@@ -114,26 +114,40 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           orderNumber: orderNum
         });
 
-        // Format WhatsApp Message
-        // Format Beautiful WhatsApp Message for Shop Owner (Ramcharan)
-        let message = `🌸 *NEW ORDER - VASAVI FANCY STORE* 🌸\n`;
-        message += `Hello Ramcharan Garu! You received a new order.\n\n`;
-        message += `📋 *ORDER SUMMARY*\n`;
-        message += `• Order ID: #${orderNum}\n`;
-        message += `• Date: ${new Date().toLocaleDateString('en-IN')}\n\n`;
-        message += `👤 *CUSTOMER DETAILS*\n`;
-        message += `• Name: ${customerName}\n`;
-        message += `• Phone: ${customerPhone}\n`;
-        message += `• Address: ${fullAddress}\n`;
-        if (customerNotes) message += `• Note/Landmark: ${customerNotes}\n`;
-        message += `\n📦 *ORDERED ITEMS*\n`;
+        // Format Beautiful WhatsApp Message with Clean Markdown & Dividers
+        let message = `🛍️ *NEW ORDER - VASAVI FANCY STORE* 🛍️\n`;
+        message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+        message += `*Hello Ramcharan Garu!* I have placed a new order on your store website.\n\n`;
+
+        message += `📋 *ORDER DETAILS*\n`;
+        message += `• *Order ID:* #${orderNum}\n`;
+        message += `• *Date:* ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}\n`;
+        message += `• *Payment Method:* WhatsApp Order & UPI Pay\n\n`;
+
+        message += `👤 *CUSTOMER INFORMATION*\n`;
+        message += `• *Name:* ${customerName}\n`;
+        message += `• *Phone:* +91 ${customerPhone}\n`;
+        message += `• *Address:* ${fullAddress}\n`;
+        if (customerNotes) {
+          message += `• *Landmark / Note:* ${customerNotes}\n`;
+        }
+        message += `\n`;
+
+        message += `📦 *ITEMS ORDERED*\n`;
+        message += `━━━━━━━━━━━━━━━━━━━━━\n`;
         cart.forEach((item, index) => {
           const p = item.product || item;
-          message += `${index + 1}. ${item.quantity}x ${p.name} (₹${p.price * item.quantity})\n`;
+          message += `${index + 1}. *${p.name}*\n`;
+          message += `   └─ Qty: ${item.quantity} × ₹${p.price} = *₹${p.price * item.quantity}*\n`;
         });
-        message += `\n💰 *TOTAL PAYABLE:* ₹${totalAmount}\n`;
-        message += `💳 *PAYMENT:* WhatsApp Order (UPI after confirmation)\n\n`;
-        message += `Please confirm my order and share payment details. Thank you! 🙏`;
+        message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+        message += `💳 *BILL SUMMARY*\n`;
+        message += `• *Items Total:* ₹${totalAmount}\n`;
+        message += `• *Delivery:* Free (Nandyal)\n`;
+        message += `• *TOTAL PAYABLE:* *₹${totalAmount}*\n\n`;
+
+        message += `✨ _Please confirm my order and share your UPI QR / PhonePe number for payment. Thank you!_ 🙏`;
 
         const waNumber = storeInfo?.whatsappNumber || '918309917665';
         const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
