@@ -114,40 +114,41 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           orderNumber: orderNum
         });
 
-        // Format Beautiful WhatsApp Message with Clean Markdown & Dividers
-        let message = `🛍️ *NEW ORDER - VASAVI FANCY STORE* 🛍️\n`;
-        message += `━━━━━━━━━━━━━━━━━━━━━\n`;
-        message += `*Hello Ramcharan Garu!* I have placed a new order on your store website.\n\n`;
+        // Format Clean, Highly Professional WhatsApp Message without star artifacts
+        let message = `🛍️ NEW ORDER - VASAVI FANCY STORE\n`;
+        message += `────────────────────────\n`;
+        message += `Hello Ramcharan Garu! I have placed a new order on your store website.\n\n`;
 
-        message += `📋 *ORDER DETAILS*\n`;
-        message += `• *Order ID:* #${orderNum}\n`;
-        message += `• *Date:* ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}\n`;
-        message += `• *Payment Method:* WhatsApp Order & UPI Pay\n\n`;
+        message += `📋 ORDER DETAILS:\n`;
+        message += `• Order ID: #${orderNum}\n`;
+        message += `• Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}\n`;
+        message += `• Payment: WhatsApp Order (UPI / Scanner)\n\n`;
 
-        message += `👤 *CUSTOMER INFORMATION*\n`;
-        message += `• *Name:* ${customerName}\n`;
-        message += `• *Phone:* +91 ${customerPhone}\n`;
-        message += `• *Address:* ${fullAddress}\n`;
+        message += `👤 CUSTOMER INFORMATION:\n`;
+        message += `• Name: ${customerName}\n`;
+        message += `• Phone: +91 ${customerPhone}\n`;
+        message += `• Address: ${fullAddress}\n`;
         if (customerNotes) {
-          message += `• *Landmark / Note:* ${customerNotes}\n`;
+          message += `• Landmark / Note: ${customerNotes}\n`;
         }
         message += `\n`;
 
-        message += `📦 *ITEMS ORDERED*\n`;
-        message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+        message += `📦 ITEMS ORDERED:\n`;
+        message += `────────────────────────\n`;
         cart.forEach((item, index) => {
           const p = item.product || item;
-          message += `${index + 1}. *${p.name}*\n`;
-          message += `   └─ Qty: ${item.quantity} × ₹${p.price} = *₹${p.price * item.quantity}*\n`;
+          message += `${index + 1}. ${p.name}\n`;
+          message += `   Qty: ${item.quantity} × ₹${p.price} = ₹${p.price * item.quantity}\n`;
         });
-        message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        message += `────────────────────────\n\n`;
 
-        message += `💳 *BILL SUMMARY*\n`;
-        message += `• *Items Total:* ₹${totalAmount}\n`;
-        message += `• *Delivery:* Free (Nandyal)\n`;
-        message += `• *TOTAL PAYABLE:* *₹${totalAmount}*\n\n`;
+        message += `💳 BILL SUMMARY:\n`;
+        message += `• Items Total: ₹${totalAmount}\n`;
+        message += `• Delivery Charge: FREE (Nandyal)\n`;
+        message += `• TOTAL PAYABLE: ₹${totalAmount}\n\n`;
 
-        message += `✨ _Please confirm my order and share your UPI QR / PhonePe number for payment. Thank you!_ 🙏`;
+        message += `────────────────────────\n`;
+        message += `Please confirm my order and share your UPI QR / PhonePe number for payment. Thank you! 🙏`;
 
         const waNumber = storeInfo?.whatsappNumber || '918309917665';
         const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;

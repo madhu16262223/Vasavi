@@ -31,15 +31,15 @@ export const ProductDetailModal = () => {
 
   const handleWhatsAppQuickOrder = () => {
     const waNumber = storeInfo?.whatsappNumber || '918309917665';
-    let msg = `🛍️ *PRODUCT INQUIRY - VASAVI FANCY STORE* 🛍️\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `*Hello Ramcharan Garu!* I am interested in buying this item:\n\n`;
-    msg += `📦 *Product:* ${selectedProduct.name}\n`;
-    msg += `💰 *Unit Price:* ₹${selectedProduct.price} ${selectedProduct.originalPrice ? `(M.R.P. ₹${selectedProduct.originalPrice})` : ''}\n`;
-    msg += `🔢 *Quantity:* ${quantity}\n`;
-    msg += `💵 *Total Amount:* *₹${selectedProduct.price * quantity}*\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    msg += `✨ _Please confirm stock availability and share payment options. Thank you!_ 🙏`;
+    let msg = `🛍️ PRODUCT INQUIRY - VASAVI FANCY STORE\n`;
+    msg += `────────────────────────\n`;
+    msg += `Hello Ramcharan Garu! I am interested in ordering this product:\n\n`;
+    msg += `📦 Product: ${selectedProduct.name}\n`;
+    msg += `💰 Price: ₹${selectedProduct.price} ${selectedProduct.originalPrice ? `(M.R.P. ₹${selectedProduct.originalPrice})` : ''}\n`;
+    msg += `🔢 Quantity: ${quantity}\n`;
+    msg += `💵 Total Amount: ₹${selectedProduct.price * quantity}\n`;
+    msg += `────────────────────────\n\n`;
+    msg += `Please confirm stock availability and share UPI QR / payment details. Thank you! 🙏`;
 
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
   };
