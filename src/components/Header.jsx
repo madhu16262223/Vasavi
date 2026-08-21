@@ -124,7 +124,7 @@ export const Header = () => {
           </div>
 
           {/* Search Bar (Desktop) with Live Interactive Suggestions */}
-          <div ref={searchContainerRef} className="hidden md:block relative flex-1 max-w-sm mx-6 lg:mx-10">
+          <div ref={searchContainerRef} className="hidden md:block relative flex-1 max-w-[240px] lg:max-w-xs xl:max-w-sm mx-3 lg:mx-6 shrink">
             <form onSubmit={handleSearchSubmit} className="relative w-full">
               <input
                 type="text"
@@ -211,10 +211,10 @@ export const Header = () => {
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6">
+          <nav className="hidden xl:flex items-center gap-5 shrink-0">
             <button
               onClick={() => handleNavClick('home')}
-              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ${
+              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === 'home' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
               }`}
             >
@@ -223,7 +223,7 @@ export const Header = () => {
 
             <button
               onClick={() => handleNavClick('shop')}
-              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ${
+              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === 'shop' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
               }`}
             >
@@ -232,7 +232,7 @@ export const Header = () => {
 
             <button
               onClick={() => handleNavClick('track')}
-              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ${
+              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === 'track' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
               }`}
             >
@@ -241,7 +241,7 @@ export const Header = () => {
           </nav>
 
           {/* Action Buttons (Cart, Customer Auth & Mobile Menu) */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0 pl-2">
             
             {/* Customer User Account / Sign In Button with Dropdown */}
             {currentUser ? (
