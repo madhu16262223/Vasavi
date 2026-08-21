@@ -1,25 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
   <defs>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e5b85c"/>
-      <stop offset="50%" stop-color="#c99632"/>
-      <stop offset="100%" stop-color="#a6751d"/>
+    <!-- Ultra-Luxurious Metallic Gold Gradient -->
+    <linearGradient id="goldMetallic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff2c2"/>
+      <stop offset="25%" stop-color="#d4af37"/>
+      <stop offset="50%" stop-color="#aa7c11"/>
+      <stop offset="75%" stop-color="#f5d77f"/>
+      <stop offset="100%" stop-color="#8a5e00"/>
     </linearGradient>
-    <linearGradient id="royalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#0f172a"/>
-    </linearGradient>
+
+    <radialGradient id="jewelGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2d2210"/>
+      <stop offset="70%" stop-color="#141008"/>
+      <stop offset="100%" stop-color="#080603"/>
+    </radialGradient>
+
+    <!-- Diamond Sparkle Filter -->
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
-  
-  <!-- Outer Gold Ring -->
-  <circle cx="50" cy="50" r="46" fill="#fffcf7" stroke="url(#goldGrad)" stroke-width="4"/>
-  
-  <!-- Vasavi Monogram 'V' -->
-  <path d="M28 26 L48 76 Q50 80 52 76 L72 26" fill="none" stroke="url(#goldGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  
-  <!-- Inner Royal Accent -->
-  <path d="M38 26 L50 62 L62 26" fill="none" stroke="url(#royalGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  
-  <!-- Crown Sparkle Accent -->
-  <polygon points="50,14 53,21 60,21 54,25 57,32 50,28 43,32 46,25 40,21 47,21" fill="url(#goldGrad)"/>
+
+  <!-- Deep Obsidian Jewel Base (Looks stunning in both Dark & Light browser tabs) -->
+  <circle cx="64" cy="64" r="60" fill="url(#jewelGlow)" stroke="url(#goldMetallic)" stroke-width="5" />
+  <circle cx="64" cy="64" r="54" fill="none" stroke="url(#goldMetallic)" stroke-width="1.5" stroke-dasharray="2,3" opacity="0.75" />
+
+  <!-- 4 Corner Diamond Accent Jewels -->
+  <circle cx="64" cy="12" r="3" fill="#fff" filter="url(#goldGlow)" />
+  <circle cx="64" cy="116" r="3" fill="#fff" filter="url(#goldGlow)" />
+  <circle cx="12" cy="64" r="3" fill="#fff" filter="url(#goldGlow)" />
+  <circle cx="116" cy="64" r="3" fill="#fff" filter="url(#goldGlow)" />
+
+  <!-- Royal Floral Crown / Tiara Accent -->
+  <g transform="translate(64, 34) scale(0.9)" filter="url(#goldGlow)">
+    <path d="M-18,6 L-9,-4 L0,2 L9,-4 L18,6 L12,9 L-12,9 Z" fill="url(#goldMetallic)"/>
+    <circle cx="0" cy="-6" r="2.5" fill="#fff"/>
+    <circle cx="-9" cy="-6" r="2" fill="#fff"/>
+    <circle cx="9" cy="-6" r="2" fill="#fff"/>
+  </g>
+
+  <!-- Iconic Vasavi 'V' Monogram with Diamond Cuts -->
+  <g filter="url(#goldGlow)">
+    <!-- Left Wing of V -->
+    <path d="M38 48 L58 98 Q64 105 70 98 L90 48 Q93 42 86 42 Q80 42 78 48 L64 84 L50 48 Q48 42 42 42 Q35 42 38 48 Z" fill="url(#goldMetallic)"/>
+    
+    <!-- Central Sparkling Jewel Core -->
+    <polygon points="64,48 67,56 75,56 69,61 71,69 64,64 57,69 59,61 53,56 61,56" fill="#ffffff" opacity="0.9"/>
+  </g>
 </svg>
