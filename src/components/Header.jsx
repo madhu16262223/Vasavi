@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { ShoppingBag, Search, Shield, Menu, X, Package, Home, Store, User, Crown } from 'lucide-react';
+import { ShoppingBag, Search, Shield, Menu, X, Package, Home, Store, User, ArrowRight, Sparkles } from 'lucide-react';
 
 export const Header = () => {
   const {
@@ -13,20 +13,70 @@ export const Header = () => {
     isAdminLoggedIn,
     currentUser,
     openAuthModal,
-    logoutCustomer
+    logoutCustomer,
+    products,
+    setSelectedProduct
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef(null);
+  const mobileSearchContainerRef = useRef(null);
+
   const cartCount = getCartCount();
 
   const handleNavClick = (tab) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
+    setShowSuggestions(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Compute live search suggestions
+  const matchingProducts = searchQuery.trim()
+    ? products.filter(p => {
+        const q = searchQuery.toLowerCase().trim();
+        return (
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.brand && p.brand.toLowerCase().includes(q)) ||
+          (p.shade && p.shade.toLowerCase().includes(q))
+        );
+      }).slice(0, 6)
+    : [];
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      setActiveTab('shop');
+      setShowSuggestions(false);
+      setMobileMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleSelectProductFromSearch = (product) => {
+    setSelectedProduct(product);
+    setShowSuggestions(false);
+    setMobileMenuOpen(false);
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        searchContainerRef.current && !searchContainerRef.current.contains(e.target) &&
+        mobileSearchContainerRef.current && !mobileSearchContainerRef.current.contains(e.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Secret Admin Shortcut Handler (Ctrl + Shift + A or #admin URL hash)
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault();
@@ -43,16 +93,16 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-[#fffcf7]/95 backdrop-blur-md border-b border-[#c99632]/30 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
           {/* Brand Logo */}
           <div
             onClick={() => handleNavClick('home')}
-            className="flex items-center gap-3.5 cursor-pointer group"
+            className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group"
           >
             {/* Vasavi Logo */}
-            <div className="relative flex items-center justify-center w-14 h-14 shrink-0 rounded-full overflow-hidden border border-[#c99632]/60 shadow-sm">
+            <div className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-full overflow-hidden border border-[#c99632]/60 shadow-sm">
               <img
                 src="/vasavi_logo.png"
                 alt="Vasavi Fancy Store Logo"
@@ -61,41 +111,103 @@ export const Header = () => {
             </div>
 
             <div>
-              <h1 className="font-serif-luxury text-2xl font-black tracking-wider text-[#171717] group-hover:text-[#c99632] transition-colors leading-none">
+              <h1 className="font-serif-luxury text-xl sm:text-2xl font-black tracking-wider text-[#171717] group-hover:text-[#c99632] transition-colors leading-none">
                 VASAVI
               </h1>
-              <p className="text-[12px] font-sans font-black text-[#c99632] tracking-[0.2em] uppercase mt-1 leading-none">
+              <p className="text-[11px] sm:text-[12px] font-sans font-black text-[#c99632] tracking-[0.2em] uppercase mt-1 leading-none">
                 FANCY STORE
               </p>
-              <p className="text-[9px] text-[#666666] tracking-widest uppercase font-bold mt-1 leading-none">
+              <p className="hidden sm:block text-[9px] text-[#666666] tracking-widest uppercase font-bold mt-1 leading-none">
                 COSMETICS • JEWELLERY • HANDBAGS
               </p>
             </div>
           </div>
 
-          {/* Search Bar (Desktop) */}
-          <div className="hidden md:flex items-center flex-1 max-w-xs mx-8">
-            <div className="relative w-full">
+          {/* Search Bar (Desktop) with Live Interactive Suggestions */}
+          <div ref={searchContainerRef} className="hidden md:block relative flex-1 max-w-sm mx-6 lg:mx-10">
+            <form onSubmit={handleSearchSubmit} className="relative w-full">
               <input
                 type="text"
-                placeholder="Search lipsticks, jewellery..."
+                placeholder="Search lipsticks, bangles, jewellery..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => {
-                  if (activeTab !== 'admin') setActiveTab('shop');
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSuggestions(true);
                 }}
-                className="w-full bg-white border border-[#c99632]/40 rounded-full py-2 pl-10 pr-4 text-xs font-medium text-[#171717] placeholder-[#777777] focus:outline-none focus:border-[#c99632] focus:ring-1 focus:ring-[#c99632] transition-all shadow-xs"
+                onFocus={() => {
+                  if (searchQuery.trim()) setShowSuggestions(true);
+                }}
+                className="w-full bg-white border border-[#c99632]/40 rounded-full py-2.5 pl-10 pr-9 text-xs font-medium text-[#171717] placeholder-[#888888] focus:outline-none focus:border-[#c99632] focus:ring-1 focus:ring-[#c99632] transition-all shadow-xs"
               />
               <Search className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setShowSuggestions(false);
+                  }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#888888] hover:text-[#171717]"
                 >
-                  Clear
+                  ✕
                 </button>
               )}
-            </div>
+            </form>
+
+            {/* Desktop Live Suggestions Dropdown */}
+            {showSuggestions && searchQuery.trim() && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-[#c99632]/30 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+                <div className="p-2.5 bg-[#faf8f5] border-b border-[#c99632]/20 flex items-center justify-between text-[11px] font-bold text-[#888888]">
+                  <span>MATCHING PRODUCTS ({matchingProducts.length})</span>
+                  <span className="text-[10px] text-[#c99632]">Press Enter to view all</span>
+                </div>
+
+                <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                  {matchingProducts.length > 0 ? (
+                    matchingProducts.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSelectProductFromSearch(p)}
+                        className="p-3 hover:bg-[#fff9ee] cursor-pointer flex items-center gap-3 transition-colors group"
+                      >
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className="w-10 h-10 object-cover rounded-lg border border-[#c99632]/20 shrink-0"
+                          onError={(e) => { e.target.src = '/vasavi_logo.png'; }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-[#171717] group-hover:text-[#c99632] truncate">
+                            {p.name}
+                          </p>
+                          <p className="text-[10px] text-[#777777] truncate">
+                            {p.category} {p.shade ? `• ${p.shade}` : ''}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-black text-[#171717]">₹{p.price}</p>
+                          {p.originalPrice && p.originalPrice > p.price && (
+                            <p className="text-[10px] text-gray-400 line-through">₹{p.originalPrice}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center text-xs text-[#777777]">
+                      No products found for "{searchQuery}". Press Enter to browse catalog.
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleSearchSubmit}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white text-xs font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-opacity"
+                >
+                  <span>View all results for "{searchQuery}" in Shop</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Desktop Navigation Links */}
@@ -129,14 +241,14 @@ export const Header = () => {
           </nav>
 
           {/* Action Buttons (Cart, Customer Auth & Mobile Menu) */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             
             {/* Customer User Account / Sign In Button with Dropdown */}
             {currentUser ? (
               <div className="relative group">
                 <button
                   onClick={() => openAuthModal('login')}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#fff3c4]/80 border border-[#c99632]/50 hover:bg-[#fff3c4] transition-all gold-glow text-xs font-bold text-[#8a6200] shadow-xs"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#fff3c4]/80 border border-[#c99632]/50 hover:bg-[#fff3c4] transition-all gold-glow text-xs font-bold text-[#8a6200] shadow-xs"
                   title="Click to view account"
                 >
                   <span className="w-6 h-6 rounded-full bg-[#c99632] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
@@ -145,7 +257,7 @@ export const Header = () => {
                   <span className="hidden sm:inline font-bold truncate max-w-[100px]">{currentUser.name.split(' ')[0]}</span>
                 </button>
 
-                {/* Dropdown Menu on Hover/Click */}
+                {/* Dropdown Menu on Hover */}
                 <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#c99632]/30 rounded-2xl shadow-xl p-2 hidden group-hover:block transition-all z-50">
                   <div className="p-3 border-b border-[#c99632]/15 bg-[#fffcf7] rounded-xl mb-1">
                     <p className="text-xs font-bold text-[#171717] truncate">{currentUser.name}</p>
@@ -180,10 +292,10 @@ export const Header = () => {
             ) : (
               <button
                 onClick={() => openAuthModal('login')}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-xs font-bold text-[#171717] hover:text-[#c99632] transition-all shadow-xs gold-glow"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-xs font-bold text-[#171717] hover:text-[#c99632] transition-all shadow-xs gold-glow"
               >
                 <User className="w-4 h-4 text-[#c99632]" />
-                <span className="hidden sm:inline">Sign In / Register</span>
+                <span className="hidden sm:inline">Sign In</span>
               </button>
             )}
 
@@ -210,11 +322,89 @@ export const Header = () => {
             </button>
           </div>
         </div>
+
+        {/* Mobile Dedicated Search Bar (Visible directly on Home/Shop without opening drawer) */}
+        <div ref={mobileSearchContainerRef} className="md:hidden pb-3 relative">
+          <form onSubmit={handleSearchSubmit} className="relative w-full">
+            <input
+              type="text"
+              placeholder="Search products, jewellery, bangles..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => {
+                if (searchQuery.trim()) setShowSuggestions(true);
+              }}
+              className="w-full bg-white border border-[#c99632]/40 rounded-full py-2 pl-9 pr-9 text-xs font-medium text-[#171717] placeholder-[#888888] focus:outline-none focus:border-[#c99632] shadow-xs"
+            />
+            <Search className="w-4 h-4 text-[#888888] absolute left-3 top-1/2 -translate-y-1/2" />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowSuggestions(false);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#888888]"
+              >
+                ✕
+              </button>
+            )}
+          </form>
+
+          {/* Mobile Live Suggestions Dropdown */}
+          {showSuggestions && searchQuery.trim() && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#c99632]/30 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+              <div className="p-2 bg-[#faf8f5] border-b border-[#c99632]/20 flex items-center justify-between text-[11px] font-bold text-[#888888]">
+                <span>MATCHING PRODUCTS ({matchingProducts.length})</span>
+                <span className="text-[10px] text-[#c99632]">Tap to view</span>
+              </div>
+
+              <div className="max-h-60 overflow-y-auto divide-y divide-gray-100">
+                {matchingProducts.length > 0 ? (
+                  matchingProducts.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => handleSelectProductFromSearch(p)}
+                      className="p-2.5 hover:bg-[#fff9ee] active:bg-[#fff3c4] cursor-pointer flex items-center gap-2.5 transition-colors"
+                    >
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="w-9 h-9 object-cover rounded-lg border border-[#c99632]/20 shrink-0"
+                        onError={(e) => { e.target.src = '/vasavi_logo.png'; }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#171717] truncate">{p.name}</p>
+                        <p className="text-[10px] text-[#777777] truncate">{p.category}</p>
+                      </div>
+                      <span className="text-xs font-black text-[#171717] shrink-0">₹{p.price}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-xs text-[#777777]">
+                    No matching items. Press Enter to view catalog.
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleSearchSubmit}
+                className="w-full py-2 px-3 bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white text-xs font-bold flex items-center justify-center gap-1.5"
+              >
+                <span>View all in Shop Catalog</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer Menu (Navigation & Account Only) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#fffcf7] border-b border-[#c99632]/30 px-4 pt-3 pb-6 space-y-4 shadow-xl">
+        <div className="lg:hidden bg-[#fffcf7] border-b border-[#c99632]/30 px-4 pt-3 pb-6 space-y-4 shadow-xl animate-fadeIn">
           {/* Customer Account Status in Mobile */}
           {currentUser ? (
             <div className="p-3 bg-white border border-[#c99632]/30 rounded-2xl flex items-center justify-between shadow-xs">
@@ -250,22 +440,7 @@ export const Header = () => {
             </button>
           )}
 
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => {
-                setActiveTab('shop');
-                setMobileMenuOpen(false);
-              }}
-              className="w-full bg-white border border-[#c99632]/40 rounded-lg py-2 pl-9 pr-4 text-xs font-medium text-[#171717] placeholder-[#777777]"
-            />
-            <Search className="w-4 h-4 text-[#777777] absolute left-3 top-1/2 -translate-y-1/2" />
-          </div>
-
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-2 pt-1">
             <button
               onClick={() => handleNavClick('home')}
               className={`p-2.5 rounded-lg text-left text-xs uppercase font-bold flex items-center gap-2 ${
