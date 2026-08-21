@@ -1,0 +1,113 @@
+// Prisma Schema for Vasavi Fancy Store (PostgreSQL)
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  imageUrl    String
+  products    Product[]
+  createdAt   DateTime  @default(now())
+
+  @@map("categories")
+}
+
+model Product {
+  id            String      @id @default(uuid())
+  name          String
+  description   String?
+  price         Float
+  originalPrice Float?
+  stock         Int         @default(0)
+  imageUrl      String
+  brand         String?
+  shade         String?
+  isTrending    Boolean     @default(false)
+  isBestSeller  Boolean     @default(false)
+  isActive      Boolean     @default(true)
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("products")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  address   String
+  orders    Order[]
+  createdAt DateTime @default(now())
+
+  @@map("customers")
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  orderNumber       String      @unique
+  customerId        String?
+  customer          Customer?   @relation(fields: [customerId], references: [id])
+  customerName      String
+  customerPhone     String
+  address           String
+  notes             String?
+  totalAmount       Float
+  status            OrderStatus @default(PENDING)
+  paymentMethod     String      @default("WHATSAPP_UPI")
+  paymentStatus     String      @default("PENDING") // PENDING, CONFIRMED, COD, PAID
+  whatsappRef       String?
+  upiTxnId          String?
+  paidAt            DateTime?
+  items             OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  productName String
+  quantity    Int
+  price       Float
+  subtotal    Float
+
+  @@map("order_items")
+}
