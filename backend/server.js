@@ -23,14 +23,16 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/payment', paymentRouter);
 
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    store: 'Vasavi Fancy Store API',
-    database: 'PostgreSQL Ready',
-    paymentSystem: 'WhatsApp Direct & Cash on Delivery',
-    timestamp: new Date().toISOString()
-  });
+  res.status(200).send('OK');
 });
 
 app.listen(PORT, () => {
