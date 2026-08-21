@@ -80,6 +80,9 @@ export const ProductDetailModal = () => {
               <img
                 src={selectedProduct.image}
                 alt={selectedProduct.name}
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
+                }}
                 className="w-full max-h-[340px] object-contain rounded-2xl shadow-md transition-all duration-300 hover:scale-105"
               />
             </div>

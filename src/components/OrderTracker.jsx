@@ -18,9 +18,9 @@ export const OrderTracker = () => {
     
     const found = orders.find(
       (o) =>
-        o.orderNumber.toLowerCase() === query ||
-        o.id.toLowerCase() === query ||
-        o.customerPhone.includes(query)
+        (o.orderNumber && o.orderNumber.toLowerCase().includes(query)) ||
+        (o.id && o.id.toLowerCase().includes(query)) ||
+        (o.customerPhone && o.customerPhone.includes(query))
     );
 
     setSearchedOrder(found || null);

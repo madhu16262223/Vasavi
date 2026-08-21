@@ -17,13 +17,17 @@ export const ShopCatalog = () => {
       activeCategory === 'all' ||
       p.categoryId === activeCategory ||
       p.slug === activeCategory ||
-      p.categoryName?.toLowerCase().replace(/\s+/g, '-') === activeCategory;
+      (p.category && p.category.toLowerCase().replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-')) ||
+      (p.categoryName && p.categoryName.toLowerCase().replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-'));
 
     const matchesSearch =
       !searchQuery ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.categoryName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      p.name.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+      (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
+      (p.categoryName && p.categoryName.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
+      (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
+      (p.shade && p.shade.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
+      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase().trim()));
 
     const matchesPrice = p.price <= priceRange;
     const matchesStock = !inStockOnly || p.stock > 0;
