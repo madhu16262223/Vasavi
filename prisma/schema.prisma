@@ -86,11 +86,10 @@ model Order {
   notes             String?
   totalAmount       Float
   status            OrderStatus @default(PENDING)
-  paymentMethod     String      @default("ONLINE_UPI")
-  paymentStatus     String      @default("PENDING") // PENDING, PAID, FAILED, COD, REFUNDED
-  razorpayOrderId   String?
-  razorpayPaymentId String?
-  razorpaySignature String?
+  paymentMethod     String      @default("WHATSAPP_UPI")
+  paymentStatus     String      @default("PENDING") // PENDING, CONFIRMED, COD, PAID
+  whatsappRef       String?
+  upiTxnId          String?
   paidAt            DateTime?
   items             OrderItem[]
   createdAt         DateTime    @default(now())

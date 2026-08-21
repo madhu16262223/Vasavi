@@ -28,7 +28,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     store: 'Vasavi Fancy Store API',
     database: 'PostgreSQL Ready',
-    razorpay: 'Enabled & Configured',
+    paymentSystem: 'WhatsApp Direct & Cash on Delivery',
     timestamp: new Date().toISOString()
   });
 });
