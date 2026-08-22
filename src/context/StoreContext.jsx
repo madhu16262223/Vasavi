@@ -455,6 +455,7 @@ export const StoreProvider = ({ children }) => {
   const updateProduct = (productIdOrObj, maybePayload) => {
     const id = typeof productIdOrObj === 'object' ? productIdOrObj.id : productIdOrObj;
     const data = typeof productIdOrObj === 'object' ? productIdOrObj : (maybePayload || {});
+    const imageSrc = data.image || data.imageUrl;
 
     setProducts((prev) =>
       prev.map((p) => {
@@ -462,8 +463,10 @@ export const StoreProvider = ({ children }) => {
           const updated = { ...p, ...data };
           if (data.price !== undefined) updated.price = Number(data.price);
           if (data.stock !== undefined) updated.stock = Number(data.stock);
-          if (data.image) updated.image = data.image;
-          if (data.imageUrl) updated.imageUrl = data.imageUrl;
+          if (imageSrc) {
+            updated.image = imageSrc;
+            updated.imageUrl = imageSrc;
+          }
           return updated;
         }
         return p;
@@ -474,7 +477,7 @@ export const StoreProvider = ({ children }) => {
     fetch(`${API_BASE_URL}/api/products/${id}`, {
       method: 'PUT',
       headers: ADMIN_API_HEADER,
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, image: imageSrc, imageUrl: imageSrc })
     }).catch((err) => console.error('[Vasavi] Product update sync error:', err));
   };
 

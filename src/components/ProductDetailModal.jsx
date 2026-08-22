@@ -78,11 +78,9 @@ export const ProductDetailModal = () => {
             {/* Product Image Display */}
             <div className="w-full max-h-[360px] flex items-center justify-center p-2">
               <img
-                src={selectedProduct.image}
+                src={selectedProduct.image || selectedProduct.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80'}
                 alt={selectedProduct.name}
-                onError={(e) => {
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
-                }}
+                referrerPolicy="no-referrer"
                 className="w-full max-h-[340px] object-contain rounded-2xl shadow-md transition-all duration-300 hover:scale-105"
               />
             </div>

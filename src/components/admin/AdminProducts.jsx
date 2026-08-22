@@ -62,7 +62,7 @@ export const AdminProducts = () => {
       price: product.price,
       originalPrice: product.originalPrice || '',
       stock: product.stock,
-      image: product.image,
+      image: product.image || product.imageUrl || '',
       description: product.description || '',
       shade: product.shade || '',
       brand: product.brand || 'Vasavi Collection',
@@ -74,9 +74,12 @@ export const AdminProducts = () => {
   const handleSave = (e) => {
     e.preventDefault();
     const catObj = categories.find((c) => c.id === formData.categoryId) || categories[0];
+    const imageToSave = formData.image?.trim() || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
     
     const payload = {
       ...formData,
+      image: imageToSave,
+      imageUrl: imageToSave,
       categoryId: catObj?.id || formData.categoryId || 'cat-1',
       categoryName: catObj?.name || formData.categoryName || 'Cosmetics',
       categorySlug: catObj?.slug || 'cosmetics',
@@ -166,7 +169,12 @@ export const AdminProducts = () => {
             <div key={p.id} className="bg-white rounded-2xl border border-[#c99632]/25 p-2.5 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
               <div className="space-y-1.5">
                 <div className="relative h-28 sm:h-32 rounded-xl overflow-hidden bg-[#faf8f5]">
-                  <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                  <img
+                    src={p.image || p.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80'}
+                    alt={p.name}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute top-1.5 left-1.5 flex flex-col gap-0.5">
                     {p.isTrending && <span className="bg-[#e88a9a] text-white text-[8px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">Trending</span>}
                     {p.isBestSeller && <span className="bg-[#c99632] text-white text-[8px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">Bestseller</span>}
@@ -227,7 +235,12 @@ export const AdminProducts = () => {
                   <tr key={p.id} className="hover:bg-[#fffcf7] transition-colors">
                     <td className="py-2.5 px-4">
                       <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#faf8f5] border border-[#c99632]/30 shrink-0">
-                        <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                        <img
+                          src={p.image || p.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80'}
+                          alt={p.name}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     </td>
                     <td className="py-2.5 px-4">
@@ -484,7 +497,12 @@ export const AdminProducts = () => {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="text-[10px] font-bold text-emerald-700">✓ Loaded:</span>
                       <div className="w-9 h-9 rounded-xl overflow-hidden border-2 border-emerald-500 bg-white shadow-xs">
-                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                        <img
+                          src={formData.image}
+                          alt="Preview"
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     </div>
                   )}
@@ -533,7 +551,12 @@ export const AdminProducts = () => {
                   <div className="space-y-2">
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-white">
                       {formData.image ? (
-                        <img src={formData.image} alt={formData.name || 'Preview'} className="w-full h-full object-cover" />
+                        <img
+                          src={formData.image}
+                          alt={formData.name || 'Preview'}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">Image Preview</div>
                       )}

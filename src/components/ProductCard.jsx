@@ -36,11 +36,10 @@ export const ProductCard = ({ product }) => {
       {/* Product Image Container */}
       <div className="relative aspect-square overflow-hidden bg-[#fffcf7]">
         <img
-          src={product.image}
+          src={product.image || product.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80'}
           alt={product.name}
-          onError={(e) => {
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
-          }}
+          referrerPolicy="no-referrer"
+          loading="lazy"
           className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500"
         />
 
