@@ -210,6 +210,31 @@ export const StoreProvider = ({ children }) => {
     }
   }, [isAdminLoggedIn, products, categories]);
 
+  // Live Order Fetching from Cloud for Admin Dashboard (every 10s)
+  const fetchOrdersFromCloud = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/orders?t=${Date.now()}`, {
+        headers: ADMIN_API_HEADER
+      });
+      if (res.ok) {
+        const cloudOrders = await res.json();
+        if (Array.isArray(cloudOrders)) {
+          setOrders(cloudOrders);
+        }
+      }
+    } catch (err) {
+      console.warn('[Vasavi] Could not fetch orders from cloud:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAdminLoggedIn) {
+      fetchOrdersFromCloud();
+      const orderInterval = setInterval(fetchOrdersFromCloud, 10000);
+      return () => clearInterval(orderInterval);
+    }
+  }, [isAdminLoggedIn, fetchOrdersFromCloud]);
+
   // Offline Sales / Shop Counter Income State
   const [offlineSales, setOfflineSales] = useState(() => {
     const saved = localStorage.getItem('vasavi_offline_sales');
@@ -507,11 +532,27 @@ export const StoreProvider = ({ children }) => {
     }).catch((err) => console.error('[Vasavi] Category delete sync error:', err));
   };
 
-  // Order Status Update
-  const updateOrderStatus = (orderId, newStatus) => {
+  // Order Status Update with Cloud Sync
+  const updateOrderStatus = (orderId, newStatus, paymentStatus) => {
     setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus, updatedAt: new Date().toISOString() } : o))
+      prev.map((o) =>
+        o.id === orderId || o.orderNumber === orderId
+          ? {
+              ...o,
+              status: newStatus,
+              paymentStatus: paymentStatus || o.paymentStatus,
+              updatedAt: new Date().toISOString()
+            }
+          : o
+      )
     );
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: ADMIN_API_HEADER,
+      body: JSON.stringify({ status: newStatus, paymentStatus })
+    }).catch((err) => console.warn('[Vasavi] Order status sync error:', err));
   };
 
   const updateStoreSettings = (newSettings) => {
