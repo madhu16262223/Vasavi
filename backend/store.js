@@ -66,69 +66,7 @@ const INITIAL_CATEGORIES = [
   }
 ];
 
-const INITIAL_PRODUCTS = [
-  {
-    id: "prod-1",
-    name: "Velvet Matte Rose Lipstick",
-    categoryId: "cat-1",
-    categoryName: "Cosmetics",
-    categorySlug: "cosmetics",
-    price: 349,
-    originalPrice: 499,
-    stock: 24,
-    image: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=800&q=80",
-    description: "Long-lasting 12-hour matte lipstick with nourishing Vitamin E and jojoba oil.",
-    brand: "Vasavi Elegance",
-    shade: "Velvet Rose Red",
-    isTrending: true,
-    isBestSeller: true
-  },
-  {
-    id: "prod-2",
-    name: "24K Gold Plated Antique Temple Necklace Set",
-    categoryId: "cat-2",
-    categoryName: "Jewellery",
-    categorySlug: "jewellery",
-    price: 1899,
-    originalPrice: 2499,
-    stock: 8,
-    image: "https://images.unsplash.com/photo-1611591475179-be25032890db?auto=format&fit=crop&w=800&q=80",
-    description: "Exquisite traditional temple design handcrafted with Lakshmi motif.",
-    brand: "Vasavi Heritage",
-    isTrending: true,
-    isBestSeller: true
-  },
-  {
-    id: "prod-rakhi-1",
-    name: "Handcrafted Royal Thread Rakhi",
-    categoryId: "cat-2",
-    categoryName: "Jewellery",
-    categorySlug: "jewellery",
-    price: 100,
-    originalPrice: 325,
-    stock: 50,
-    image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
-    description: "Beautiful designer Rakhi handcrafted with golden embellishments.",
-    brand: "Vasavi Royal",
-    isTrending: true,
-    isBestSeller: true
-  },
-  {
-    id: "prod-rakhi-2",
-    name: "Premium Designer Kundan Rakhi Set",
-    categoryId: "cat-7",
-    categoryName: "Rakis",
-    categorySlug: "rakis",
-    price: 325,
-    originalPrice: 500,
-    stock: 35,
-    image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
-    description: "Traditional festival Rakhi with fine stone craftsmanship.",
-    brand: "Vasavi Royal",
-    isTrending: true,
-    isBestSeller: true
-  }
-];
+const INITIAL_PRODUCTS = [];
 
 function readJsonFile(file, defaultValue) {
   try {
