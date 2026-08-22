@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ord-101",
+    "orderNumber": "VSV-62717",
+    "customerName": "K. Madhu",
+    "customerPhone": "9704381790",
+    "customerAddress": "Nandyal Main Road, Beside Gandhi Statue, Nandyal - 518501",
+    "address": "Nandyal Main Road, Beside Gandhi Statue, Nandyal - 518501",
+    "notes": "Please pack with gift wrap and call before delivery",
+    "totalAmount": 325,
+    "status": "PENDING",
+    "paymentMethod": "WHATSAPP",
+    "paymentStatus": "UNPAID",
+    "createdAt": "2026-08-22T06:18:00.000Z",
+    "updatedAt": "2026-08-22T06:18:00.000Z",
+    "items": [
+      {
+        "id": "item-101",
+        "productId": "prod-rakhi-2",
+        "productName": "Premium Designer Kundan Rakhi Set",
+        "quantity": 1,
+        "price": 325,
+        "subtotal": 325
+      }
+    ]
+  },
+  {
+    "id": "ord-102",
+    "orderNumber": "VSV-48192",
+    "customerName": "Sowmya Reddy",
+    "customerPhone": "9876543210",
+    "customerAddress": "Srinagar Colony, Street 4, Nandyal - 518501",
+    "address": "Srinagar Colony, Street 4, Nandyal - 518501",
+    "notes": "Urgent delivery needed before evening",
+    "totalAmount": 1899,
+    "status": "CONFIRMED",
+    "paymentMethod": "WHATSAPP",
+    "paymentStatus": "PAID",
+    "createdAt": "2026-08-21T14:30:00.000Z",
+    "updatedAt": "2026-08-21T15:00:00.000Z",
+    "items": [
+      {
+        "id": "item-102",
+        "productId": "prod-2",
+        "productName": "24K Gold Plated Antique Temple Necklace Set",
+        "quantity": 1,
+        "price": 1899,
+        "subtotal": 1899
+      }
+    ]
+  }
+]
