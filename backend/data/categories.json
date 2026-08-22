@@ -1,0 +1,44 @@
+[
+  {
+    "id": "cat-1",
+    "name": "Cosmetics",
+    "slug": "cosmetics",
+    "description": "Premium lipsticks, matte foundations, eyeliners, and makeup palettes",
+    "image": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    "id": "cat-2",
+    "name": "Jewellery",
+    "slug": "jewellery",
+    "description": "Temple jewellery, gold plated necklaces, jhumkas, and designer bangles",
+    "image": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    "id": "cat-3",
+    "name": "Hand Bags",
+    "slug": "hand-bags",
+    "description": "Luxury totes, party clutches, bridal potlis, and crossbody bags",
+    "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    "id": "cat-4",
+    "name": "Hair Accessories",
+    "slug": "hair-accessories",
+    "description": "Bridal hair combs, pearl pins, floral tiaras, and velvet scrunchies",
+    "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    "id": "cat-5",
+    "name": "Bangles",
+    "slug": "bangles",
+    "description": "Bridal silk thread bangles, gold-plated velvet kada sets, and designer chuda",
+    "image": "https://images.unsplash.com/photo-1611591475179-be25032890db?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    "id": "cat-6",
+    "name": "Beauty & Perfumes",
+    "slug": "beauty-perfumes",
+    "description": "Long lasting floral perfumes, luxury body mists, and herbal skin care",
+    "image": "https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=800&q=80"
+  }
+]
