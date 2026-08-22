@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "prisma generate --schema=backend/prisma/schema.prisma && vite build",
+    "postinstall": "prisma generate --schema=backend/prisma/schema.prisma",
     "start": "node backend/server.js",
     "lint": "oxlint",
     "preview": "vite preview"
