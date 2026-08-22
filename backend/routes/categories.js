@@ -30,6 +30,44 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Bulk Sync Categories from Admin to Cloud Database
+router.post('/bulk-sync', authenticateAdmin, async (req, res) => {
+  try {
+    const { categories } = req.body;
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return res.status(400).json({ error: 'Categories array is required' });
+    }
+
+    const upserted = [];
+    for (const c of categories) {
+      const slug = (c.slug || c.name).toLowerCase().replace(/\s+/g, '-');
+      const imageSrc = c.imageUrl || c.image || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
+
+      const cat = await prisma.category.upsert({
+        where: { slug },
+        update: {
+          name: c.name,
+          description: c.description || '',
+          imageUrl: imageSrc
+        },
+        create: {
+          id: c.id || `cat-${Date.now()}`,
+          name: c.name,
+          slug,
+          description: c.description || '',
+          imageUrl: imageSrc
+        }
+      });
+      upserted.push(cat);
+    }
+
+    res.json({ success: true, count: upserted.length, message: 'Categories synced to cloud successfully' });
+  } catch (err) {
+    console.error('Error bulk syncing categories:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create category
 router.post('/', authenticateAdmin, async (req, res) => {
   try {

@@ -51,8 +51,70 @@ router.get('/', async (req, res) => {
       updatedAt: p.updatedAt
     }));
 
-    res.json(formatted);
+// Bulk Sync Products from Admin to Cloud Database
+router.post('/bulk-sync', authenticateAdmin, async (req, res) => {
+  try {
+    const { products } = req.body;
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: 'Products array is required' });
+    }
+
+    const upserted = [];
+    for (const p of products) {
+      // Find or resolve category
+      let catId = p.categoryId;
+      if (!catId && p.categoryName) {
+        const cat = await prisma.category.findFirst({
+          where: { OR: [{ name: { equals: p.categoryName, mode: 'insensitive' } }, { slug: p.categoryName.toLowerCase().replace(/\s+/g, '-') }] }
+        });
+        if (cat) catId = cat.id;
+      }
+
+      if (!catId) {
+        const firstCat = await prisma.category.findFirst();
+        catId = firstCat?.id || 'cat-1';
+      }
+
+      const imageSrc = p.imageUrl || p.image || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
+
+      const prod = await prisma.product.upsert({
+        where: { id: p.id },
+        update: {
+          name: p.name,
+          categoryId: catId,
+          price: parseFloat(p.price) || 0,
+          originalPrice: p.originalPrice ? parseFloat(p.originalPrice) : null,
+          stock: p.stock !== undefined ? parseInt(p.stock, 10) : 10,
+          imageUrl: imageSrc,
+          description: p.description || '',
+          brand: p.brand || 'Vasavi Collection',
+          shade: p.shade || null,
+          isTrending: !!p.isTrending,
+          isBestSeller: !!p.isBestSeller,
+          isActive: true
+        },
+        create: {
+          id: p.id,
+          name: p.name,
+          categoryId: catId,
+          price: parseFloat(p.price) || 0,
+          originalPrice: p.originalPrice ? parseFloat(p.originalPrice) : null,
+          stock: p.stock !== undefined ? parseInt(p.stock, 10) : 10,
+          imageUrl: imageSrc,
+          description: p.description || '',
+          brand: p.brand || 'Vasavi Collection',
+          shade: p.shade || null,
+          isTrending: !!p.isTrending,
+          isBestSeller: !!p.isBestSeller,
+          isActive: true
+        }
+      });
+      upserted.push(prod);
+    }
+
+    res.json({ success: true, count: upserted.length, message: 'Products synced to cloud successfully' });
   } catch (err) {
+    console.error('Error bulk syncing products:', err);
     res.status(500).json({ error: err.message });
   }
 });
