@@ -77,14 +77,16 @@ export const AdminProducts = () => {
     
     const payload = {
       ...formData,
-      price: parseFloat(formData.price),
+      categoryId: catObj?.id || formData.categoryId || 'cat-1',
+      categoryName: catObj?.name || formData.categoryName || 'Cosmetics',
+      categorySlug: catObj?.slug || 'cosmetics',
+      price: parseFloat(formData.price) || 0,
       originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
-      stock: parseInt(formData.stock, 10),
-      categoryName: catObj?.name || formData.categoryName
+      stock: parseInt(formData.stock, 10) || 0
     };
 
     if (editingProduct) {
-      updateProduct({ ...editingProduct, ...payload });
+      updateProduct(editingProduct.id, payload);
       setEditingProduct(null);
     } else {
       addProduct(payload);

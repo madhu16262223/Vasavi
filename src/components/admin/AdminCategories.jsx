@@ -3,7 +3,7 @@ import { useStore } from '../../context/StoreContext';
 import { Plus, Edit2, Trash2, Tag, X } from 'lucide-react';
 
 export const AdminCategories = () => {
-  const { categories, addCategory, updateCategory, deleteCategory } = useStore();
+  const { categories, products = [], addCategory, updateCategory, deleteCategory } = useStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   
@@ -62,15 +62,31 @@ export const AdminCategories = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {categories.map((cat) => (
-          <div key={cat.id} className="bg-white border border-[#c99632]/25 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-            <div className="relative h-36 overflow-hidden bg-[#faf8f5]">
-              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <span className="absolute top-2 right-2 bg-white/90 text-[#c99632] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs border border-[#c99632]/30">
-                {cat.itemCount || 0} Products
-              </span>
-            </div>
+        {categories.map((cat) => {
+          const catProductCount = products.filter(
+            (p) =>
+              p.categoryId === cat.id ||
+              p.categoryName === cat.name ||
+              (p.categorySlug && p.categorySlug === cat.slug) ||
+              (p.category && p.category.toLowerCase().replace(/\s+/g, '-') === cat.slug)
+          ).length;
+
+          return (
+            <div key={cat.id} className="bg-white border border-[#c99632]/25 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+              <div className="relative h-36 overflow-hidden bg-[#faf8f5]">
+                <img
+                  src={cat.image}
+                  alt={cat.name}
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
+                  }}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <span className="absolute top-2 right-2 bg-white/90 text-[#c99632] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs border border-[#c99632]/30">
+                  {catProductCount} Products
+                </span>
+              </div>
 
             <div className="p-4 space-y-1.5">
               <h4 className="font-bold text-[#171717] text-sm font-serif-luxury">{cat.name}</h4>
@@ -92,8 +108,9 @@ export const AdminCategories = () => {
               </button>
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
+    </div>
 
       {/* Add/Edit Category Modal */}
       {(isAddModalOpen || editingCategory) && (

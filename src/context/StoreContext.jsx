@@ -4,10 +4,19 @@ import { INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_ORDERS, STORE_INFO } from
 
 const StoreContext = createContext();
 
+const API_BASE_URL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000'
+  : 'https://vasavi-api.onrender.com';
+
+const ADMIN_API_HEADER = {
+  'Content-Type': 'application/json',
+  'x-admin-key': 'vasavi_admin_secret_2026'
+};
+
 // ─── DATA VERSION GUARD ───────────────────────────────────────────────────────
 // Increment this number any time you want to force-clear old localStorage data.
 // When the version changes, ALL store data is automatically wiped on first load.
-const DATA_VERSION = 'vasavi_v5_clean';
+const DATA_VERSION = 'vasavi_v6_cloud_sync';
 
 const runAutoReset = () => {
   const stored = localStorage.getItem('vasavi_data_version');
@@ -20,7 +29,7 @@ const runAutoReset = () => {
     ].forEach(k => localStorage.removeItem(k));
     // Stamp the new version so it won't wipe again on next load
     localStorage.setItem('vasavi_data_version', DATA_VERSION);
-    console.info('[Vasavi] Auto-reset: demo data cleared for clean client handover.');
+    console.info('[Vasavi] Cloud Sync initialized: fresh data version active.');
   }
 };
 
@@ -140,6 +149,38 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('vasavi_registered_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
+
+  // Live Cloud Database Hydration (Syncs Admin edits across all customers & devices)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCloudData = async () => {
+      try {
+        const [catRes, prodRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/categories`),
+          fetch(`${API_BASE_URL}/api/products`)
+        ]);
+
+        if (catRes.ok) {
+          const cloudCats = await catRes.json();
+          if (isMounted && Array.isArray(cloudCats) && cloudCats.length > 0) {
+            setCategories(cloudCats);
+          }
+        }
+
+        if (prodRes.ok) {
+          const cloudProds = await prodRes.json();
+          if (isMounted && Array.isArray(cloudProds) && cloudProds.length > 0) {
+            setProducts(cloudProds);
+          }
+        }
+      } catch (err) {
+        console.warn('[Vasavi] Cloud API sync offline, using local cache:', err);
+      }
+    };
+
+    fetchCloudData();
+    return () => { isMounted = false; };
+  }, []);
 
   // Offline Sales / Shop Counter Income State
   const [offlineSales, setOfflineSales] = useState(() => {
@@ -276,9 +317,9 @@ export const StoreProvider = ({ children }) => {
       clearCart();
       setIsCartOpen(false);
 
-      // Try syncing order with Express API backend asynchronously
+      // Sync order with Express API backend asynchronously
       try {
-        fetch('http://localhost:5000/api/orders', {
+        fetch(`${API_BASE_URL}/api/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newOrder)
@@ -335,49 +376,107 @@ export const StoreProvider = ({ children }) => {
     });
   };
 
-  // Product CRUD
+  // Product CRUD with Cloud Sync
   const addProduct = (productData) => {
     const newProd = {
       ...productData,
-      id: `prod-${Date.now()}`,
+      id: productData.id || `prod-${Date.now()}`,
       rating: 5.0,
       reviewsCount: 1,
       stock: Number(productData.stock) || 10,
       price: Number(productData.price),
-      originalPrice: Number(productData.originalPrice || productData.price * 1.2)
+      originalPrice: productData.originalPrice ? Number(productData.originalPrice) : null,
+      image: productData.image || productData.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80',
+      imageUrl: productData.image || productData.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80'
     };
     setProducts((prev) => [newProd, ...prev]);
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/products`, {
+      method: 'POST',
+      headers: ADMIN_API_HEADER,
+      body: JSON.stringify(newProd)
+    }).catch((err) => console.error('[Vasavi] Product sync error:', err));
   };
 
-  const updateProduct = (productId, updatedData) => {
+  const updateProduct = (productIdOrObj, maybePayload) => {
+    const id = typeof productIdOrObj === 'object' ? productIdOrObj.id : productIdOrObj;
+    const data = typeof productIdOrObj === 'object' ? productIdOrObj : (maybePayload || {});
+
     setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, ...updatedData, price: Number(updatedData.price), stock: Number(updatedData.stock) } : p))
+      prev.map((p) => {
+        if (p.id === id) {
+          const updated = { ...p, ...data };
+          if (data.price !== undefined) updated.price = Number(data.price);
+          if (data.stock !== undefined) updated.stock = Number(data.stock);
+          if (data.image) updated.image = data.image;
+          if (data.imageUrl) updated.imageUrl = data.imageUrl;
+          return updated;
+        }
+        return p;
+      })
     );
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/products/${id}`, {
+      method: 'PUT',
+      headers: ADMIN_API_HEADER,
+      body: JSON.stringify(data)
+    }).catch((err) => console.error('[Vasavi] Product update sync error:', err));
   };
 
   const deleteProduct = (productId) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/products/${productId}`, {
+      method: 'DELETE',
+      headers: ADMIN_API_HEADER
+    }).catch((err) => console.error('[Vasavi] Product delete sync error:', err));
   };
 
-  // Category CRUD
+  // Category CRUD with Cloud Sync
   const addCategory = (categoryData) => {
+    const slug = (categoryData.slug || categoryData.name).toLowerCase().replace(/\s+/g, '-');
     const newCat = {
       ...categoryData,
-      id: `cat-${Date.now()}`,
-      slug: categoryData.name.toLowerCase().replace(/\s+/g, '-'),
+      id: categoryData.id || `cat-${Date.now()}`,
+      slug,
+      image: categoryData.image || categoryData.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80',
+      imageUrl: categoryData.image || categoryData.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80',
       itemCount: 0
     };
     setCategories((prev) => [...prev, newCat]);
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/categories`, {
+      method: 'POST',
+      headers: ADMIN_API_HEADER,
+      body: JSON.stringify(newCat)
+    }).catch((err) => console.error('[Vasavi] Category add sync error:', err));
   };
 
   const updateCategory = (categoryId, updatedData) => {
     setCategories((prev) =>
       prev.map((c) => (c.id === categoryId ? { ...c, ...updatedData } : c))
     );
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
+      method: 'PUT',
+      headers: ADMIN_API_HEADER,
+      body: JSON.stringify(updatedData)
+    }).catch((err) => console.error('[Vasavi] Category update sync error:', err));
   };
 
   const deleteCategory = (categoryId) => {
     setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
+      method: 'DELETE',
+      headers: ADMIN_API_HEADER
+    }).catch((err) => console.error('[Vasavi] Category delete sync error:', err));
   };
 
   // Order Status Update

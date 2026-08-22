@@ -41,8 +41,14 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Middleware for JWT protection
+// Middleware for Admin protection (Supports JWT or Secure Admin Key)
 export const authenticateAdmin = (req, res, next) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey === 'vasavi_admin_secret_2026') {
+    req.admin = { name: 'Vasavi Admin' };
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized admin access' });

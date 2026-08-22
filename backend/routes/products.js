@@ -4,19 +4,24 @@ import { authenticateAdmin } from './auth.js';
 
 const router = express.Router();
 
-// Get all products
+// Get all products (Formatted for frontend)
 router.get('/', async (req, res) => {
   try {
     const { category, search } = req.query;
     
     const where = { isActive: true };
     if (category && category !== 'all') {
-      where.categoryId = category;
+      where.OR = [
+        { categoryId: category },
+        { category: { slug: category } },
+        { category: { name: { equals: category, mode: 'insensitive' } } }
+      ];
     }
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } },
+        { brand: { contains: search, mode: 'insensitive' } }
       ];
     }
 
@@ -26,7 +31,27 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(products);
+    const formatted = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      originalPrice: p.originalPrice,
+      stock: p.stock,
+      image: p.imageUrl,
+      imageUrl: p.imageUrl,
+      brand: p.brand || 'Vasavi Collection',
+      shade: p.shade,
+      isTrending: p.isTrending,
+      isBestSeller: p.isBestSeller,
+      categoryId: p.categoryId,
+      categoryName: p.category?.name || 'Cosmetics',
+      categorySlug: p.category?.slug || 'cosmetics',
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt
+    }));
+
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -41,7 +66,24 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json(product);
+    
+    res.json({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      stock: product.stock,
+      image: product.imageUrl,
+      imageUrl: product.imageUrl,
+      brand: product.brand || 'Vasavi Collection',
+      shade: product.shade,
+      isTrending: product.isTrending,
+      isBestSeller: product.isBestSeller,
+      categoryId: product.categoryId,
+      categoryName: product.category?.name,
+      categorySlug: product.category?.slug
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -50,26 +92,49 @@ router.get('/:id', async (req, res) => {
 // Create product (Admin)
 router.post('/', authenticateAdmin, async (req, res) => {
   try {
-    const { name, categoryId, price, originalPrice, stock, imageUrl, description, brand, shade, isTrending, isBestSeller } = req.body;
+    const { id, name, categoryId, categoryName, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller } = req.body;
     
+    // Resolve Category
+    let targetCatId = categoryId;
+    if (!targetCatId && categoryName) {
+      const existingCat = await prisma.category.findFirst({
+        where: { OR: [{ name: { equals: categoryName, mode: 'insensitive' } }, { slug: categoryName.toLowerCase().replace(/\s+/g, '-') }] }
+      });
+      if (existingCat) targetCatId = existingCat.id;
+    }
+
+    if (!targetCatId) {
+      const firstCat = await prisma.category.findFirst();
+      targetCatId = firstCat?.id || 'cat-1';
+    }
+
+    const imageSrc = imageUrl || image || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
+
     const product = await prisma.product.create({
       data: {
+        id: id || `prod-${Date.now()}`,
         name,
-        categoryId,
-        price: parseFloat(price),
+        categoryId: targetCatId,
+        price: parseFloat(price) || 0,
         originalPrice: originalPrice ? parseFloat(originalPrice) : null,
-        stock: parseInt(stock) || 0,
-        imageUrl,
-        description,
-        brand,
-        shade,
+        stock: stock !== undefined ? parseInt(stock, 10) : 10,
+        imageUrl: imageSrc,
+        description: description || '',
+        brand: brand || 'Vasavi Collection',
+        shade: shade || null,
         isTrending: !!isTrending,
         isBestSeller: !!isBestSeller
-      }
+      },
+      include: { category: true }
     });
 
-    res.status(201).json(product);
+    res.status(201).json({
+      ...product,
+      image: product.imageUrl,
+      categoryName: product.category?.name
+    });
   } catch (err) {
+    console.error('Error creating product:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -77,27 +142,33 @@ router.post('/', authenticateAdmin, async (req, res) => {
 // Update product (Admin)
 router.put('/:id', authenticateAdmin, async (req, res) => {
   try {
-    const { name, categoryId, price, originalPrice, stock, imageUrl, description, brand, shade, isTrending, isBestSeller, isActive } = req.body;
+    const { name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, isActive } = req.body;
+    const imageSrc = imageUrl || image;
 
     const product = await prisma.product.update({
       where: { id: req.params.id },
       data: {
-        name,
-        categoryId,
-        price: price ? parseFloat(price) : undefined,
-        originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
-        stock: stock !== undefined ? parseInt(stock) : undefined,
-        imageUrl,
-        description,
-        brand,
-        shade,
-        isTrending,
-        isBestSeller,
-        isActive
-      }
+        name: name !== undefined ? name : undefined,
+        categoryId: categoryId !== undefined ? categoryId : undefined,
+        price: price !== undefined ? parseFloat(price) : undefined,
+        originalPrice: originalPrice !== undefined ? (originalPrice ? parseFloat(originalPrice) : null) : undefined,
+        stock: stock !== undefined ? parseInt(stock, 10) : undefined,
+        imageUrl: imageSrc !== undefined ? imageSrc : undefined,
+        description: description !== undefined ? description : undefined,
+        brand: brand !== undefined ? brand : undefined,
+        shade: shade !== undefined ? shade : undefined,
+        isTrending: isTrending !== undefined ? !!isTrending : undefined,
+        isBestSeller: isBestSeller !== undefined ? !!isBestSeller : undefined,
+        isActive: isActive !== undefined ? !!isActive : undefined
+      },
+      include: { category: true }
     });
 
-    res.json(product);
+    res.json({
+      ...product,
+      image: product.imageUrl,
+      categoryName: product.category?.name
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -107,7 +178,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
 router.delete('/:id', authenticateAdmin, async (req, res) => {
   try {
     await prisma.product.delete({ where: { id: req.params.id } });
-    res.json({ success: true, message: 'Product deleted' });
+    res.json({ success: true, message: 'Product deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
