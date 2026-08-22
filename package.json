@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "prisma generate --schema=backend/prisma/schema.prisma && vite build",
     "postinstall": "prisma generate --schema=backend/prisma/schema.prisma",
-    "start": "node backend/server.js",
+    "start": "node -r dotenv/config backend/server.js dotenv_config_path=backend/.env",
     "lint": "oxlint",
     "preview": "vite preview"
   },

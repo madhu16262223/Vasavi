@@ -4,10 +4,10 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "prisma generate",
-    "postinstall": "prisma generate",
-    "dev": "node --watch server.js"
+    "start": "node -r dotenv/config server.js",
+    "build": "prisma generate --schema=prisma/schema.prisma",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma",
+    "dev": "node --watch -r dotenv/config server.js"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
