@@ -150,37 +150,46 @@ export const StoreProvider = ({ children }) => {
     localStorage.setItem('vasavi_registered_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
-  // Live Cloud Database Hydration (Syncs Admin edits across all customers & devices)
-  useEffect(() => {
-    let isMounted = true;
-    const fetchCloudData = async () => {
-      try {
-        const [catRes, prodRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/categories`),
-          fetch(`${API_BASE_URL}/api/products`)
-        ]);
+  // Live Cloud Database Hydration (Syncs Admin edits across all customers & devices in Real-Time)
+  const fetchCloudData = React.useCallback(async () => {
+    try {
+      const [catRes, prodRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/categories?t=${Date.now()}`),
+        fetch(`${API_BASE_URL}/api/products?t=${Date.now()}`)
+      ]);
 
-        if (catRes.ok) {
-          const cloudCats = await catRes.json();
-          if (isMounted && Array.isArray(cloudCats) && cloudCats.length > 0) {
-            setCategories(cloudCats);
-          }
+      if (catRes.ok) {
+        const cloudCats = await catRes.json();
+        if (Array.isArray(cloudCats) && cloudCats.length > 0) {
+          setCategories(cloudCats);
         }
-
-        if (prodRes.ok) {
-          const cloudProds = await prodRes.json();
-          if (isMounted && Array.isArray(cloudProds) && cloudProds.length > 0) {
-            setProducts(cloudProds);
-          }
-        }
-      } catch (err) {
-        console.warn('[Vasavi] Cloud API sync offline, using local cache:', err);
       }
-    };
 
-    fetchCloudData();
-    return () => { isMounted = false; };
+      if (prodRes.ok) {
+        const cloudProds = await prodRes.json();
+        if (Array.isArray(cloudProds) && cloudProds.length > 0) {
+          setProducts(cloudProds);
+        }
+      }
+    } catch (err) {
+      console.warn('[Vasavi] Cloud API sync offline, using local cache:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchCloudData();
+
+    // Auto-refresh every 20 seconds so all customer devices stay synchronized in real-time
+    const interval = setInterval(fetchCloudData, 20000);
+
+    // Refresh whenever user switches back to the browser tab
+    window.addEventListener('focus', fetchCloudData);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchCloudData);
+    };
+  }, [fetchCloudData]);
 
   // Offline Sales / Shop Counter Income State
   const [offlineSales, setOfflineSales] = useState(() => {
@@ -682,6 +691,7 @@ export const StoreProvider = ({ children }) => {
         updateStoreSettings,
         loginAdmin,
         logoutAdmin,
+        refreshCloudData: fetchCloudData,
         storeInfo: { ...STORE_INFO, ...storeSettings }
       }}
     >
