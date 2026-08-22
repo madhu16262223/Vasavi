@@ -2,8 +2,15 @@ import { jsPDF } from 'jspdf';
 import { STORE_INFO } from '../data/mockData';
 
 export const generateInvoicePDF = (order) => {
+  if (!order) return;
+
   try {
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
     const orderNum = order.orderNumber || 'VSV-ORDER';
     const filename = `Vasavi_Invoice_${orderNum}.pdf`;
 
@@ -117,18 +124,8 @@ export const generateInvoicePDF = (order) => {
     doc.text('Thank you for shopping at Vasavi Fancy Store! ✨', 20, y + 8);
     doc.text(`For order tracking & customer support, message us on WhatsApp: ${STORE_INFO.displayPhone}`, 20, y + 14);
 
-    // Safe universal download
-    const blob = doc.output('blob');
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 1000);
+    // Save with jsPDF standard file saver
+    doc.save(filename);
   } catch (err) {
     console.error('Failed to generate PDF:', err);
     window.print();
