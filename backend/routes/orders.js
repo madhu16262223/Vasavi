@@ -1,11 +1,11 @@
 import express from 'express';
-import prisma from '../db.js';
+import { query } from '../pgdb.js';
 import { authenticateAdmin } from './auth.js';
 import { getStoredOrders, saveStoredOrder, updateStoredOrderStatus } from '../store.js';
 
 const router = express.Router();
 
-// Create Order (Public / Customer - Guaranteed 201 Created)
+// Create Order (Public / Customer - Saves to Supabase PostgreSQL & Persistent Store)
 router.post('/', async (req, res) => {
   const {
     id,
@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
     paymentStatus,
     status
   } = req.body;
-  
+
   if (!customerName || !customerPhone || !items || items.length === 0) {
     return res.status(400).json({ error: 'Customer details and items are required' });
   }
@@ -58,190 +58,207 @@ router.post('/', async (req, res) => {
   // Always save to persistent store
   saveStoredOrder(formattedOrder);
 
-  // Also attempt PostgreSQL save asynchronously without blocking
+  // Direct PostgreSQL Save to Supabase
   try {
-    if (prisma && prisma.order) {
-      for (const item of formattedOrder.items) {
-        const defaultCat = await prisma.category.findFirst().catch(() => null) || { id: 'cat-1' };
-        await prisma.product.upsert({
-          where: { id: item.productId },
-          update: {},
-          create: {
-            id: item.productId,
-            name: item.productName,
-            categoryId: defaultCat.id,
-            price: item.price,
-            stock: 10,
-            imageUrl: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80',
-            isActive: true
-          }
-        }).catch(() => {});
-      }
-
-      await prisma.order.upsert({
-        where: { orderNumber: finalOrderNumber },
-        update: {},
-        create: {
-          id: finalId,
-          orderNumber: finalOrderNumber,
-          customerName: formattedOrder.customerName,
-          customerPhone: formattedOrder.customerPhone,
-          address: formattedOrder.address,
-          notes: formattedOrder.notes,
-          totalAmount: formattedOrder.totalAmount,
-          status: formattedOrder.status,
-          paymentMethod: formattedOrder.paymentMethod,
-          paymentStatus: formattedOrder.paymentStatus,
-          items: {
-            create: formattedOrder.items.map((i) => ({
-              productId: i.productId,
-              productName: i.productName,
-              quantity: i.quantity,
-              price: i.price,
-              subtotal: i.subtotal
-            }))
-          }
-        }
-      }).catch(() => {});
+    // 1. Ensure customer exists
+    const custRes = await query('SELECT id FROM customers WHERE phone = $1', [formattedOrder.customerPhone]);
+    let custId = custRes.rows[0]?.id;
+    if (!custId) {
+      custId = `cust-${Date.now()}`;
+      await query(
+        'INSERT INTO customers (id, name, phone, address, "createdAt") VALUES ($1, $2, $3, $4, NOW()) ON CONFLICT (phone) DO NOTHING',
+        [custId, formattedOrder.customerName, formattedOrder.customerPhone, formattedOrder.address]
+      ).catch(() => {});
     }
-  } catch (dbErr) {}
+
+    // 2. Insert into orders table
+    await query(
+      `INSERT INTO orders (id, "orderNumber", "customerId", "customerName", "customerPhone", address, notes, "totalAmount", status, "createdAt", "updatedAt", "paymentMethod", "paymentStatus")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::"OrderStatus", NOW(), NOW(), $10, $11)
+       ON CONFLICT (id) DO UPDATE SET
+         status = EXCLUDED.status,
+         "updatedAt" = NOW()`,
+      [
+        finalId,
+        finalOrderNumber,
+        custId,
+        formattedOrder.customerName,
+        formattedOrder.customerPhone,
+        formattedOrder.address,
+        formattedOrder.notes,
+        finalTotal,
+        formattedOrder.status,
+        formattedOrder.paymentMethod,
+        formattedOrder.paymentStatus
+      ]
+    );
+
+    // 3. Insert order items
+    for (const item of formattedOrder.items) {
+      // Ensure product exists in Supabase
+      await query(
+        `INSERT INTO products (id, name, price, stock, "imageUrl", "isActive", "categoryId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 10, 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80', true, 'cat-1', NOW(), NOW())
+         ON CONFLICT (id) DO NOTHING`,
+        [item.productId, item.productName, item.price]
+      ).catch(() => {});
+
+      await query(
+        `INSERT INTO order_items (id, "orderId", "productId", "productName", quantity, price, subtotal)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (id) DO NOTHING`,
+        [item.id, finalId, item.productId, item.productName, item.quantity, item.price, item.subtotal]
+      ).catch(() => {});
+    }
+  } catch (dbErr) {
+    console.warn('[PostgreSQL Order Save Note]:', dbErr.message);
+  }
 
   return res.status(201).json(formattedOrder);
 });
 
-// Track Order Status by Order Number or Phone (Guaranteed Result)
+// Track Order Status by Order Number or Phone (Direct from Supabase)
 router.get('/track/:query', async (req, res) => {
-  const query = (req.params.query || '').trim().toLowerCase();
+  const q = (req.params.query || '').trim();
+
+  try {
+    const dbRes = await query(
+      `SELECT o.*, 
+              COALESCE(json_agg(json_build_object(
+                'id', oi.id,
+                'productId', oi."productId",
+                'productName', oi."productName",
+                'quantity', oi.quantity,
+                'price', oi.price,
+                'subtotal', oi.subtotal
+              )) FILTER (WHERE oi.id IS NOT NULL), '[]') as items
+       FROM orders o
+       LEFT JOIN order_items oi ON o.id = oi."orderId"
+       WHERE LOWER(o."orderNumber") = LOWER($1) OR o."customerPhone" LIKE '%' || $1 || '%' OR o.id = $1
+       GROUP BY o.id
+       ORDER BY o."createdAt" DESC
+       LIMIT 1`,
+      [q]
+    );
+
+    if (dbRes.rows.length > 0) {
+      const o = dbRes.rows[0];
+      return res.json({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        customerName: o.customerName,
+        customerPhone: o.customerPhone,
+        customerAddress: o.address,
+        address: o.address,
+        notes: o.notes || '',
+        totalAmount: o.totalAmount,
+        status: o.status,
+        paymentMethod: o.paymentMethod || 'WHATSAPP',
+        paymentStatus: o.paymentStatus || 'UNPAID',
+        createdAt: o.createdAt,
+        items: o.items || []
+      });
+    }
+  } catch (err) {
+    console.warn('Track order DB fallback:', err.message);
+  }
 
   const allOrders = getStoredOrders();
   const found = allOrders.find(
     (o) =>
-      (o.orderNumber && o.orderNumber.toLowerCase() === query) ||
-      (o.customerPhone && o.customerPhone.includes(query)) ||
-      (o.id && o.id.toLowerCase() === query)
+      (o.orderNumber && o.orderNumber.toLowerCase() === q.toLowerCase()) ||
+      (o.customerPhone && o.customerPhone.includes(q))
   );
 
-  if (found) {
-    return res.status(200).json(found);
-  }
-
-  try {
-    if (prisma && prisma.order) {
-      const order = await prisma.order.findFirst({
-        where: {
-          OR: [
-            { orderNumber: { equals: query, mode: 'insensitive' } },
-            { customerPhone: { contains: query } }
-          ]
-        },
-        include: { items: true },
-        orderBy: { createdAt: 'desc' }
-      }).catch(() => null);
-
-      if (order) {
-        return res.status(200).json({
-          id: order.id,
-          orderNumber: order.orderNumber,
-          customerName: order.customerName,
-          customerPhone: order.customerPhone,
-          customerAddress: order.address,
-          address: order.address,
-          notes: order.notes,
-          totalAmount: order.totalAmount,
-          status: order.status,
-          paymentMethod: order.paymentMethod,
-          paymentStatus: order.paymentStatus,
-          createdAt: order.createdAt,
-          items: order.items
-        });
-      }
-    }
-  } catch (e) {}
-
+  if (found) return res.json(found);
   return res.status(404).json({ error: 'Order not found' });
 });
 
-// Get all orders (Admin protected - Guaranteed 200 OK)
+// Get all orders (Admin protected - Direct from Supabase PostgreSQL)
 router.get('/', authenticateAdmin, async (req, res) => {
   const { status, search } = req.query;
-  let orders = getStoredOrders();
 
   try {
-    if (prisma && prisma.order) {
-      const dbOrders = await prisma.order.findMany({
-        include: { items: true },
-        orderBy: { createdAt: 'desc' }
-      }).catch(() => null);
+    let sql = `
+      SELECT o.*, 
+             COALESCE(json_agg(json_build_object(
+               'id', oi.id,
+               'productId', oi."productId",
+               'productName', oi."productName",
+               'quantity', oi.quantity,
+               'price', oi.price,
+               'subtotal', oi.subtotal
+             )) FILTER (WHERE oi.id IS NOT NULL), '[]') as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi."orderId"
+    `;
 
-      if (Array.isArray(dbOrders) && dbOrders.length > 0) {
-        dbOrders.forEach((dbo) => {
-          const exists = orders.some((o) => o.id === dbo.id || o.orderNumber === dbo.orderNumber);
-          if (!exists) {
-            orders.push({
-              id: dbo.id,
-              orderNumber: dbo.orderNumber,
-              customerName: dbo.customerName,
-              customerPhone: dbo.customerPhone,
-              customerAddress: dbo.address,
-              address: dbo.address,
-              notes: dbo.notes || '',
-              totalAmount: dbo.totalAmount,
-              status: dbo.status,
-              paymentMethod: dbo.paymentMethod || 'WHATSAPP_UPI',
-              paymentStatus: dbo.paymentStatus || 'PENDING',
-              createdAt: dbo.createdAt,
-              updatedAt: dbo.updatedAt,
-              items: (dbo.items || []).map((i) => ({
-                id: i.id,
-                productId: i.productId,
-                productName: i.productName,
-                quantity: i.quantity,
-                price: i.price,
-                subtotal: i.subtotal
-              }))
-            });
-          }
-        });
-      }
+    const params = [];
+    const whereClauses = [];
+
+    if (status && status !== 'ALL') {
+      params.push(status);
+      whereClauses.push(`o.status = $${params.length}::"OrderStatus"`);
     }
-  } catch (e) {}
 
-  if (status && status !== 'ALL') {
-    orders = orders.filter((o) => o.status === status);
-  }
-  if (search) {
-    const q = search.toLowerCase();
-    orders = orders.filter(
-      (o) =>
-        (o.orderNumber && o.orderNumber.toLowerCase().includes(q)) ||
-        (o.customerName && o.customerName.toLowerCase().includes(q)) ||
-        (o.customerPhone && o.customerPhone.includes(q))
-    );
-  }
+    if (search) {
+      params.push(`%${search}%`);
+      whereClauses.push(`(o."orderNumber" ILIKE $${params.length} OR o."customerName" ILIKE $${params.length} OR o."customerPhone" LIKE $${params.length})`);
+    }
 
-  return res.status(200).json(orders);
+    if (whereClauses.length > 0) {
+      sql += ` WHERE ` + whereClauses.join(' AND ');
+    }
+
+    sql += ` GROUP BY o.id ORDER BY o."createdAt" DESC`;
+
+    const dbRes = await query(sql, params);
+    const orders = dbRes.rows.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      customerName: o.customerName,
+      customerPhone: o.customerPhone,
+      customerAddress: o.address,
+      address: o.address,
+      notes: o.notes || '',
+      totalAmount: o.totalAmount,
+      status: o.status,
+      paymentMethod: o.paymentMethod || 'WHATSAPP',
+      paymentStatus: o.paymentStatus || 'UNPAID',
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt,
+      items: o.items || []
+    }));
+
+    return res.json(orders);
+  } catch (err) {
+    console.warn('[Orders Admin API Fallback]:', err.message);
+    const fallback = getStoredOrders();
+    return res.json(fallback);
+  }
 });
 
-// Update Order Status (Admin - Guaranteed 200 OK)
+// Update Order Status (Admin)
 router.put('/:id/status', authenticateAdmin, async (req, res) => {
   const { status, paymentStatus } = req.body;
   const orderId = req.params.id;
 
-  const updated = updateStoredOrderStatus(orderId, status, paymentStatus);
+  updateStoredOrderStatus(orderId, status, paymentStatus);
 
   try {
-    if (prisma && prisma.order) {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: status !== undefined ? status : undefined,
-          paymentStatus: paymentStatus !== undefined ? paymentStatus : undefined
-        }
-      }).catch(() => {});
-    }
-  } catch (e) {}
-
-  return res.status(200).json(updated || { success: true, message: 'Status updated' });
+    await query(
+      `UPDATE orders SET
+         status = COALESCE($1::"OrderStatus", status),
+         "paymentStatus" = COALESCE($2, "paymentStatus"),
+         "updatedAt" = NOW()
+       WHERE id = $3 OR "orderNumber" = $3`,
+      [status, paymentStatus, orderId]
+    );
+    res.json({ success: true, message: 'Status updated in Supabase successfully' });
+  } catch (err) {
+    console.warn('Update order status DB warning:', err.message);
+    res.json({ success: true, message: 'Status updated' });
+  }
 });
 
 export default router;

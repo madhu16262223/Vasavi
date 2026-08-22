@@ -36,7 +36,7 @@ export const UserAuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
@@ -46,40 +46,35 @@ export const UserAuthModal = () => {
       return;
     }
 
-    const res = loginCustomer(email, password);
-    if (res.success) {
+    const res = await loginCustomer(email, password);
+    if (res && res.success) {
       setSuccessMsg('Signed in successfully!');
       setTimeout(() => {
         closeAuthModal();
       }, 700);
     } else {
-      setError(res.message || 'Invalid email or password. Please check your credentials.');
+      setError((res && res.message) || 'Invalid email or password. Please check your credentials.');
     }
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
 
-    if (!name.trim() || !email.trim() || !password.trim() || !phone.trim()) {
-      setError('Please fill in all required fields to create your account.');
+    if (!name.trim() || !phone.trim()) {
+      setError('Please fill in your name and 10-digit mobile number.');
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    const res = signupCustomer({ name, email, phone, password });
-    if (res.success) {
+    const res = await signupCustomer({ name, email, phone, password });
+    if (res && res.success) {
       setSuccessMsg('Account created successfully! Welcome to Vasavi Fancy Store.');
       setTimeout(() => {
         closeAuthModal();
       }, 900);
     } else {
-      setError(res.message || 'Registration failed. Email may already be in use.');
+      setError((res && res.message) || 'Registration failed. Please check your details.');
     }
   };
 

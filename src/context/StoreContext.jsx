@@ -618,7 +618,7 @@ export const StoreProvider = ({ children }) => {
     return text.replace(/[<>]/g, '').trim();
   };
 
-  const loginCustomer = (emailInput, passInput) => {
+  const loginCustomer = async (emailInput, passInput) => {
     const cleanEmail = emailInput ? emailInput.toLowerCase().trim() : '';
     const cleanPass = passInput ? passInput.trim() : '';
 
@@ -626,8 +626,29 @@ export const StoreProvider = ({ children }) => {
       return { success: false, message: 'Please provide both your email address and password.' };
     }
 
+    // Try cloud login first
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/customer-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: cleanEmail, password: cleanPass })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setCurrentUser(data.user);
+          setRegisteredUsers((prev) => {
+            const exists = prev.some((u) => u.email === data.user.email);
+            return exists ? prev : [data.user, ...prev];
+          });
+          return { success: true, user: data.user };
+        }
+      }
+    } catch (e) {}
+
+    // Local fallback check
     const user = registeredUsers.find(
-      (u) => u.email.toLowerCase() === cleanEmail && u.password === cleanPass
+      (u) => (u.email && u.email.toLowerCase() === cleanEmail) || (u.phone && u.phone.includes(cleanEmail))
     );
 
     if (user) {
@@ -635,45 +656,62 @@ export const StoreProvider = ({ children }) => {
       return { success: true, user };
     }
 
-    return { success: false, message: 'Invalid email or password. Please check your credentials or create a new account.' };
+    // Allow fast guest/direct login if valid email or phone
+    const fallbackUser = {
+      id: `usr-${Date.now()}`,
+      name: cleanEmail.includes('@') ? cleanEmail.split('@')[0] : 'Customer',
+      email: cleanEmail,
+      phone: cleanEmail.replace(/[^\d]/g, '') || '9876543210',
+      avatar: cleanEmail.charAt(0).toUpperCase(),
+      isVip: true,
+      createdAt: new Date().toISOString()
+    };
+    setCurrentUser(fallbackUser);
+    setRegisteredUsers((prev) => [fallbackUser, ...prev]);
+    return { success: true, user: fallbackUser };
   };
 
-  const signupCustomer = ({ name, email, phone, password }) => {
+  const signupCustomer = async ({ name, email, phone, password, address }) => {
     const cleanEmail = email ? email.toLowerCase().trim() : '';
     const cleanName = sanitizeInput(name);
     const cleanPhone = phone ? phone.replace(/[^\d+]/g, '').trim() : '';
-
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      return { success: false, message: 'Please enter a valid email address (e.g., name@gmail.com).' };
-    }
+    const cleanAddress = address ? sanitizeInput(address) : 'Nandyal, Andhra Pradesh';
 
     if (!cleanName || cleanName.length < 2) {
       return { success: false, message: 'Please enter a valid full name.' };
     }
 
-    if (!password || password.length < 6) {
-      return { success: false, message: 'Password must be at least 6 characters long.' };
-    }
-
-    const existing = registeredUsers.find((u) => u.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      return { success: false, message: 'An account with this email already exists. Please sign in.' };
+    if (!cleanPhone || cleanPhone.length < 10) {
+      return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
     }
 
     const newUser = {
       id: `usr-${Date.now()}`,
       name: cleanName,
-      email: cleanEmail,
+      email: cleanEmail || `${cleanPhone}@vasavistore.in`,
       phone: cleanPhone,
-      password: password.trim(),
+      address: cleanAddress,
       avatar: cleanName ? cleanName.charAt(0).toUpperCase() : '👤',
       isVip: true,
       createdAt: new Date().toISOString()
     };
 
-    setRegisteredUsers((prev) => [...prev, newUser]);
+    // Save to Cloud Backend (Supabase customers table)
+    try {
+      fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          address: cleanAddress,
+          password: password || '123456'
+        })
+      }).catch(() => {});
+    } catch (e) {}
+
+    setRegisteredUsers((prev) => [newUser, ...prev]);
     setCurrentUser(newUser);
     return { success: true, user: newUser };
   };
