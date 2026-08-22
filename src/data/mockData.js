@@ -87,5 +87,56 @@ export const INITIAL_PRODUCTS = [
   }
 ];
 
-export const INITIAL_ORDERS = [];
+export const INITIAL_ORDERS = [
+  {
+    id: "ord-101",
+    orderNumber: "VSV-62717",
+    customerName: "K. Madhu",
+    customerPhone: "9704381790",
+    customerAddress: "Nandyal Main Road, Beside Gandhi Statue, Nandyal - 518501",
+    address: "Nandyal Main Road, Beside Gandhi Statue, Nandyal - 518501",
+    notes: "Please pack with gift wrap and call before delivery",
+    totalAmount: 325,
+    status: "PENDING",
+    paymentMethod: "WHATSAPP",
+    paymentStatus: "UNPAID",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    items: [
+      {
+        id: "item-101",
+        productId: "prod-rakhi-2",
+        productName: "Premium Designer Kundan Rakhi Set",
+        quantity: 1,
+        price: 325,
+        subtotal: 325
+      }
+    ]
+  },
+  {
+    id: "ord-102",
+    orderNumber: "VSV-48192",
+    customerName: "Sowmya Reddy",
+    customerPhone: "9876543210",
+    customerAddress: "Srinagar Colony, Street 4, Nandyal - 518501",
+    address: "Srinagar Colony, Street 4, Nandyal - 518501",
+    notes: "Urgent delivery needed before evening",
+    totalAmount: 1899,
+    status: "CONFIRMED",
+    paymentMethod: "WHATSAPP",
+    paymentStatus: "PAID",
+    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 20).toISOString(),
+    items: [
+      {
+        id: "item-102",
+        productId: "prod-2",
+        productName: "24K Gold Plated Antique Temple Necklace Set",
+        quantity: 1,
+        price: 1899,
+        subtotal: 1899
+      }
+    ]
+  }
+];
 
