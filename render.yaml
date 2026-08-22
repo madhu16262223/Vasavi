@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: vasavi-api
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate --schema=prisma/schema.prisma
+    startCommand: node -r dotenv/config server.js
+    envVars:
+      - key: DATABASE_URL
+        value: "postgresql://postgres.pyiivdahvfaawjcwbcis:%40CharanVasavi@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+      - key: DIRECT_URL
+        value: "postgresql://postgres.pyiivdahvfaawjcwbcis:%40CharanVasavi@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+      - key: JWT_SECRET
+        value: "vasavi_fancy_store_jwt_secret_key_2026_nandyal"
+      - key: PORT
+        value: "5000"
