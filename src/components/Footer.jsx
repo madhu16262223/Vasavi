@@ -54,7 +54,7 @@ export const Footer = () => {
                   </div>
                   <div>
                     <strong className="block text-[#171717]">Store Timings:</strong>
-                    <span className="text-emerald-700 font-semibold">Mon - Sat: 9:00 AM - 9:30 PM | Sun: 10:00 AM - 9:00 PM</span>
+                    <span className="text-emerald-700 font-semibold">Mon - Sat: 9:00 AM - 9:30 PM | Sun: 10:00 AM - 4:00 PM</span>
                   </div>
                 </div>
               </div>
@@ -176,7 +176,7 @@ export const Footer = () => {
                 <Clock className="w-4 h-4 text-[#c99632] shrink-0 mt-0.5" />
                 <div className="flex flex-col text-xs leading-snug">
                   <span className="font-semibold text-[#171717]">Mon - Sat: 9:00 AM - 9:30 PM</span>
-                  <span className="font-semibold text-[#171717]">Sunday: 10:00 AM - 9:00 PM</span>
+                  <span className="font-semibold text-[#171717]">Sunday: 10:00 AM - 4:00 PM</span>
                 </div>
               </div>
             </div>

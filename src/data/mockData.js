@@ -7,7 +7,7 @@ export const STORE_INFO = {
   displayPhone: "+91 83099 17665",
   email: "mogalipalliram@gmail.com",
   instagram: "@vasavi_fancy_store_nandyal",
-  businessHours: "Mon - Sat: 9:00 AM - 9:30 PM | Sunday: 10:00 AM - 9:00 PM",
+  businessHours: "Mon - Sat: 9:00 AM - 9:30 PM | Sunday: 10:00 AM - 4:00 PM",
   developer: {
     name: "K. Madhu",
     phone: "+91 97043 81790",
