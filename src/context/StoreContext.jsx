@@ -16,7 +16,7 @@ const ADMIN_API_HEADER = {
 // ─── DATA VERSION GUARD ───────────────────────────────────────────────────────
 // Increment this number any time you want to force-clear old localStorage data.
 // When the version changes, ALL store data is automatically wiped on first load.
-const DATA_VERSION = 'vasavi_v6_cloud_sync';
+const DATA_VERSION = 'vasavi_v7_clean_auth';
 
 const runAutoReset = () => {
   const stored = localStorage.getItem('vasavi_data_version');
