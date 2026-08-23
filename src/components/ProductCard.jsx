@@ -3,11 +3,15 @@ import { useStore } from '../context/StoreContext';
 import { ShoppingBag, Star, Eye, Sparkles, Zap, Check, Heart } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
-  const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist } = useStore();
+  const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist, categories = [] } = useStore();
 
   const [isAdded, setIsAdded] = useState(false);
   const isOutOfStock = product.stock <= 0;
   const inWishlist = isInWishlist(product.id);
+
+  // Match category name dynamically
+  const catObj = categories.find(c => c.id === product.categoryId || c.slug === product.categoryId);
+  const categoryTitle = product.categoryName || catObj?.name || product.category || 'Vasavi';
 
   const discountPct = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -113,7 +117,7 @@ export const ProductCard = ({ product }) => {
       <div className="p-2.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3 bg-white">
         <div>
           <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-[#666666] mb-1">
-            <span className="uppercase tracking-wider text-[#c99632] font-bold truncate max-w-[90px] sm:max-w-none">{product.categoryName || 'Vasavi'}</span>
+            <span className="uppercase tracking-wider text-[#c99632] font-bold truncate max-w-[90px] sm:max-w-none">{categoryTitle}</span>
             <div className="flex items-center gap-0.5 text-amber-500 font-bold shrink-0">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
               <span>{product.rating || '4.9'}</span>

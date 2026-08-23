@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { X, ShoppingBag, Star, Zap, Check, ShieldCheck, Truck, MessageCircle, Heart, Sparkles, Award } from 'lucide-react';
 
 export const ProductDetailModal = () => {
-  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviewsList = [], addReview, currentUser, openAuthModal, storeInfo, toggleWishlist, isInWishlist, language } = useStore();
+  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviewsList = [], addReview, currentUser, openAuthModal, storeInfo, toggleWishlist, isInWishlist, language, categories = [] } = useStore();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'reviews'
@@ -174,9 +174,16 @@ export const ProductDetailModal = () => {
             {activeTab === 'details' && (
               <div className="space-y-3.5">
                 <div>
-                  <span className="text-[10px] font-black tracking-widest text-[#c99632] uppercase">
-                    {selectedProduct.brand || 'Vasavi Luxury Collection'}
-                  </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-[#fff3c4] text-[#8a6200] px-2 py-0.5 rounded-md border border-[#c99632]/40">
+                      {selectedProduct.categoryName || categories.find(c => c.id === selectedProduct.categoryId || c.slug === selectedProduct.categoryId)?.name || selectedProduct.category || 'Luxury Item'}
+                    </span>
+                    {selectedProduct.brand && (
+                      <span className="text-[10px] font-bold text-[#888888] uppercase tracking-wider">
+                        • {selectedProduct.brand}
+                      </span>
+                    )}
+                  </div>
                   <h3 className="text-xl font-bold font-serif-luxury text-[#171717] mt-0.5 leading-tight">
                     {selectedProduct.name}
                   </h3>
