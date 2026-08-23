@@ -11,7 +11,8 @@ export const UserAuthModal = () => {
     signupCustomer,
     logoutCustomer,
     authModalMode,
-    setAuthModalMode
+    setAuthModalMode,
+    setActiveTab
   } = useStore();
 
   const [mode, setMode] = useState(authModalMode || 'login'); // 'login' | 'signup'
@@ -130,7 +131,8 @@ export const UserAuthModal = () => {
                 <button
                   onClick={() => {
                     closeAuthModal();
-                    window.location.hash = '#track';
+                    setActiveTab('track');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="flex-1 py-3 rounded-xl bg-[#faf8f5] border border-[#c99632]/40 text-xs font-bold text-[#171717] hover:bg-[#fff3c4]/50 transition-colors"
                 >
