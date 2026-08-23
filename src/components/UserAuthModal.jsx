@@ -11,10 +11,7 @@ export const UserAuthModal = () => {
     signupCustomer,
     logoutCustomer,
     authModalMode,
-    setAuthModalMode,
-    setActiveTab,
-    cart = [],
-    setIsCartOpen
+    setAuthModalMode
   } = useStore();
 
   const [mode, setMode] = useState(authModalMode || 'login'); // 'login' | 'signup'
@@ -45,7 +42,7 @@ export const UserAuthModal = () => {
     setSuccessMsg('');
 
     if (!email.trim() || !password.trim()) {
-      setError('Please enter both your email address/mobile and password.');
+      setError('Please enter both your email address and password.');
       return;
     }
 
@@ -54,12 +51,9 @@ export const UserAuthModal = () => {
       setSuccessMsg('Signed in successfully!');
       setTimeout(() => {
         closeAuthModal();
-        if (cart && cart.length > 0) {
-          setIsCartOpen(true);
-        }
       }, 700);
     } else {
-      setError((res && res.message) || 'Invalid credentials. Please check your details.');
+      setError((res && res.message) || 'Invalid email or password. Please check your credentials.');
     }
   };
 
@@ -78,9 +72,6 @@ export const UserAuthModal = () => {
       setSuccessMsg('Account created successfully! Welcome to Vasavi Fancy Store.');
       setTimeout(() => {
         closeAuthModal();
-        if (cart && cart.length > 0) {
-          setIsCartOpen(true);
-        }
       }, 900);
     } else {
       setError((res && res.message) || 'Registration failed. Please check your details.');
@@ -139,8 +130,7 @@ export const UserAuthModal = () => {
                 <button
                   onClick={() => {
                     closeAuthModal();
-                    setActiveTab('track');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    window.location.hash = '#track';
                   }}
                   className="flex-1 py-3 rounded-xl bg-[#faf8f5] border border-[#c99632]/40 text-xs font-bold text-[#171717] hover:bg-[#fff3c4]/50 transition-colors"
                 >
@@ -201,14 +191,14 @@ export const UserAuthModal = () => {
               {mode === 'login' && (
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Mobile Number or Email Address</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">Email Address</label>
                     <div className="relative">
                       <input
-                        type="text"
+                        type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="e.g. 9876543210 or yourname@gmail.com"
+                        placeholder="yourname@gmail.com"
                         className="w-full bg-white border border-[#c99632]/30 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-[#171717] placeholder-slate-400 focus:outline-none focus:border-[#c99632]"
                       />
                       <Mail className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />

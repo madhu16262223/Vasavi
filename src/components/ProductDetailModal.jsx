@@ -30,25 +30,19 @@ export const ProductDetailModal = () => {
     : 0;
 
   const handleAddToCart = () => {
-    if (!currentUser) {
-      addToCart(selectedProduct, quantity, false);
-      openAuthModal('login');
-      return;
-    }
-    addToCart(selectedProduct, quantity, false);
+    addToCart(selectedProduct, quantity);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
 
   const handleInstantBuyNow = () => {
     if (!currentUser) {
-      addToCart(selectedProduct, quantity, false);
-      setSelectedProduct(null);
       openAuthModal('login');
       return;
     }
-    addToCart(selectedProduct, quantity, true);
+    addToCart(selectedProduct, quantity);
     setSelectedProduct(null);
+    setIsCartOpen(true);
   };
 
   const handleReviewSubmit = (e) => {
@@ -286,9 +280,9 @@ export const ProductDetailModal = () => {
                     <button
                       disabled={isOutOfStock}
                       onClick={handleInstantBuyNow}
-                      className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md gold-glow uppercase tracking-wider"
+                      className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md gold-glow"
                     >
-                      <Zap className="w-4 h-4" /> BUY NOW
+                      <Zap className="w-4 h-4" /> {currentUser ? 'Instant Buy' : '🔐 Login to Buy'}
                     </button>
                   </div>
                 </div>

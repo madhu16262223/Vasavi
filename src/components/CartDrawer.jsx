@@ -10,9 +10,7 @@ export const CartDrawer = () => {
     setIsCartOpen,
     removeFromCart,
     updateCartQuantity,
-    getCartTotal,
-    currentUser,
-    openAuthModal
+    getCartTotal
   } = useStore();
 
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -59,58 +57,49 @@ export const CartDrawer = () => {
                 </button>
               </div>
             ) : (
-              cart.map((item) => {
-                const prod = item.product || item;
-                const prodId = prod.id || `cart-${Date.now()}`;
-                const prodImage = prod.image || prod.imageUrl || '/bangles.jpg';
-                const prodName = prod.name || 'Vasavi Store Item';
-                const prodPrice = typeof prod.price === 'number' ? prod.price : (parseFloat(prod.price) || 0);
-                const prodQty = item.quantity || 1;
-
-                return (
-                  <div
-                    key={prodId}
-                    className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-[#c99632]/25 shadow-xs hover:border-[#c99632] transition-all"
-                  >
-                    <img
-                      src={prodImage}
-                      alt={prodName}
-                      className="w-16 h-16 object-cover rounded-xl bg-[#fffcf7] shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-[#171717] truncate">{prodName}</h4>
-                      <p className="text-xs text-[#c99632] font-bold mt-0.5">₹{prodPrice}</p>
-                      
-                      {/* Quantity adjustment */}
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => updateCartQuantity(prodId, prodQty - 1)}
-                          className="w-5 h-5 rounded bg-[#fffcf7] border border-[#c99632]/40 text-[#171717] flex items-center justify-center text-xs font-bold hover:bg-[#e8c7b5]/30"
-                        >
-                          -
-                        </button>
-                        <span className="text-xs font-bold text-[#171717]">{prodQty}</span>
-                        <button
-                          onClick={() => updateCartQuantity(prodId, prodQty + 1)}
-                          className="w-5 h-5 rounded bg-[#fffcf7] border border-[#c99632]/40 text-[#171717] flex items-center justify-center text-xs font-bold hover:bg-[#e8c7b5]/30"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-bold text-[#171717] block">₹{prodPrice * prodQty}</span>
+              cart.map((item) => (
+                <div
+                  key={item.product.id}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-[#c99632]/25 shadow-xs hover:border-[#c99632] transition-all"
+                >
+                  <img
+                    src={item.product.image}
+                    alt={item.product.name}
+                    className="w-16 h-16 object-cover rounded-xl bg-[#fffcf7]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-bold text-[#171717] truncate">{item.product.name}</h4>
+                    <p className="text-xs text-[#c99632] font-bold mt-0.5">₹{item.product.price}</p>
+                    
+                    {/* Quantity adjustment */}
+                    <div className="flex items-center gap-2 mt-2">
                       <button
-                        onClick={() => removeFromCart(prodId)}
-                        className="text-[#888888] hover:text-red-500 p-1 mt-1 inline-block"
+                        onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                        className="w-5 h-5 rounded bg-[#fffcf7] border border-[#c99632]/40 text-[#171717] flex items-center justify-center text-xs font-bold hover:bg-[#e8c7b5]/30"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        -
+                      </button>
+                      <span className="text-xs font-bold text-[#171717]">{item.quantity}</span>
+                      <button
+                        onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                        className="w-5 h-5 rounded bg-[#fffcf7] border border-[#c99632]/40 text-[#171717] flex items-center justify-center text-xs font-bold hover:bg-[#e8c7b5]/30"
+                      >
+                        +
                       </button>
                     </div>
                   </div>
-                );
-              })
+
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-[#171717] block">₹{item.product.price * item.quantity}</span>
+                    <button
+                      onClick={() => removeFromCart(item.product.id)}
+                      className="text-[#888888] hover:text-red-500 p-1 mt-1 inline-block"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
 
@@ -123,7 +112,7 @@ export const CartDrawer = () => {
                 <span className="text-xl font-bold text-[#c99632]">₹{totalAmount}</span>
               </div>
 
-              {/* Single Bold Checkout & Online Payment Button (Flipkart Standard Style) */}
+              {/* Single Bold Checkout & Online Payment Button */}
               <button
                 onClick={() => {
                   if (!currentUser) {
@@ -132,11 +121,18 @@ export const CartDrawer = () => {
                     setIsCheckoutOpen(true);
                   }
                 }}
-                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#c99632] via-[#e5b85c] to-[#a6751d] text-white font-black text-sm shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow uppercase tracking-wider"
+                className="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-sm shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow"
               >
-                <span>PROCEED TO CHECKOUT</span>
+                <Lock className="w-4 h-4" />
+                <span>{currentUser ? 'CHECKOUT — WhatsApp Order or Cash on Delivery' : '🔐 LOGIN / REGISTER TO CHECKOUT'}</span>
                 <ArrowRight className="w-4 h-4 ml-auto" />
               </button>
+
+              {!currentUser && (
+                <p className="text-[11px] text-center font-bold text-amber-700 bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-200">
+                  ⚠️ Please log in or sign up with your phone number to complete your order.
+                </p>
+              )}
 
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#666666] font-bold">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#c99632]" />
