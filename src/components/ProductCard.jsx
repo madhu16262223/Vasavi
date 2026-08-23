@@ -3,7 +3,16 @@ import { useStore } from '../context/StoreContext';
 import { ShoppingBag, Star, Eye, Sparkles, Zap, Check, Heart } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
-  const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist, categories = [] } = useStore();
+  const {
+    addToCart,
+    setSelectedProduct,
+    setIsCartOpen,
+    toggleWishlist,
+    isInWishlist,
+    categories = [],
+    currentUser,
+    openAuthModal
+  } = useStore();
 
   const [isAdded, setIsAdded] = useState(false);
   const isOutOfStock = product.stock <= 0;
@@ -29,6 +38,11 @@ export const ProductCard = ({ product }) => {
   const handleBuyNow = (e) => {
     e.stopPropagation();
     const success = addToCart(product, 1);
+    if (!currentUser) {
+      // Flipkart / Amazon style: prompt login/registration modal on Buy Now
+      openAuthModal('login');
+      return;
+    }
     if (success) {
       setIsCartOpen(true);
     }

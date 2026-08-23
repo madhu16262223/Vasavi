@@ -191,14 +191,14 @@ export const UserAuthModal = () => {
               {mode === 'login' && (
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Email Address</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">Mobile Number or Email Address</label>
                     <div className="relative">
                       <input
-                        type="email"
+                        type="text"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="yourname@gmail.com"
+                        placeholder="e.g. 9876543210 or yourname@gmail.com"
                         className="w-full bg-white border border-[#c99632]/30 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-[#171717] placeholder-slate-400 focus:outline-none focus:border-[#c99632]"
                       />
                       <Mail className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
