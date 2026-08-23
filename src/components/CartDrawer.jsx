@@ -112,7 +112,7 @@ export const CartDrawer = () => {
                 <span className="text-xl font-bold text-[#c99632]">₹{totalAmount}</span>
               </div>
 
-              {/* Single Bold Checkout & Online Payment Button */}
+              {/* Single Bold Checkout & Online Payment Button (Flipkart Standard Style) */}
               <button
                 onClick={() => {
                   if (!currentUser) {
@@ -121,18 +121,11 @@ export const CartDrawer = () => {
                     setIsCheckoutOpen(true);
                   }
                 }}
-                className="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-sm shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow"
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#c99632] via-[#e5b85c] to-[#a6751d] text-white font-black text-sm shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow uppercase tracking-wider"
               >
-                <Lock className="w-4 h-4" />
-                <span>{currentUser ? 'CHECKOUT — WhatsApp Order or Cash on Delivery' : '🔐 LOGIN / REGISTER TO CHECKOUT'}</span>
+                <span>PROCEED TO CHECKOUT</span>
                 <ArrowRight className="w-4 h-4 ml-auto" />
               </button>
-
-              {!currentUser && (
-                <p className="text-[11px] text-center font-bold text-amber-700 bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-200">
-                  ⚠️ Please log in or sign up with your phone number to complete your order.
-                </p>
-              )}
 
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#666666] font-bold">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#c99632]" />

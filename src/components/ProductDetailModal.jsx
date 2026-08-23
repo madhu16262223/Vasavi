@@ -280,9 +280,9 @@ export const ProductDetailModal = () => {
                     <button
                       disabled={isOutOfStock}
                       onClick={handleInstantBuyNow}
-                      className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md gold-glow"
+                      className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md gold-glow uppercase tracking-wider"
                     >
-                      <Zap className="w-4 h-4" /> {currentUser ? 'Instant Buy' : '🔐 Login to Buy'}
+                      <Zap className="w-4 h-4" /> BUY NOW
                     </button>
                   </div>
                 </div>
