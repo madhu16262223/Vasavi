@@ -38,17 +38,17 @@ export const HeroSection = () => {
 
               {/* Interactive Category Badges Pill */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 pt-1">
+                <span className="text-[10px] font-extrabold bg-[#fff3c4] text-[#8a6200] border border-[#c99632]/50 px-3 py-1 rounded-full shadow-xs flex items-center gap-1.5 animate-pulse">
+                  🎁 Raksha Bandhan Special (Aug 28)
+                </span>
                 <span className="text-[10px] font-bold bg-[#fff8ed] text-[#c99632] border border-[#c99632]/30 px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1">
-                  ✨ Temple Jewellery
+                  ✨ Bangles & Jewellery
                 </span>
                 <span className="text-[10px] font-bold bg-[#fff0f2] text-[#e88a9a] border border-[#e88a9a]/30 px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1">
                   💄 Matte Lipsticks
                 </span>
                 <span className="text-[10px] font-bold bg-[#f0f9ff] text-sky-700 border border-sky-300/40 px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1">
                   👜 Designer Bags
-                </span>
-                <span className="text-[10px] font-bold bg-[#f6f5ff] text-purple-700 border border-purple-300/40 px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1">
-                  👑 Bridal Combs
                 </span>
               </div>
 
