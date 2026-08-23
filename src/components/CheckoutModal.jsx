@@ -43,6 +43,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
   const rawTotal = getCartTotal();
   const finalAmount = Math.max(0, rawTotal - couponDiscount);
+  const totalAmount = finalAmount;
 
   const handleApplyCoupon = () => {
     setCouponMsg('');
