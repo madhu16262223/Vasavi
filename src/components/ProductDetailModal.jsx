@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { X, ShoppingBag, Star, Zap, Check, ShieldCheck, Truck, MessageCircle, Heart, Sparkles, Award } from 'lucide-react';
 
 export const ProductDetailModal = () => {
-  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviewsList = [], addReview, currentUser, openAuthModal, storeInfo } = useStore();
+  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviewsList = [], addReview, currentUser, openAuthModal, storeInfo, toggleWishlist, isInWishlist, language } = useStore();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'reviews'
@@ -16,6 +16,7 @@ export const ProductDetailModal = () => {
 
   if (!selectedProduct) return null;
 
+  const inWishlist = isInWishlist(selectedProduct.id);
   const productReviews = reviewsList.filter((r) => r.productId === selectedProduct.id);
   const avgRating = productReviews.length > 0
     ? (productReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / productReviews.length).toFixed(1)
@@ -81,13 +82,25 @@ export const ProductDetailModal = () => {
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
       <div className="relative w-full max-w-4xl bg-[#fffcf7] border border-[#c99632]/40 rounded-3xl overflow-hidden shadow-2xl text-[#171717]">
         
-        {/* Close Button */}
-        <button
-          onClick={() => setSelectedProduct(null)}
-          className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-white/90 text-[#171717] hover:bg-[#e8c7b5]/30 border border-[#c99632]/30 transition-all shadow-md"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Close & Wishlist Buttons */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <button
+            onClick={() => toggleWishlist(selectedProduct)}
+            className={`p-2.5 rounded-full backdrop-blur-md shadow-md transition-all ${
+              inWishlist ? 'bg-pink-50 text-pink-600 border border-pink-300' : 'bg-white/90 text-slate-500 hover:text-pink-600'
+            }`}
+            title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+          >
+            <Heart className={`w-4 h-4 ${inWishlist ? 'fill-pink-500 text-pink-500' : ''}`} />
+          </button>
+
+          <button
+            onClick={() => setSelectedProduct(null)}
+            className="p-2.5 rounded-full bg-white/90 text-[#171717] hover:bg-[#e8c7b5]/30 border border-[#c99632]/30 transition-all shadow-md"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
           
@@ -111,7 +124,7 @@ export const ProductDetailModal = () => {
             {/* Product Image Display */}
             <div className="w-full max-h-[360px] flex items-center justify-center p-2">
               <img
-                src={selectedProduct.image || selectedProduct.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80'}
+                src={selectedProduct.image || selectedProduct.imageUrl || '/bangles.jpg'}
                 alt={selectedProduct.name}
                 referrerPolicy="no-referrer"
                 className="w-full max-h-[340px] object-contain rounded-2xl shadow-md transition-all duration-300 hover:scale-105"
@@ -143,7 +156,7 @@ export const ProductDetailModal = () => {
                   activeTab === 'details' ? 'bg-[#c99632] text-white shadow-xs' : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                Product Details
+                {language === 'te' ? 'వివరాలు' : 'Product Details'}
               </button>
               <button
                 onClick={() => setActiveTab('reviews')}
@@ -151,7 +164,7 @@ export const ProductDetailModal = () => {
                   activeTab === 'reviews' ? 'bg-[#c99632] text-white shadow-xs' : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                <span>⭐ Reviews</span>
+                <span>⭐ {language === 'te' ? 'రివ్యూలు' : 'Reviews'}</span>
                 <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full font-bold">
                   {productReviews.length}
                 </span>
@@ -159,7 +172,7 @@ export const ProductDetailModal = () => {
             </div>
 
             {activeTab === 'details' && (
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 <div>
                   <span className="text-[10px] font-black tracking-widest text-[#c99632] uppercase">
                     {selectedProduct.brand || 'Vasavi Luxury Collection'}
@@ -168,13 +181,19 @@ export const ProductDetailModal = () => {
                     {selectedProduct.name}
                   </h3>
                   
+                  {/* Social Proof Urgency Badge */}
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-xl">
+                    <span>🔥</span>
+                    <span>{language === 'te' ? 'ప్రస్తుతం 4 గురు ఈ వస్తువును చూస్తున్నారు • వేగంగా అమ్ముడవుతోంది!' : '4 people looking at this item right now in Nandyal • Selling Fast!'}</span>
+                  </div>
+
                   {/* Rating summary */}
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="flex items-center text-amber-500 text-xs">
                       {'★'.repeat(5)}
                     </div>
                     <span className="text-xs font-bold text-[#171717]">{avgRating} / 5</span>
-                    <span className="text-xs text-[#888888]">({productReviews.length} customer reviews)</span>
+                    <span className="text-xs text-[#888888]">({productReviews.length} {language === 'te' ? 'రివ్యూలు' : 'customer reviews'})</span>
                   </div>
                 </div>
 

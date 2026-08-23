@@ -84,6 +84,41 @@ export const StoreProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : {};
   });
 
+  // Wishlist State
+  const [wishlist, setWishlist] = useState(() => {
+    const saved = localStorage.getItem('vasavi_wishlist');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+
+  // Language State ('en' | 'te')
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('vasavi_lang') || 'en';
+  });
+
+  const toggleLanguage = () => {
+    setLanguage((prev) => {
+      const next = prev === 'en' ? 'te' : 'en';
+      localStorage.setItem('vasavi_lang', next);
+      return next;
+    });
+  };
+
+  const toggleWishlist = (product) => {
+    setWishlist((prev) => {
+      const exists = prev.some((p) => p.id === product.id);
+      if (exists) {
+        return prev.filter((p) => p.id !== product.id);
+      } else {
+        return [product, ...prev];
+      }
+    });
+  };
+
+  const isInWishlist = (productId) => {
+    return wishlist.some((p) => p.id === productId);
+  };
+
   // UI State
   const [activeTab, setActiveTab] = useState('home'); // 'home' | 'shop' | 'track' | 'admin'
   const [activeCategory, setActiveCategory] = useState('all');
@@ -112,6 +147,10 @@ export const StoreProvider = ({ children }) => {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
+
+  useEffect(() => {
+    localStorage.setItem('vasavi_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
 
   // Local Storage Sync
   useEffect(() => {
@@ -924,6 +963,13 @@ export const StoreProvider = ({ children }) => {
         deleteReview,
         approveReview,
         updateStoreSettings,
+        wishlist,
+        toggleWishlist,
+        isInWishlist,
+        isWishlistOpen,
+        setIsWishlistOpen,
+        language,
+        toggleLanguage,
         loginAdmin,
         logoutAdmin,
         refreshCloudData: fetchCloudData,

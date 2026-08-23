@@ -12,4 +12,8 @@ export default defineConfig({
     }),
     tailwindcss()
   ],
+  build: {
+    sourcemap: false, // Prevents exposing raw source code & logic in production
+    chunkSizeWarningLimit: 2000
+  }
 })

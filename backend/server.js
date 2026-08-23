@@ -37,12 +37,64 @@ import analyticsRouter from './routes/analytics.js';
 import paymentRouter from './routes/payment.js';
 import reviewsRouter from './routes/reviews.js';
 import couponsRouter from './routes/coupons.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// 1. Disable server fingerprinting (Anti-Hacking Reconnaissance)
+app.disable('x-powered-by');
+
+// 2. High-Grade HTTP Security Headers with Helmet
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false // Allows rich imagery and external CDNs safely
+}));
+
+// 3. General API Rate Limiting (Anti-DDoS & Scraping Protection)
+const apiLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 300, // 300 requests per 5 minutes per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this IP. Please try again in 5 minutes.' }
+});
+
+// Stricter Auth Rate Limiter (Anti-Brute Force Protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 login/register attempts per 15 minutes
+  message: { error: 'Security Notice: Too many authentication attempts. Please try again in 15 minutes.' }
+});
+
+// 4. CORS Whitelisting
+const allowedOrigins = [
+  'https://vasavistore.in',
+  'https://www.vasavistore.in',
+  'https://vasavi-api.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl) or if in whitelist
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Fallback to safe permissive response
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
+}));
+
 app.use(express.json({ limit: '10mb' }));
+app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter);
 
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);

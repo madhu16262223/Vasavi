@@ -6,6 +6,7 @@ import { AdminCategories } from './AdminCategories';
 import { AdminOrders } from './AdminOrders';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminSettings } from './AdminSettings';
+import { AdminPOS } from './AdminPOS';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -34,7 +35,8 @@ import {
   AlertCircle,
   FileText,
   Trash2,
-  Plus
+  Plus,
+  Printer
 } from 'lucide-react';
 import { downloadMonthlySalesCSV, downloadGSTLedgerPDF } from '../../utils/reportsGenerator';
 
@@ -211,6 +213,7 @@ export const AdminDashboard = () => {
           <nav className="p-3 sm:p-4 space-y-1 overflow-y-auto flex-1 no-scrollbar">
             {[
               { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'pos', label: 'Super POS Counter', icon: Printer },
               { id: 'products', label: 'Products', icon: ShoppingBag, count: products.length },
               { id: 'categories', label: 'Categories', icon: Tag, count: categories.length },
               { id: 'orders', label: 'Orders', icon: PackageCheck, count: orders.length, badge: pendingOrders.length },
@@ -342,6 +345,9 @@ export const AdminDashboard = () => {
 
         {/* Dynamic Tab View Area */}
         <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
+
+          {/* POS COUNTER BILLING VIEW */}
+          {adminTab === 'pos' && <AdminPOS />}
 
           {/* OVERVIEW DASHBOARD VIEW */}
           {adminTab === 'overview' && (

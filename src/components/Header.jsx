@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { ShoppingBag, Search, Shield, Menu, X, Package, Home, Store, User, ArrowRight, Sparkles } from 'lucide-react';
+import { ShoppingBag, Search, Shield, Menu, X, Package, Home, Store, User, ArrowRight, Sparkles, Mic, MicOff, Heart, Globe, Flame } from 'lucide-react';
 
 export const Header = () => {
   const {
@@ -15,13 +15,74 @@ export const Header = () => {
     openAuthModal,
     logoutCustomer,
     products,
-    setSelectedProduct
+    setSelectedProduct,
+    wishlist = [],
+    setIsWishlistOpen,
+    language,
+    toggleLanguage
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const searchContainerRef = useRef(null);
   const mobileSearchContainerRef = useRef(null);
+
+  // Flash Sale Live Countdown Timer (Calculates hours, minutes, seconds)
+  const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 45, seconds: 20 });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      const diff = Math.max(0, endOfDay - now);
+
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      setTimeLeft({ hours, minutes, seconds });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Voice Search Handler (Web Speech Recognition)
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice Search is not supported by your browser. Please type in search bar.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = language === 'te' ? 'te-IN' : 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchQuery(transcript);
+      setShowSuggestions(true);
+      setActiveTab('shop');
+      setIsListening(false);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
 
   const cartCount = getCartCount();
 
@@ -92,43 +153,314 @@ export const Header = () => {
   }, [setActiveTab]);
 
   return (
-    <header className="sticky top-0 z-40 bg-[#fffcf7]/95 backdrop-blur-md border-b border-[#c99632]/30 shadow-xs">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          
-          {/* Brand Logo */}
-          <div
-            onClick={() => handleNavClick('home')}
-            className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group"
-          >
-            {/* Vasavi Logo */}
-            <div className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-full overflow-hidden border border-[#c99632]/60 shadow-sm">
-              <img
-                src="/vasavi_logo.png"
-                alt="Vasavi Fancy Store Logo"
-                className="w-[115%] h-[115%] object-cover"
-              />
+    <>
+      {/* Top Festive Flash Sale Countdown Urgency Bar */}
+      <div className="bg-gradient-to-r from-[#171717] via-[#2a1d08] to-[#171717] text-[#fff8ed] py-1.5 px-3 text-[11px] font-bold border-b border-[#c99632]/40 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-2 mx-auto sm:mx-0">
+          <span className="flex items-center gap-1 text-[#ffd778] animate-pulse">
+            <Flame className="w-3.5 h-3.5 fill-[#ffd778]" />
+            <span className="uppercase tracking-wider">
+              {language === 'te' ? 'పండుగ సేల్ ఆఫర్ — కోడ్ FESTIVE100 తో ₹100 తగ్గింపు!' : 'FESTIVE MEGA SALE — FLAT ₹100 OFF WITH CODE FESTIVE100!'}
+            </span>
+          </span>
+        </div>
+
+        {/* Real-time Ticking Countdown */}
+        <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono font-black text-[#ffd778]">
+          <span className="text-[10px] text-[#cccccc] font-sans font-medium uppercase">
+            {language === 'te' ? 'ముగింపు సమయం:' : 'Ends In:'}
+          </span>
+          <span className="bg-[#c99632]/30 border border-[#c99632]/50 px-1.5 py-0.5 rounded text-white font-mono">
+            {String(timeLeft.hours).padStart(2, '0')}h
+          </span>
+          :
+          <span className="bg-[#c99632]/30 border border-[#c99632]/50 px-1.5 py-0.5 rounded text-white font-mono">
+            {String(timeLeft.minutes).padStart(2, '0')}m
+          </span>
+          :
+          <span className="bg-[#c99632]/30 border border-[#c99632]/50 px-1.5 py-0.5 rounded text-[#ffd778] font-mono animate-pulse">
+            {String(timeLeft.seconds).padStart(2, '0')}s
+          </span>
+        </div>
+      </div>
+
+      <header className="sticky top-0 z-40 bg-[#fffcf7]/95 backdrop-blur-md border-b border-[#c99632]/30 shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            
+            {/* Brand Logo */}
+            <div
+              onClick={() => handleNavClick('home')}
+              className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group"
+            >
+              {/* Vasavi Logo */}
+              <div className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-full overflow-hidden border border-[#c99632]/60 shadow-sm">
+                <img
+                  src="/vasavi_logo.png"
+                  alt="Vasavi Fancy Store Logo"
+                  className="w-[115%] h-[115%] object-cover"
+                />
+              </div>
+
+              <div>
+                <h1 className="font-serif-luxury text-xl sm:text-2xl font-black tracking-wider text-[#171717] group-hover:text-[#c99632] transition-colors leading-none">
+                  VASAVI
+                </h1>
+                <p className="text-[11px] sm:text-[12px] font-sans font-black text-[#c99632] tracking-[0.2em] uppercase mt-1 leading-none">
+                  FANCY STORE
+                </p>
+                <p className="hidden sm:block text-[9px] text-[#666666] tracking-widest uppercase font-bold mt-1 leading-none">
+                  {language === 'te' ? 'గాజులు • సౌందర్య సాధనాలు • జ్యువెలరీ' : 'COSMETICS • BANGLES • JEWELLERY'}
+                </p>
+              </div>
             </div>
 
-            <div>
-              <h1 className="font-serif-luxury text-xl sm:text-2xl font-black tracking-wider text-[#171717] group-hover:text-[#c99632] transition-colors leading-none">
-                VASAVI
-              </h1>
-              <p className="text-[11px] sm:text-[12px] font-sans font-black text-[#c99632] tracking-[0.2em] uppercase mt-1 leading-none">
-                FANCY STORE
-              </p>
-              <p className="hidden sm:block text-[9px] text-[#666666] tracking-widest uppercase font-bold mt-1 leading-none">
-                COSMETICS • JEWELLERY • HANDBAGS
-              </p>
+            {/* Search Bar (Desktop) with Voice Search & Live Interactive Suggestions */}
+            <div ref={searchContainerRef} className="hidden md:block relative flex-1 max-w-[240px] lg:max-w-xs xl:max-w-sm mx-3 lg:mx-6 shrink">
+              <form onSubmit={handleSearchSubmit} className="relative w-full">
+                <input
+                  type="text"
+                  placeholder={language === 'te' ? 'లిప్‌స్టిక్, గాజులు, నెక్లెస్ సెర్చ్ చేయండి...' : 'Search lipsticks, bangles, jewellery...'}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => {
+                    if (searchQuery.trim()) setShowSuggestions(true);
+                  }}
+                  className="w-full bg-white border border-[#c99632]/40 rounded-full py-2.5 pl-10 pr-16 text-xs font-medium text-[#171717] placeholder-[#888888] focus:outline-none focus:border-[#c99632] focus:ring-1 focus:ring-[#c99632] transition-all shadow-xs"
+                />
+                <Search className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                
+                {/* Voice Search Mic Button */}
+                <button
+                  type="button"
+                  onClick={handleVoiceSearch}
+                  className={`absolute right-8 top-1/2 -translate-y-1/2 p-1 rounded-full transition-all ${
+                    isListening ? 'bg-red-500 text-white animate-bounce shadow-md' : 'text-[#888888] hover:text-[#c99632]'
+                  }`}
+                  title={isListening ? 'Listening to your voice...' : 'Search with Voice (English / తెలుగు)'}
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                </button>
+
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowSuggestions(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#888888] hover:text-[#171717]"
+                  >
+                    ✕
+                  </button>
+                )}
+              </form>
+
+              {/* Desktop Live Suggestions Dropdown */}
+              {showSuggestions && searchQuery.trim() && (
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-[#c99632]/30 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+                  <div className="p-2.5 bg-[#faf8f5] border-b border-[#c99632]/20 flex items-center justify-between text-[11px] font-bold text-[#888888]">
+                    <span>MATCHING PRODUCTS ({matchingProducts.length})</span>
+                    <span className="text-[10px] text-[#c99632]">Press Enter to view all</span>
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                    {matchingProducts.length > 0 ? (
+                      matchingProducts.map((p) => (
+                        <div
+                          key={p.id}
+                          onClick={() => handleSelectProductFromSearch(p)}
+                          className="p-3 hover:bg-[#fff9ee] cursor-pointer flex items-center gap-3 transition-colors group"
+                        >
+                          <img
+                            src={p.image || p.imageUrl || '/bangles.jpg'}
+                            alt={p.name}
+                            className="w-10 h-10 object-cover rounded-lg border border-[#c99632]/20 shrink-0"
+                            onError={(e) => { e.target.src = '/vasavi_logo.png'; }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-[#171717] group-hover:text-[#c99632] truncate">
+                              {p.name}
+                            </p>
+                            <p className="text-[10px] text-[#777777] truncate">
+                              {p.category} {p.shade ? `• ${p.shade}` : ''}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs font-black text-[#171717]">₹{p.price}</p>
+                            {p.originalPrice && p.originalPrice > p.price && (
+                              <p className="text-[10px] text-gray-400 line-through">₹{p.originalPrice}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-xs text-[#777777]">
+                        No products found for "{searchQuery}". Press Enter to browse catalog.
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleSearchSubmit}
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white text-xs font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-opacity"
+                  >
+                    <span>View all results for "{searchQuery}" in Shop</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden xl:flex items-center gap-4 shrink-0">
+              <button
+                onClick={() => handleNavClick('home')}
+                className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'home' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
+                }`}
+              >
+                <Home className="w-4 h-4 text-[#c99632]" />
+                <span>{language === 'te' ? 'హోమ్' : 'Home'}</span>
+              </button>
+
+              <button
+                onClick={() => handleNavClick('shop')}
+                className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'shop' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
+                }`}
+              >
+                <Store className="w-4 h-4 text-[#c99632]" />
+                <span>{language === 'te' ? 'షాప్ ప్రొడక్ట్స్' : 'Shop Products'}</span>
+              </button>
+
+              <button
+                onClick={() => handleNavClick('track')}
+                className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'track' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
+                }`}
+              >
+                <Package className="w-4 h-4 text-[#c99632]" />
+                <span>{language === 'te' ? 'ఆర్డర్ ట్రాకింగ్' : 'Track Order'}</span>
+              </button>
+            </nav>
+
+            {/* Action Buttons (Language, Wishlist, Cart, Customer Auth & Mobile Menu) */}
+            <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 pl-2">
+              
+              {/* Language Switcher Toggle Button */}
+              <button
+                onClick={toggleLanguage}
+                className="px-2.5 py-1.5 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-[11px] font-extrabold text-[#c99632] flex items-center gap-1 shadow-xs transition-all"
+                title="Switch Language (English / తెలుగు)"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>{language === 'en' ? 'తెలుగు' : 'English'}</span>
+              </button>
+
+              {/* Wishlist Button with Heart Badge */}
+              <button
+                onClick={() => setIsWishlistOpen(true)}
+                className="relative p-2.5 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-pink-600 transition-all shadow-xs flex items-center justify-center"
+                title="Saved Wishlist"
+              >
+                <Heart className="w-4 h-4 fill-pink-500 text-pink-500" />
+                {wishlist.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-pink-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                    {wishlist.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Cart Icon Button */}
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-2.5 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-[#171717] hover:text-[#c99632] transition-all shadow-xs gold-glow flex items-center justify-center"
+                title="View Cart"
+              >
+                <ShoppingBag className="w-5 h-5 text-[#c99632]" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-[#e88a9a] to-[#c99632] text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Customer User Account / Sign In Button */}
+              {currentUser ? (
+                <div className="relative group">
+                  <button
+                    onClick={() => openAuthModal('login')}
+                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#fff3c4]/80 border border-[#c99632]/50 hover:bg-[#fff3c4] transition-all gold-glow text-xs font-bold text-[#8a6200] shadow-xs"
+                    title="Click to view account"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-[#c99632] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                      {currentUser.avatar || '👤'}
+                    </span>
+                    <span className="hidden sm:inline font-bold truncate max-w-[100px]">{currentUser.name.split(' ')[0]}</span>
+                  </button>
+
+                  {/* Dropdown Menu on Hover */}
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#c99632]/30 rounded-2xl shadow-xl p-2 hidden group-hover:block transition-all z-50">
+                    <div className="p-3 border-b border-[#c99632]/15 bg-[#fffcf7] rounded-xl mb-1">
+                      <p className="text-xs font-bold text-[#171717] truncate">{currentUser.name}</p>
+                      <p className="text-[11px] text-[#666666] truncate">{currentUser.email}</p>
+                      <span className="inline-block mt-1 text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        ✓ Active Customer
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('track');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="w-full text-left p-2.5 rounded-xl text-xs font-bold text-[#171717] hover:bg-[#faf8f5] flex items-center gap-2"
+                    >
+                      <Package className="w-4 h-4 text-[#c99632]" />
+                      <span>Track My Orders</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        logoutCustomer();
+                      }}
+                      className="w-full text-left p-2.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                    >
+                      <span>🚪</span>
+                      <span>Sign Out / Logout</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-xs font-bold text-[#171717] hover:text-[#c99632] transition-all shadow-xs gold-glow"
+                >
+                  <User className="w-4 h-4 text-[#c99632]" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </button>
+              )}
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-lg bg-white border border-[#c99632]/30 text-[#171717]"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
             </div>
           </div>
 
-          {/* Search Bar (Desktop) with Live Interactive Suggestions */}
-          <div ref={searchContainerRef} className="hidden md:block relative flex-1 max-w-[240px] lg:max-w-xs xl:max-w-sm mx-3 lg:mx-6 shrink">
+          {/* Mobile Dedicated Search Bar with Voice Button */}
+          <div ref={mobileSearchContainerRef} className="md:hidden pb-3 relative">
             <form onSubmit={handleSearchSubmit} className="relative w-full">
               <input
                 type="text"
-                placeholder="Search lipsticks, bangles, jewellery..."
+                placeholder={language === 'te' ? 'లిప్‌స్టిక్, గాజులు, నెక్లెస్ సెర్చ్ చేయండి...' : 'Search products, jewellery, bangles...'}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -137,9 +469,20 @@ export const Header = () => {
                 onFocus={() => {
                   if (searchQuery.trim()) setShowSuggestions(true);
                 }}
-                className="w-full bg-white border border-[#c99632]/40 rounded-full py-2.5 pl-10 pr-9 text-xs font-medium text-[#171717] placeholder-[#888888] focus:outline-none focus:border-[#c99632] focus:ring-1 focus:ring-[#c99632] transition-all shadow-xs"
+                className="w-full bg-white border border-[#c99632]/40 rounded-full py-2 pl-9 pr-14 text-xs font-medium text-[#171717] placeholder-[#888888] focus:outline-none focus:border-[#c99632] shadow-xs"
               />
-              <Search className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#888888] absolute left-3 top-1/2 -translate-y-1/2" />
+              
+              <button
+                type="button"
+                onClick={handleVoiceSearch}
+                className={`absolute right-7 top-1/2 -translate-y-1/2 p-1 rounded-full ${
+                  isListening ? 'bg-red-500 text-white animate-bounce' : 'text-[#888888]'
+                }`}
+              >
+                <Mic className="w-3.5 h-3.5" />
+              </button>
+
               {searchQuery && (
                 <button
                   type="button"
@@ -147,260 +490,60 @@ export const Header = () => {
                     setSearchQuery('');
                     setShowSuggestions(false);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#888888] hover:text-[#171717]"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#888888]"
                 >
                   ✕
                 </button>
               )}
             </form>
 
-            {/* Desktop Live Suggestions Dropdown */}
+            {/* Mobile Live Suggestions Dropdown */}
             {showSuggestions && searchQuery.trim() && (
-              <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-[#c99632]/30 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
-                <div className="p-2.5 bg-[#faf8f5] border-b border-[#c99632]/20 flex items-center justify-between text-[11px] font-bold text-[#888888]">
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#c99632]/30 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+                <div className="p-2 bg-[#faf8f5] border-b border-[#c99632]/20 flex items-center justify-between text-[11px] font-bold text-[#888888]">
                   <span>MATCHING PRODUCTS ({matchingProducts.length})</span>
-                  <span className="text-[10px] text-[#c99632]">Press Enter to view all</span>
+                  <span className="text-[10px] text-[#c99632]">Tap to view</span>
                 </div>
 
-                <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                <div className="max-h-60 overflow-y-auto divide-y divide-gray-100">
                   {matchingProducts.length > 0 ? (
                     matchingProducts.map((p) => (
                       <div
                         key={p.id}
                         onClick={() => handleSelectProductFromSearch(p)}
-                        className="p-3 hover:bg-[#fff9ee] cursor-pointer flex items-center gap-3 transition-colors group"
+                        className="p-2.5 hover:bg-[#fff9ee] active:bg-[#fff3c4] cursor-pointer flex items-center gap-2.5 transition-colors"
                       >
                         <img
-                          src={p.image}
+                          src={p.image || p.imageUrl || '/bangles.jpg'}
                           alt={p.name}
-                          className="w-10 h-10 object-cover rounded-lg border border-[#c99632]/20 shrink-0"
+                          className="w-9 h-9 object-cover rounded-lg border border-[#c99632]/20 shrink-0"
                           onError={(e) => { e.target.src = '/vasavi_logo.png'; }}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-[#171717] group-hover:text-[#c99632] truncate">
-                            {p.name}
-                          </p>
-                          <p className="text-[10px] text-[#777777] truncate">
-                            {p.category} {p.shade ? `• ${p.shade}` : ''}
-                          </p>
+                          <p className="text-xs font-bold text-[#171717] truncate">{p.name}</p>
+                          <p className="text-[10px] text-[#777777] truncate">{p.category}</p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-black text-[#171717]">₹{p.price}</p>
-                          {p.originalPrice && p.originalPrice > p.price && (
-                            <p className="text-[10px] text-gray-400 line-through">₹{p.originalPrice}</p>
-                          )}
-                        </div>
+                        <span className="text-xs font-black text-[#171717] shrink-0">₹{p.price}</span>
                       </div>
                     ))
                   ) : (
-                    <div className="p-6 text-center text-xs text-[#777777]">
-                      No products found for "{searchQuery}". Press Enter to browse catalog.
+                    <div className="p-4 text-center text-xs text-[#777777]">
+                      No matching items. Press Enter to view catalog.
                     </div>
                   )}
                 </div>
 
                 <button
                   onClick={handleSearchSubmit}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white text-xs font-bold flex items-center justify-center gap-2 hover:opacity-95 transition-opacity"
+                  className="w-full py-2 px-3 bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white text-xs font-bold flex items-center justify-center gap-1.5"
                 >
-                  <span>View all results for "{searchQuery}" in Shop</span>
+                  <span>View all in Shop Catalog</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
           </div>
-
-          {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-5 shrink-0">
-            <button
-              onClick={() => handleNavClick('home')}
-              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'home' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
-              }`}
-            >
-              <Home className="w-4 h-4 text-[#c99632]" /> Home
-            </button>
-
-            <button
-              onClick={() => handleNavClick('shop')}
-              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'shop' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
-              }`}
-            >
-              <Store className="w-4 h-4 text-[#c99632]" /> Shop Products
-            </button>
-
-            <button
-              onClick={() => handleNavClick('track')}
-              className={`text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'track' ? 'text-[#c99632]' : 'text-[#333333] hover:text-[#c99632]'
-              }`}
-            >
-              <Package className="w-4 h-4 text-[#c99632]" /> Track Order
-            </button>
-          </nav>
-
-          {/* Action Buttons (Cart, Customer Auth & Mobile Menu) */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0 pl-2">
-            
-            {/* Customer User Account / Sign In Button with Dropdown */}
-            {currentUser ? (
-              <div className="relative group">
-                <button
-                  onClick={() => openAuthModal('login')}
-                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#fff3c4]/80 border border-[#c99632]/50 hover:bg-[#fff3c4] transition-all gold-glow text-xs font-bold text-[#8a6200] shadow-xs"
-                  title="Click to view account"
-                >
-                  <span className="w-6 h-6 rounded-full bg-[#c99632] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
-                    {currentUser.avatar || '👤'}
-                  </span>
-                  <span className="hidden sm:inline font-bold truncate max-w-[100px]">{currentUser.name.split(' ')[0]}</span>
-                </button>
-
-                {/* Dropdown Menu on Hover */}
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#c99632]/30 rounded-2xl shadow-xl p-2 hidden group-hover:block transition-all z-50">
-                  <div className="p-3 border-b border-[#c99632]/15 bg-[#fffcf7] rounded-xl mb-1">
-                    <p className="text-xs font-bold text-[#171717] truncate">{currentUser.name}</p>
-                    <p className="text-[11px] text-[#666666] truncate">{currentUser.email}</p>
-                    <span className="inline-block mt-1 text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                      ✓ Active Customer
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setActiveTab('track');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="w-full text-left p-2.5 rounded-xl text-xs font-bold text-[#171717] hover:bg-[#faf8f5] flex items-center gap-2"
-                  >
-                    <Package className="w-4 h-4 text-[#c99632]" />
-                    <span>Track My Orders</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      logoutCustomer();
-                    }}
-                    className="w-full text-left p-2.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                  >
-                    <span>🚪</span>
-                    <span>Sign Out / Logout</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => openAuthModal('login')}
-                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-xs font-bold text-[#171717] hover:text-[#c99632] transition-all shadow-xs gold-glow"
-              >
-                <User className="w-4 h-4 text-[#c99632]" />
-                <span className="hidden sm:inline">Sign In</span>
-              </button>
-            )}
-
-            {/* Cart Icon Button */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 rounded-full bg-white border border-[#c99632]/40 hover:border-[#c99632] text-[#171717] hover:text-[#c99632] transition-all shadow-xs gold-glow flex items-center justify-center"
-              title="View Cart"
-            >
-              <ShoppingBag className="w-5 h-5 text-[#c99632]" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-[#e88a9a] to-[#c99632] text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg bg-white border border-[#c99632]/30 text-[#171717]"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
         </div>
-
-        {/* Mobile Dedicated Search Bar (Visible directly on Home/Shop without opening drawer) */}
-        <div ref={mobileSearchContainerRef} className="md:hidden pb-3 relative">
-          <form onSubmit={handleSearchSubmit} className="relative w-full">
-            <input
-              type="text"
-              placeholder="Search products, jewellery, bangles..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => {
-                if (searchQuery.trim()) setShowSuggestions(true);
-              }}
-              className="w-full bg-white border border-[#c99632]/40 rounded-full py-2 pl-9 pr-9 text-xs font-medium text-[#171717] placeholder-[#888888] focus:outline-none focus:border-[#c99632] shadow-xs"
-            />
-            <Search className="w-4 h-4 text-[#888888] absolute left-3 top-1/2 -translate-y-1/2" />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setShowSuggestions(false);
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#888888]"
-              >
-                ✕
-              </button>
-            )}
-          </form>
-
-          {/* Mobile Live Suggestions Dropdown */}
-          {showSuggestions && searchQuery.trim() && (
-            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#c99632]/30 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
-              <div className="p-2 bg-[#faf8f5] border-b border-[#c99632]/20 flex items-center justify-between text-[11px] font-bold text-[#888888]">
-                <span>MATCHING PRODUCTS ({matchingProducts.length})</span>
-                <span className="text-[10px] text-[#c99632]">Tap to view</span>
-              </div>
-
-              <div className="max-h-60 overflow-y-auto divide-y divide-gray-100">
-                {matchingProducts.length > 0 ? (
-                  matchingProducts.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => handleSelectProductFromSearch(p)}
-                      className="p-2.5 hover:bg-[#fff9ee] active:bg-[#fff3c4] cursor-pointer flex items-center gap-2.5 transition-colors"
-                    >
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="w-9 h-9 object-cover rounded-lg border border-[#c99632]/20 shrink-0"
-                        onError={(e) => { e.target.src = '/vasavi_logo.png'; }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-[#171717] truncate">{p.name}</p>
-                        <p className="text-[10px] text-[#777777] truncate">{p.category}</p>
-                      </div>
-                      <span className="text-xs font-black text-[#171717] shrink-0">₹{p.price}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-xs text-[#777777]">
-                    No matching items. Press Enter to view catalog.
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={handleSearchSubmit}
-                className="w-full py-2 px-3 bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white text-xs font-bold flex items-center justify-center gap-1.5"
-              >
-                <span>View all in Shop Catalog</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Mobile Drawer Menu (Navigation & Account Only) */}
       {mobileMenuOpen && (
@@ -477,5 +620,6 @@ export const Header = () => {
         </div>
       )}
     </header>
-  );
+  </>
+);
 };

@@ -8,6 +8,8 @@ import { OrderTracker } from './components/OrderTracker';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
+import { WishlistDrawer } from './components/WishlistDrawer';
+import { WhatsAppWidget } from './components/WhatsAppWidget';
 import { OrderConfirmationModal } from './components/OrderConfirmationModal';
 import { UserAuthModal } from './components/UserAuthModal';
 import { Footer } from './components/Footer';
@@ -48,8 +50,10 @@ const MainAppContent = () => {
       {/* Global Overlays & Modals */}
       <ProductDetailModal />
       <CartDrawer />
+      <WishlistDrawer />
       <OrderConfirmationModal />
       <UserAuthModal />
+      {activeTab !== 'admin' && <WhatsAppWidget />}
 
       {activeTab !== 'admin' && <Footer />}
     </div>

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { ShoppingBag, Star, Eye, Sparkles, Zap, Check } from 'lucide-react';
+import { ShoppingBag, Star, Eye, Sparkles, Zap, Check, Heart } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
-  const { addToCart, setSelectedProduct, setIsCartOpen } = useStore();
+  const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist } = useStore();
 
   const [isAdded, setIsAdded] = useState(false);
   const isOutOfStock = product.stock <= 0;
+  const inWishlist = isInWishlist(product.id);
+
   const discountPct = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
@@ -28,6 +30,11 @@ export const ProductCard = ({ product }) => {
     }
   };
 
+  const handleWishlistToggle = (e) => {
+    e.stopPropagation();
+    toggleWishlist(product);
+  };
+
   return (
     <div
       onClick={() => setSelectedProduct(product)}
@@ -36,7 +43,7 @@ export const ProductCard = ({ product }) => {
       {/* Product Image Container */}
       <div className="relative aspect-square overflow-hidden bg-[#fffcf7]">
         <img
-          src={product.image || product.imageUrl || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80'}
+          src={product.image || product.imageUrl || '/bangles.jpg'}
           alt={product.name}
           referrerPolicy="no-referrer"
           loading="lazy"
@@ -58,11 +65,24 @@ export const ProductCard = ({ product }) => {
             )}
           </div>
 
-          {discountPct && (
-            <span className="text-[9px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-md">
-              {discountPct}% OFF
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            {discountPct && (
+              <span className="text-[9px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-md">
+                {discountPct}% OFF
+              </span>
+            )}
+
+            {/* Wishlist Heart Button */}
+            <button
+              onClick={handleWishlistToggle}
+              className={`p-1.5 rounded-full backdrop-blur-md shadow-md transition-all ${
+                inWishlist ? 'bg-pink-50 text-pink-600 border border-pink-300' : 'bg-white/80 text-slate-500 hover:text-pink-600 hover:bg-white'
+              }`}
+              title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            >
+              <Heart className={`w-3.5 h-3.5 ${inWishlist ? 'fill-pink-500 text-pink-500' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Out of Stock Overlay */}
