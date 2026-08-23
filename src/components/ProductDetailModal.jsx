@@ -30,19 +30,25 @@ export const ProductDetailModal = () => {
     : 0;
 
   const handleAddToCart = () => {
-    addToCart(selectedProduct, quantity);
+    if (!currentUser) {
+      addToCart(selectedProduct, quantity, false);
+      openAuthModal('login');
+      return;
+    }
+    addToCart(selectedProduct, quantity, false);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
 
   const handleInstantBuyNow = () => {
     if (!currentUser) {
+      addToCart(selectedProduct, quantity, false);
+      setSelectedProduct(null);
       openAuthModal('login');
       return;
     }
-    addToCart(selectedProduct, quantity);
+    addToCart(selectedProduct, quantity, true);
     setSelectedProduct(null);
-    setIsCartOpen(true);
   };
 
   const handleReviewSubmit = (e) => {

@@ -28,7 +28,12 @@ export const ProductCard = ({ product }) => {
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    const success = addToCart(product, 1);
+    if (!currentUser) {
+      addToCart(product, 1, false);
+      openAuthModal('login');
+      return;
+    }
+    const success = addToCart(product, 1, false);
     if (success) {
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
@@ -37,15 +42,12 @@ export const ProductCard = ({ product }) => {
 
   const handleBuyNow = (e) => {
     e.stopPropagation();
-    const success = addToCart(product, 1);
     if (!currentUser) {
-      // Flipkart / Amazon style: prompt login/registration modal on Buy Now
+      addToCart(product, 1, false);
       openAuthModal('login');
       return;
     }
-    if (success) {
-      setIsCartOpen(true);
-    }
+    addToCart(product, 1, true);
   };
 
   const handleWishlistToggle = (e) => {

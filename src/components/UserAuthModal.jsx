@@ -12,7 +12,9 @@ export const UserAuthModal = () => {
     logoutCustomer,
     authModalMode,
     setAuthModalMode,
-    setActiveTab
+    setActiveTab,
+    cart = [],
+    setIsCartOpen
   } = useStore();
 
   const [mode, setMode] = useState(authModalMode || 'login'); // 'login' | 'signup'
@@ -43,7 +45,7 @@ export const UserAuthModal = () => {
     setSuccessMsg('');
 
     if (!email.trim() || !password.trim()) {
-      setError('Please enter both your email address and password.');
+      setError('Please enter both your email address/mobile and password.');
       return;
     }
 
@@ -52,9 +54,12 @@ export const UserAuthModal = () => {
       setSuccessMsg('Signed in successfully!');
       setTimeout(() => {
         closeAuthModal();
+        if (cart && cart.length > 0) {
+          setIsCartOpen(true);
+        }
       }, 700);
     } else {
-      setError((res && res.message) || 'Invalid email or password. Please check your credentials.');
+      setError((res && res.message) || 'Invalid credentials. Please check your details.');
     }
   };
 
@@ -73,6 +78,9 @@ export const UserAuthModal = () => {
       setSuccessMsg('Account created successfully! Welcome to Vasavi Fancy Store.');
       setTimeout(() => {
         closeAuthModal();
+        if (cart && cart.length > 0) {
+          setIsCartOpen(true);
+        }
       }, 900);
     } else {
       setError((res && res.message) || 'Registration failed. Please check your details.');

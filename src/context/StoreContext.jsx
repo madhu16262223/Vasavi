@@ -352,20 +352,39 @@ export const StoreProvider = ({ children }) => {
   };
 
   // Cart Actions (Seamless Guest Checkout + Optional Login)
-  const addToCart = (product, quantity = 1) => {
+  const addToCart = (product, quantity = 1, openCart = false) => {
+    if (!product) return false;
+    const prodId = product.id || `prod-${Date.now()}`;
+    const safeProduct = {
+      ...product,
+      id: prodId,
+      name: product.name || 'Vasavi Store Item',
+      price: typeof product.price === 'number' ? product.price : (parseFloat(product.price) || 0),
+      image: product.image || product.imageUrl || '/bangles.jpg',
+      imageUrl: product.image || product.imageUrl || '/bangles.jpg',
+      stock: product.stock || 99
+    };
+
     setCart((prevCart) => {
-      const existingIndex = prevCart.findIndex((item) => item.product.id === product.id);
+      const existingIndex = prevCart.findIndex((item) => (item.product?.id || item.productId) === prodId);
       if (existingIndex > -1) {
         const updated = [...prevCart];
-        const newQty = updated[existingIndex].quantity + quantity;
-        const availableStock = product.stock || 99;
-        updated[existingIndex].quantity = Math.min(newQty, availableStock);
+        const newQty = (updated[existingIndex].quantity || 1) + quantity;
+        const availableStock = safeProduct.stock || 99;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          product: safeProduct,
+          quantity: Math.min(newQty, availableStock)
+        };
         return updated;
       } else {
-        return [...prevCart, { product, quantity: Math.min(quantity, product.stock || 99) }];
+        return [...prevCart, { product: safeProduct, quantity: Math.min(quantity, safeProduct.stock || 99) }];
       }
     });
-    setIsCartOpen(true);
+
+    if (openCart) {
+      setIsCartOpen(true);
+    }
     return true;
   };
 
