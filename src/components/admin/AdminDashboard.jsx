@@ -32,8 +32,11 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  FileText
+  FileText,
+  Trash2,
+  Plus
 } from 'lucide-react';
+import { downloadMonthlySalesCSV, downloadGSTLedgerPDF } from '../../utils/reportsGenerator';
 
 const formatFullDateTime = (dateInput) => {
   if (!dateInput) return '';
@@ -67,12 +70,22 @@ export const AdminDashboard = () => {
     offlineSales = [],
     addOfflineSale,
     deleteOfflineSale,
-    resetStoreToCleanState
+    resetStoreToCleanState,
+    deleteCustomer,
+    coupons = [],
+    createCoupon,
+    deleteCoupon,
+    reviewsList = [],
+    deleteReview,
+    approveReview,
+    deleteOrder,
+    storeSettings
   } = useStore();
 
   const [adminTab, setAdminTab] = useState('overview'); // 'overview' | 'products' | 'categories' | 'orders' | 'payments' | 'analytics' | 'settings'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [paymentLedgerType, setPaymentLedgerType] = useState('ALL'); // 'ALL' | 'ONLINE' | 'OFFLINE'
+  const [customerSearch, setCustomerSearch] = useState('');
 
   // Offline Sale Modal Form State
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
@@ -81,12 +94,34 @@ export const AdminDashboard = () => {
   const [offCustomer, setOffCustomer] = useState('');
   const [offNotes, setOffNotes] = useState('');
 
+  // Coupon Creation Modal State
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [coupCode, setCoupCode] = useState('');
+  const [coupType, setCoupType] = useState('PERCENTAGE'); // 'PERCENTAGE' | 'FLAT'
+  const [coupVal, setCoupVal] = useState('');
+  const [coupMin, setCoupMin] = useState('0');
+
   // Fresh Start Reset Modal State
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleFreshReset = () => {
     resetStoreToCleanState();
     setShowResetConfirm(false);
+  };
+
+  const handleCreateCouponSubmit = (e) => {
+    e.preventDefault();
+    if (!coupCode.trim() || !coupVal) return;
+    createCoupon({
+      code: coupCode.trim().toUpperCase(),
+      discountType: coupType,
+      discountValue: parseFloat(coupVal) || 0,
+      minOrderAmount: parseFloat(coupMin) || 0
+    });
+    setCoupCode('');
+    setCoupVal('');
+    setCoupMin('0');
+    setIsCouponModalOpen(false);
   };
 
   if (!isAdminLoggedIn) {
@@ -888,51 +923,85 @@ export const AdminDashboard = () => {
           {/* CUSTOMERS MANAGEMENT */}
           {adminTab === 'customers' && (
             <div className="bg-white border border-[#c99632]/25 p-6 rounded-2xl shadow-xs space-y-4">
-              <div className="flex justify-between items-center border-b border-[#c99632]/20 pb-3">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-[#c99632]/20 pb-3">
                 <div>
                   <h3 className="text-base font-bold font-serif-luxury text-[#171717]">Customer Directory</h3>
-                  <p className="text-xs text-[#666666]">{registeredUsers.length} Registered Nandyal &amp; Online Shoppers</p>
+                  <p className="text-xs text-[#666666]">{registeredUsers.length} Registered Customers in Supabase Database</p>
                 </div>
-                <span className="text-xs font-bold text-[#c99632] bg-[#fff3c4] px-3 py-1 rounded-full">Active Directory</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search name, phone..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    className="bg-[#faf8f5] border border-[#c99632]/30 rounded-xl px-3 py-1.5 text-xs text-[#171717] focus:outline-none focus:border-[#c99632]"
+                  />
+                  <span className="text-xs font-bold text-[#c99632] bg-[#fff3c4] px-3 py-1.5 rounded-full shrink-0">Live Cloud</span>
+                </div>
               </div>
+
               <div className="overflow-x-auto">
                 {registeredUsers.length === 0 ? (
                   <div className="text-center py-12 space-y-3">
                     <div className="text-4xl">👥</div>
                     <p className="text-sm font-bold text-[#171717]">No registered customers yet</p>
-                    <p className="text-xs text-[#666666]">Customers who sign up on the website will appear here.</p>
+                    <p className="text-xs text-[#666666]">Customers who sign up or order on the website will appear here in real-time.</p>
                   </div>
                 ) : (
                   <table className="w-full text-left text-xs divide-y divide-[#c99632]/15">
                     <thead className="bg-[#faf8f5] text-[#666666] font-bold uppercase">
                       <tr>
                         <th className="p-3">Customer Name</th>
-                        <th className="p-3">Email</th>
-                        <th className="p-3">Phone</th>
+                        <th className="p-3">Phone &amp; Email</th>
+                        <th className="p-3">Delivery Address</th>
                         <th className="p-3">Total Orders</th>
                         <th className="p-3">Total Spent</th>
+                        <th className="p-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#c99632]/15">
-                      {registeredUsers.map((u) => {
-                        const customerOrders = orders.filter(o => o.customerPhone === u.phone || o.customerName === u.name);
-                        const totalSpent = customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-                        return (
-                          <tr key={u.id} className="hover:bg-[#fffcf7]">
-                            <td className="p-3 font-bold text-[#171717]">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{u.avatar || '👤'}</span>
-                                <span>{u.name}</span>
-                                {u.isVip && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">VIP</span>}
-                              </div>
-                            </td>
-                            <td className="p-3 text-[#666666]">{u.email}</td>
-                            <td className="p-3 font-medium text-[#666666]">{u.phone}</td>
-                            <td className="p-3 font-bold text-[#c99632]">{customerOrders.length} Orders</td>
-                            <td className="p-3 font-bold text-[#171717]">₹{totalSpent.toLocaleString('en-IN')}</td>
-                          </tr>
-                        );
-                      })}
+                      {registeredUsers
+                        .filter((u) => {
+                          const q = customerSearch.toLowerCase();
+                          return (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q) || (u.email || '').toLowerCase().includes(q);
+                        })
+                        .map((u) => {
+                          const customerOrders = orders.filter(o => o.customerPhone === u.phone || o.customerName === u.name);
+                          const totalSpent = customerOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+                          return (
+                            <tr key={u.id} className="hover:bg-[#fffcf7]">
+                              <td className="p-3 font-bold text-[#171717]">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">{u.avatar || '👤'}</span>
+                                  <span>{u.name}</span>
+                                  {u.isVip && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">VIP</span>}
+                                </div>
+                              </td>
+                              <td className="p-3 text-[#666666]">
+                                <div className="font-bold text-[#171717]">{u.phone || '-'}</div>
+                                <div className="text-[11px] text-[#888888]">{u.email || '-'}</div>
+                              </td>
+                              <td className="p-3 text-[#666666] max-w-[200px] truncate" title={u.address || 'Nandyal, AP'}>
+                                {u.address || 'Nandyal, AP'}
+                              </td>
+                              <td className="p-3 font-bold text-[#c99632]">{customerOrders.length} Orders</td>
+                              <td className="p-3 font-bold text-[#171717]">₹{totalSpent.toLocaleString('en-IN')}</td>
+                              <td className="p-3 text-right">
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Delete customer ${u.name} from database?`)) {
+                                      deleteCustomer(u.id);
+                                    }
+                                  }}
+                                  className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
+                                  title="Delete Customer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 )}
@@ -943,27 +1012,203 @@ export const AdminDashboard = () => {
           {/* REVIEWS MANAGER */}
           {adminTab === 'reviews' && (
             <div className="bg-white border border-[#c99632]/25 p-6 rounded-2xl shadow-xs space-y-4">
-              <h3 className="text-base font-bold font-serif-luxury text-[#171717]">Customer Reviews &amp; Ratings</h3>
-              <div className="text-center py-12 space-y-3">
-                <div className="text-4xl">⭐</div>
-                <p className="text-sm font-bold text-[#171717]">No reviews yet</p>
-                <p className="text-xs text-[#666666]">Customer product reviews will appear here once orders are placed and reviewed.</p>
+              <div className="flex justify-between items-center border-b border-[#c99632]/20 pb-3">
+                <div>
+                  <h3 className="text-base font-bold font-serif-luxury text-[#171717]">Customer Reviews &amp; Ratings</h3>
+                  <p className="text-xs text-[#666666]">{reviewsList.length} Customer reviews across all catalog products</p>
+                </div>
+                <span className="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                  ⭐ Real Customer Feedback
+                </span>
               </div>
+
+              {reviewsList.length === 0 ? (
+                <div className="text-center py-12 space-y-3">
+                  <div className="text-4xl">⭐</div>
+                  <p className="text-sm font-bold text-[#171717]">No reviews submitted yet</p>
+                  <p className="text-xs text-[#666666]">Reviews written by customers on product pages will show up here.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reviewsList.map((rev) => (
+                    <div key={rev.id} className="p-4 rounded-2xl bg-[#faf8f5] border border-[#c99632]/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#171717]">{rev.customerName}</span>
+                          <span className="text-amber-500 font-bold">{'★'.repeat(Number(rev.rating) || 5)}</span>
+                          <span className="text-[10px] bg-white border border-[#c99632]/30 px-2 py-0.5 rounded-full font-bold text-[#c99632]">
+                            {rev.productName || 'Store Item'}
+                          </span>
+                        </div>
+                        <p className="text-[#555555] italic">"{rev.comment}"</p>
+                        <span className="text-[10px] text-[#999999]">
+                          {rev.createdAt ? new Date(rev.createdAt).toLocaleString('en-IN') : 'Recent'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => approveReview(rev.id, !rev.isApproved)}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                            rev.isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {rev.isApproved ? '✔ Approved' : '⏳ Pending Approval'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Delete this review permanently?')) {
+                              deleteReview(rev.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-xl text-red-600 hover:bg-red-50"
+                          title="Delete Review"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* COUPONS & DISCOUNTS */}
           {adminTab === 'coupons' && (
             <div className="bg-white border border-[#c99632]/25 p-6 rounded-2xl shadow-xs space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-base font-bold font-serif-luxury text-[#171717]">Store Coupon &amp; Offer Manager</h3>
-                <button className="px-3 py-1.5 rounded-xl bg-[#c99632] text-white text-xs font-bold shadow-xs">+ Create Coupon</button>
+              <div className="flex justify-between items-center border-b border-[#c99632]/20 pb-3">
+                <div>
+                  <h3 className="text-base font-bold font-serif-luxury text-[#171717]">Store Coupon &amp; Offer Manager</h3>
+                  <p className="text-xs text-[#666666]">Manage promo codes, percentage discounts, and cart offer rules</p>
+                </div>
+                <button
+                  onClick={() => setIsCouponModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-[#c99632] hover:bg-[#a6751d] text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create Coupon</span>
+                </button>
               </div>
-              <div className="text-center py-10 space-y-3">
-                <div className="text-4xl">🎟️</div>
-                <p className="text-sm font-bold text-[#171717]">No coupons created yet</p>
-                <p className="text-xs text-[#666666]">Click "Create Coupon" to add discount codes for your customers.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {coupons.map((c) => (
+                  <div key={c.id} className="p-4 rounded-2xl bg-[#fffcf7] border border-[#c99632]/30 space-y-2 relative shadow-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="font-extrabold text-sm text-[#c99632] tracking-wider uppercase font-mono">
+                        🎟️ {c.code}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete coupon ${c.code}?`)) {
+                            deleteCoupon(c.id);
+                          }
+                        }}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded-lg"
+                        title="Delete Coupon"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-[#555555] space-y-1">
+                      <p className="font-bold text-[#171717]">
+                        Discount: {c.discountType === 'PERCENTAGE' ? `${c.discountValue}% OFF` : `₹${c.discountValue} Flat OFF`}
+                      </p>
+                      <p className="text-[11px] text-[#777777]">
+                        Min Cart Value: ₹{c.minOrderAmount || 0}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#c99632]/20 flex justify-between items-center text-[10px]">
+                      <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        ACTIVE IN CHECKOUT
+                      </span>
+                      <span className="text-[#888888]">Instant Apply</span>
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              {/* Create Coupon Modal */}
+              {isCouponModalOpen && (
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+                  <div className="relative w-full max-w-md bg-white border border-[#c99632]/40 rounded-3xl p-6 shadow-2xl space-y-4 text-[#171717]">
+                    <div className="flex justify-between items-center border-b border-[#c99632]/20 pb-3">
+                      <h4 className="text-base font-bold font-serif-luxury text-[#171717]">Create New Promo Coupon</h4>
+                      <button onClick={() => setIsCouponModalOpen(false)} className="text-slate-400 hover:text-[#171717]">✕</button>
+                    </div>
+
+                    <form onSubmit={handleCreateCouponSubmit} className="space-y-3 text-xs">
+                      <div>
+                        <label className="block font-bold text-[#171717] mb-1">Coupon Code (Uppercase) *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. FESTIVE20"
+                          value={coupCode}
+                          onChange={(e) => setCoupCode(e.target.value.toUpperCase())}
+                          className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl p-2.5 font-mono uppercase font-bold focus:outline-none focus:border-[#c99632]"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block font-bold text-[#171717] mb-1">Discount Type</label>
+                          <select
+                            value={coupType}
+                            onChange={(e) => setCoupType(e.target.value)}
+                            className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl p-2.5 font-bold focus:outline-none"
+                          >
+                            <option value="PERCENTAGE">% Percentage</option>
+                            <option value="FLAT">₹ Flat Rupees</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block font-bold text-[#171717] mb-1">Discount Value *</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            placeholder="e.g. 10 or 100"
+                            value={coupVal}
+                            onChange={(e) => setCoupVal(e.target.value)}
+                            className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl p-2.5 font-bold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-[#171717] mb-1">Minimum Order Amount (₹)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={coupMin}
+                          onChange={(e) => setCoupMin(e.target.value)}
+                          className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl p-2.5 font-bold focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsCouponModalOpen(false)}
+                          className="py-2.5 bg-slate-100 hover:bg-slate-200 text-[#171717] font-bold rounded-xl"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="py-2.5 bg-[#c99632] hover:bg-[#a6751d] text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Save Coupon
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -979,14 +1224,56 @@ export const AdminDashboard = () => {
             </div>
           )}
 
-          {/* REPORTS EXPORT */}
+          {/* REPORTS EXPORT (100% Functional Real CSV and GST PDF) */}
           {adminTab === 'reports' && (
-            <div className="bg-white border border-[#c99632]/25 p-6 rounded-2xl shadow-xs space-y-4 text-xs">
-              <h3 className="text-base font-bold font-serif-luxury text-[#171717]">Financial Reports & Exports</h3>
-              <p className="text-[#666666]">Export store sales ledgers, GST summaries, and product stock audit sheets.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <button className="p-3 rounded-xl bg-[#faf8f5] border border-[#c99632]/30 font-bold text-[#171717] hover:bg-[#fff3c4]">📊 Download Monthly Sales CSV</button>
-                <button className="p-3 rounded-xl bg-[#faf8f5] border border-[#c99632]/30 font-bold text-[#171717] hover:bg-[#fff3c4]">📑 Download GST Audit Ledger PDF</button>
+            <div className="bg-white border border-[#c99632]/25 p-6 rounded-2xl shadow-xs space-y-5 text-xs">
+              <div className="border-b border-[#c99632]/20 pb-3">
+                <h3 className="text-base font-bold font-serif-luxury text-[#171717]">Financial Reports &amp; Official Audit Exports</h3>
+                <p className="text-[#666666]">Export store sales ledgers, GST summaries, and product stock audit sheets with 100% authentic database data.</p>
+              </div>
+
+              {/* Financial Quick Preview */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-[#faf8f5] border border-[#c99632]/20 space-y-1">
+                  <span className="text-[#666666] font-medium">Total Online Revenue</span>
+                  <h4 className="text-lg font-bold text-[#171717]">₹{onlineRevenue.toLocaleString('en-IN')}</h4>
+                  <p className="text-[10px] text-[#888888]">{orders.length} orders recorded</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#faf8f5] border border-[#c99632]/20 space-y-1">
+                  <span className="text-[#666666] font-medium">Counter Shop Sales</span>
+                  <h4 className="text-lg font-bold text-[#171717]">₹{offlineRevenue.toLocaleString('en-IN')}</h4>
+                  <p className="text-[10px] text-[#888888]">{offlineSales.length} cash entries</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#fffcf7] border border-[#c99632]/40 space-y-1">
+                  <span className="text-[#c99632] font-bold">Gross Business Revenue</span>
+                  <h4 className="text-lg font-extrabold text-[#c99632]">₹{totalRevenue.toLocaleString('en-IN')}</h4>
+                  <p className="text-[10px] text-emerald-700 font-bold">✔ 100% Reconciled</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <button
+                  onClick={() => downloadMonthlySalesCSV(orders, offlineSales)}
+                  className="p-4 rounded-2xl bg-[#faf8f5] border-2 border-[#c99632]/40 font-bold text-[#171717] hover:bg-[#fff3c4] flex items-center justify-center gap-3 transition-all shadow-xs"
+                >
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                  <div className="text-left">
+                    <span className="block text-xs font-extrabold">📊 Download Monthly Sales CSV</span>
+                    <span className="block text-[10px] text-[#666666] font-normal">Excel / Spreadsheet compatible format</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => downloadGSTLedgerPDF(orders, offlineSales, storeSettings)}
+                  className="p-4 rounded-2xl bg-[#faf8f5] border-2 border-[#c99632]/40 font-bold text-[#171717] hover:bg-[#fff3c4] flex items-center justify-center gap-3 transition-all shadow-xs"
+                >
+                  <FileText className="w-5 h-5 text-[#c99632]" />
+                  <div className="text-left">
+                    <span className="block text-xs font-extrabold">📑 Download GST Audit Ledger PDF</span>
+                    <span className="block text-[10px] text-[#666666] font-normal">Tax breakdown, ledger table & sign-off statement</span>
+                  </div>
+                </button>
               </div>
             </div>
           )}

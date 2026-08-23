@@ -119,6 +119,12 @@ export function updateStoredOrderStatus(orderId, status, paymentStatus) {
   return null;
 }
 
+export function deleteStoredOrder(orderId) {
+  const orders = getStoredOrders().filter(o => o.id !== orderId && o.orderNumber !== orderId);
+  writeJsonFile(ORDERS_FILE, orders);
+  return true;
+}
+
 // ─── PRODUCTS ────────────────────────────────────────────────────────
 export function getStoredProducts() {
   return readJsonFile(PRODUCTS_FILE, INITIAL_PRODUCTS);

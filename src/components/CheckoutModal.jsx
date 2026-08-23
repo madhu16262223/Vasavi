@@ -17,24 +17,70 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   // Customer Details Form
   const [customerName, setCustomerName] = useState(currentUser?.name || '');
   const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '');
-  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerAddress, setCustomerAddress] = useState(currentUser?.address || '');
   const [customerCity, setCustomerCity] = useState('Nandyal');
   const [pincode, setPincode] = useState('518501');
   const [customerNotes, setCustomerNotes] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Coupon State
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponMsg, setCouponMsg] = useState('');
+
   React.useEffect(() => {
     if (currentUser) {
       if (currentUser.name && !customerName) setCustomerName(currentUser.name);
       if (currentUser.phone && !customerPhone) setCustomerPhone(currentUser.phone);
+      if (currentUser.address && !customerAddress) setCustomerAddress(currentUser.address);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.name, currentUser?.phone]);
+  }, [currentUser?.name, currentUser?.phone, currentUser?.address]);
 
   if (!isOpen) return null;
 
-  const totalAmount = getCartTotal();
+  const rawTotal = getCartTotal();
+  const finalAmount = Math.max(0, rawTotal - couponDiscount);
+
+  const handleApplyCoupon = () => {
+    setCouponMsg('');
+    const code = couponCode.trim().toUpperCase();
+    if (!code) {
+      setCouponMsg('Please enter a coupon code.');
+      return;
+    }
+
+    if (code === 'WELCOME50') {
+      if (rawTotal < 200) {
+        setCouponMsg('Min order ₹200 required for WELCOME50');
+        return;
+      }
+      setCouponDiscount(50);
+      setAppliedCoupon('WELCOME50');
+      setCouponMsg('🎉 WELCOME50 applied! ₹50 OFF');
+    } else if (code === 'VASAVI10') {
+      if (rawTotal < 300) {
+        setCouponMsg('Min order ₹300 required for VASAVI10');
+        return;
+      }
+      const disc = Math.min(200, Math.round(rawTotal * 0.10));
+      setCouponDiscount(disc);
+      setAppliedCoupon('VASAVI10');
+      setCouponMsg(`🎉 VASAVI10 applied! 10% OFF (Saved ₹${disc})`);
+    } else if (code === 'FESTIVE100') {
+      if (rawTotal < 500) {
+        setCouponMsg('Min order ₹500 required for FESTIVE100');
+        return;
+      }
+      setCouponDiscount(100);
+      setAppliedCoupon('FESTIVE100');
+      setCouponMsg('🎉 FESTIVE100 applied! ₹100 OFF');
+    } else {
+      setCouponMsg('❌ Invalid or expired coupon code.');
+    }
+  };
 
   const sanitizeText = (val) => {
     if (!val || typeof val !== 'string') return '';
@@ -281,15 +327,89 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Summary Card */}
-              <div className="p-4 rounded-2xl bg-white border border-[#c99632]/30 flex items-center justify-between shadow-xs">
-                <div>
-                  <span className="text-xs text-[#666666] font-medium block">Total Payable:</span>
-                  <span className="text-xl font-bold text-[#c99632]">₹{totalAmount}</span>
+              {/* Coupon Code Box */}
+              <div className="p-3.5 rounded-2xl bg-[#fffcf7] border border-[#c99632]/40 space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-[#171717]">
+                  <span className="flex items-center gap-1.5 text-[#c99632]">
+                    🎟️ Have a Coupon or Offer Code?
+                  </span>
+                  {appliedCoupon && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                      {appliedCoupon} APPLIED
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs bg-[#e8c7b5]/50 text-[#171717] px-3 py-1 rounded-full font-bold">
-                  {cart.length} Products
-                </span>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter Code (e.g. WELCOME50, VASAVI10)"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="flex-1 bg-white border border-[#c99632]/30 rounded-xl px-3 py-2 text-xs font-bold text-[#171717] uppercase tracking-wider focus:outline-none focus:border-[#c99632]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    className="px-4 py-2 bg-[#c99632] hover:bg-[#a6751d] text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+                  >
+                    Apply
+                  </button>
+                </div>
+
+                {couponMsg && (
+                  <p className={`text-[11px] font-bold ${couponMsg.startsWith('🎉') ? 'text-emerald-700' : 'text-red-600'}`}>
+                    {couponMsg}
+                  </p>
+                )}
+
+                {/* Quick Suggestion Pills */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setCouponCode('WELCOME50'); }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-[#c99632]/30 text-[#c99632] hover:bg-[#fff3c4]"
+                  >
+                    WELCOME50 (₹50 OFF)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setCouponCode('VASAVI10'); }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-[#c99632]/30 text-[#c99632] hover:bg-[#fff3c4]"
+                  >
+                    VASAVI10 (10% OFF)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setCouponCode('FESTIVE100'); }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-[#c99632]/30 text-[#c99632] hover:bg-[#fff3c4]"
+                  >
+                    FESTIVE100 (₹100 OFF)
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary Card */}
+              <div className="p-4 rounded-2xl bg-white border border-[#c99632]/30 space-y-2 shadow-xs">
+                <div className="flex justify-between text-xs text-[#666666] font-medium">
+                  <span>Cart Subtotal:</span>
+                  <span className="font-bold text-[#171717]">₹{rawTotal}</span>
+                </div>
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-xs text-emerald-700 font-bold">
+                    <span>Coupon Discount ({appliedCoupon}):</span>
+                    <span>-₹{couponDiscount}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-[#c99632]/20">
+                  <div>
+                    <span className="text-xs text-[#666666] font-medium block">Total Payable:</span>
+                    <span className="text-xl font-bold text-[#c99632]">₹{finalAmount}</span>
+                  </div>
+                  <span className="text-xs bg-[#e8c7b5]/50 text-[#171717] px-3 py-1 rounded-full font-bold">
+                    {cart.length} Products
+                  </span>
+                </div>
               </div>
 
               <button

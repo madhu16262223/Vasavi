@@ -3,13 +3,24 @@ import { useStore } from '../context/StoreContext';
 import { X, ShoppingBag, Star, Zap, Check, ShieldCheck, Truck, MessageCircle, Heart, Sparkles, Award } from 'lucide-react';
 
 export const ProductDetailModal = () => {
-  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviews, storeInfo } = useStore();
+  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviewsList = [], addReview, currentUser, openAuthModal, storeInfo } = useStore();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'reviews'
+
+  // Review Form State
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewName, setReviewName] = useState(currentUser?.name || '');
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState(false);
 
   if (!selectedProduct) return null;
 
-  const productReviews = reviews[selectedProduct.id] || [];
+  const productReviews = reviewsList.filter((r) => r.productId === selectedProduct.id);
+  const avgRating = productReviews.length > 0
+    ? (productReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / productReviews.length).toFixed(1)
+    : '4.8';
+
   const isOutOfStock = selectedProduct.stock <= 0;
   const maxAvailable = selectedProduct.stock || 1;
 
@@ -24,9 +35,31 @@ export const ProductDetailModal = () => {
   };
 
   const handleInstantBuyNow = () => {
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
     addToCart(selectedProduct, quantity);
     setSelectedProduct(null);
     setIsCartOpen(true);
+  };
+
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    if (!reviewName.trim()) return;
+
+    addReview({
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      customerName: reviewName.trim(),
+      customerPhone: currentUser?.phone || null,
+      rating: reviewRating,
+      comment: reviewComment.trim()
+    });
+
+    setReviewComment('');
+    setReviewSuccess(true);
+    setTimeout(() => setReviewSuccess(false), 3000);
   };
 
   const handleWhatsAppQuickOrder = () => {
@@ -99,120 +132,222 @@ export const ProductDetailModal = () => {
 
           </div>
 
-          {/* Right Column: Details & Actions */}
-          <div className="p-6 sm:p-8 flex flex-col justify-between space-y-5 bg-[#fffcf7]">
-            <div className="space-y-4">
-              
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-[#c99632] bg-[#fff8ed] border border-[#c99632]/30 px-2.5 py-0.5 rounded-full">
-                    {selectedProduct.categoryName || 'Vasavi Fancy Store'}
+          {/* Right Column: Details & Reviews */}
+          <div className="p-6 sm:p-8 flex flex-col justify-between space-y-4 max-h-[550px] overflow-y-auto">
+            
+            {/* Header Tabs (Overview vs Reviews) */}
+            <div className="flex items-center gap-2 border-b border-[#c99632]/20 pb-2">
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
+                  activeTab === 'details' ? 'bg-[#c99632] text-white shadow-xs' : 'text-[#666666] hover:text-[#171717]'
+                }`}
+              >
+                Product Details
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                  activeTab === 'reviews' ? 'bg-[#c99632] text-white shadow-xs' : 'text-[#666666] hover:text-[#171717]'
+                }`}
+              >
+                <span>⭐ Reviews</span>
+                <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full font-bold">
+                  {productReviews.length}
+                </span>
+              </button>
+            </div>
+
+            {activeTab === 'details' && (
+              <div className="space-y-4">
+                <div>
+                  <span className="text-[10px] font-black tracking-widest text-[#c99632] uppercase">
+                    {selectedProduct.brand || 'Vasavi Luxury Collection'}
                   </span>
+                  <h3 className="text-xl font-bold font-serif-luxury text-[#171717] mt-0.5 leading-tight">
+                    {selectedProduct.name}
+                  </h3>
                   
-                  {/* Stock Tag */}
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                  {/* Rating summary */}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center text-amber-500 text-xs">
+                      {'★'.repeat(5)}
+                    </div>
+                    <span className="text-xs font-bold text-[#171717]">{avgRating} / 5</span>
+                    <span className="text-xs text-[#888888]">({productReviews.length} customer reviews)</span>
+                  </div>
+                </div>
+
+                {/* Price Display */}
+                <div className="flex items-baseline gap-3 p-3 rounded-2xl bg-white border border-[#c99632]/20">
+                  <span className="text-2xl font-black text-[#c99632]">₹{selectedProduct.price}</span>
+                  {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
+                    <span className="text-xs text-slate-400 line-through">
+                      M.R.P: ₹{selectedProduct.originalPrice}
+                    </span>
+                  )}
+                  <span className={`ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full ${
                     isOutOfStock ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
                   }`}>
-                    {isOutOfStock ? 'Out of Stock' : `In Stock (${selectedProduct.stock} left)`}
+                    {isOutOfStock ? 'Out of Stock' : `In Stock: ${selectedProduct.stock} units`}
                   </span>
                 </div>
 
-                <h2 className="text-xl sm:text-2xl font-bold font-serif-luxury text-[#171717] mt-2 leading-snug">
-                  {selectedProduct.name}
-                </h2>
-              </div>
+                {/* Description */}
+                <p className="text-xs text-[#555555] leading-relaxed">
+                  {selectedProduct.description || 'Authentic premium quality product exclusively available at Vasavi Fancy Store, Nandyal.'}
+                </p>
 
-              {/* Price & Rating Bar */}
-              <div className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-[#c99632]/25 shadow-xs">
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-[#171717]">₹{selectedProduct.price}</span>
-                    {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
-                      <span className="text-xs text-[#888888] line-through font-medium">₹{selectedProduct.originalPrice}</span>
-                    )}
+                {/* Quantity Selector */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs font-bold text-[#171717]">Select Quantity:</span>
+                  <div className="flex items-center border border-[#c99632]/40 rounded-xl overflow-hidden bg-white shadow-2xs">
+                    <button
+                      disabled={quantity <= 1}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-3 py-1.5 text-sm font-bold text-[#171717] hover:bg-[#e8c7b5]/30 disabled:opacity-40"
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-1.5 text-xs font-black text-[#171717]">{quantity}</span>
+                    <button
+                      disabled={quantity >= maxAvailable}
+                      onClick={() => setQuantity(Math.min(maxAvailable, quantity + 1))}
+                      className="px-3 py-1.5 text-sm font-bold text-[#171717] hover:bg-[#e8c7b5]/30 disabled:opacity-40"
+                    >
+                      +
+                    </button>
                   </div>
-                  <span className="text-[10px] text-emerald-700 font-bold">Inclusive of all taxes • COD Available</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-[#fff8ed] px-3 py-1.5 rounded-xl border border-[#c99632]/30">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="text-xs font-bold text-[#c99632]">{selectedProduct.rating || '4.9'}</span>
-                  <span className="text-[10px] text-[#666666]">({productReviews.length + 12})</span>
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-xs sm:text-sm text-[#444444] leading-relaxed font-normal">
-                {selectedProduct.description || 'Exquisite high-quality item curated directly for Vasavi Fancy Store, Nandyal.'}
-              </p>
-
-              {/* Quantity Selector */}
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-xs font-bold text-[#171717]">Select Quantity:</span>
-                <div className="flex items-center border border-[#c99632]/40 rounded-xl overflow-hidden bg-white shadow-2xs">
+                {/* Action Buttons */}
+                <div className="space-y-2.5 pt-3 border-t border-[#c99632]/20">
                   <button
-                    disabled={quantity <= 1}
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-1.5 text-sm font-bold text-[#171717] hover:bg-[#e8c7b5]/30 disabled:opacity-40"
+                    onClick={handleWhatsAppQuickOrder}
+                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:bg-emerald-700 transition-all"
                   >
-                    -
+                    <MessageCircle className="w-4 h-4" />
+                    <span>ORDER INSTANTLY VIA WHATSAPP</span>
                   </button>
-                  <span className="px-4 py-1.5 text-xs font-black text-[#171717]">{quantity}</span>
-                  <button
-                    disabled={quantity >= maxAvailable}
-                    onClick={() => setQuantity(Math.min(maxAvailable, quantity + 1))}
-                    className="px-3 py-1.5 text-sm font-bold text-[#171717] hover:bg-[#e8c7b5]/30 disabled:opacity-40"
-                  >
-                    +
-                  </button>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      disabled={isOutOfStock}
+                      onClick={handleAddToCart}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs ${
+                        isAdded
+                          ? 'bg-emerald-50 border border-emerald-500 text-emerald-700 font-bold'
+                          : 'bg-white border border-[#c99632] text-[#171717] hover:bg-[#e8c7b5]/30'
+                      }`}
+                    >
+                      {isAdded ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-600" /> Added to Cart!
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="w-4 h-4 text-[#c99632]" /> Add to Cart
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      disabled={isOutOfStock}
+                      onClick={handleInstantBuyNow}
+                      className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md gold-glow"
+                    >
+                      <Zap className="w-4 h-4" /> {currentUser ? 'Instant Buy' : '🔐 Login to Buy'}
+                    </button>
+                  </div>
                 </div>
+
               </div>
+            )}
 
-            </div>
+            {/* REVIEWS TAB VIEW */}
+            {activeTab === 'reviews' && (
+              <div className="space-y-4">
+                
+                {/* Write Review Box */}
+                <form onSubmit={handleReviewSubmit} className="p-3.5 rounded-2xl bg-white border border-[#c99632]/30 space-y-2.5 text-xs">
+                  <h4 className="font-bold text-[#171717] flex items-center justify-between">
+                    <span>Write a Product Review</span>
+                    {reviewSuccess && <span className="text-emerald-700 text-[11px] font-bold">✔ Review submitted!</span>}
+                  </h4>
 
-            {/* Action Buttons */}
-            <div className="space-y-2.5 pt-3 border-t border-[#c99632]/20">
-              
-              {/* WhatsApp Direct Order Button */}
-              <button
-                onClick={handleWhatsAppQuickOrder}
-                className="w-full py-3 px-4 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:bg-emerald-700 transition-all"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>ORDER INSTANTLY VIA WHATSAPP</span>
-              </button>
+                  {/* Rating Stars Selection */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#666666] font-medium">Your Rating:</span>
+                    <div className="flex gap-1 text-lg cursor-pointer">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          className={star <= reviewRating ? 'text-amber-500' : 'text-slate-300'}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  disabled={isOutOfStock}
-                  onClick={handleAddToCart}
-                  className={`py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs ${
-                    isAdded
-                      ? 'bg-emerald-50 border border-emerald-500 text-emerald-700 font-bold'
-                      : 'bg-white border border-[#c99632] text-[#171717] hover:bg-[#e8c7b5]/30'
-                  }`}
-                >
-                  {isAdded ? (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-600" /> Added to Cart!
-                    </>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Your Name *"
+                    value={reviewName}
+                    onChange={(e) => setReviewName(e.target.value)}
+                    className="w-full bg-[#fffcf7] border border-[#c99632]/30 rounded-xl p-2 font-medium text-xs text-[#171717] focus:outline-none focus:border-[#c99632]"
+                  />
+
+                  <textarea
+                    rows={2}
+                    required
+                    placeholder="Share your experience with this product..."
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    className="w-full bg-[#fffcf7] border border-[#c99632]/30 rounded-xl p-2 font-medium text-xs text-[#171717] focus:outline-none focus:border-[#c99632] resize-none"
+                  />
+
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-[#c99632] text-white font-bold text-xs rounded-xl hover:brightness-110 shadow-xs transition-all"
+                  >
+                    Submit Customer Review
+                  </button>
+                </form>
+
+                {/* Customer Reviews List */}
+                <div className="space-y-2.5">
+                  <h4 className="text-xs font-bold text-[#171717] uppercase tracking-wider">
+                    Customer Feedback ({productReviews.length})
+                  </h4>
+
+                  {productReviews.length === 0 ? (
+                    <div className="text-center py-6 bg-white rounded-2xl border border-slate-100 text-xs text-[#888888]">
+                      No reviews yet for this product. Be the first to review!
+                    </div>
                   ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4 text-[#c99632]" /> Add to Cart
-                    </>
+                    productReviews.map((rev) => (
+                      <div key={rev.id} className="p-3 rounded-2xl bg-white border border-[#c99632]/20 space-y-1 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-[#171717]">{rev.customerName}</span>
+                          <div className="text-amber-500 text-xs font-bold">
+                            {'★'.repeat(rev.rating || 5)}
+                          </div>
+                        </div>
+                        <p className="text-[#555555] text-[11px] leading-relaxed">{rev.comment}</p>
+                        <span className="text-[9px] text-[#999999] block pt-0.5">
+                          {new Date(rev.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                    ))
                   )}
-                </button>
+                </div>
 
-                <button
-                  disabled={isOutOfStock}
-                  onClick={handleInstantBuyNow}
-                  className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md gold-glow"
-                >
-                  <Zap className="w-4 h-4" /> Instant Buy
-                </button>
               </div>
-
-            </div>
+            )}
 
           </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { generateInvoicePDF } from '../../utils/invoiceGenerator';
-import { Package, Phone, Clock, CheckCircle2, Truck, AlertCircle, Filter, Eye, ChevronDown, FileText, Search, CreditCard } from 'lucide-react';
+import { Package, Phone, Clock, CheckCircle2, Truck, AlertCircle, Filter, Eye, ChevronDown, FileText, Search, CreditCard, Trash2 } from 'lucide-react';
 
 const formatFullDateTime = (dateInput) => {
   if (!dateInput) return '';
@@ -24,7 +24,7 @@ const formatFullDateTime = (dateInput) => {
 };
 
 export const AdminOrders = () => {
-  const { orders, updateOrderStatus } = useStore();
+  const { orders, updateOrderStatus, deleteOrder } = useStore();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
@@ -196,6 +196,17 @@ export const AdminOrders = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`⚠️ Permanently delete Order #${order.orderNumber} from database? This cannot be undone.`)) {
+                              deleteOrder(order.id || order.orderNumber);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400 shadow-xs"
+                          title="Delete Order Permanently"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
 
@@ -248,12 +259,25 @@ export const AdminOrders = () => {
               <span className="text-[#c99632]">₹{selectedOrderDetails.totalAmount}</span>
             </div>
 
-            <button
-              onClick={() => generateInvoicePDF(selectedOrderDetails)}
-              className="w-full py-2.5 rounded-xl bg-[#c99632] text-white font-bold text-xs flex items-center justify-center gap-2"
-            >
-              <FileText className="w-4 h-4" /> Download Official Invoice PDF
-            </button>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={() => generateInvoicePDF(selectedOrderDetails)}
+                className="py-2.5 rounded-xl bg-[#c99632] text-white font-bold text-xs flex items-center justify-center gap-2"
+              >
+                <FileText className="w-4 h-4" /> Download PDF Bill
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(`⚠️ Permanently delete Order #${selectedOrderDetails.orderNumber} from database?`)) {
+                    deleteOrder(selectedOrderDetails.id || selectedOrderDetails.orderNumber);
+                    setSelectedOrderDetails(null);
+                  }
+                }}
+                className="py-2.5 rounded-xl bg-white border border-red-300 text-red-600 font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4" /> Delete Order
+              </button>
+            </div>
           </div>
         </div>
       )}

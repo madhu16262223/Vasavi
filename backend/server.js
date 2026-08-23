@@ -35,6 +35,8 @@ import categoriesRouter from './routes/categories.js';
 import ordersRouter from './routes/orders.js';
 import analyticsRouter from './routes/analytics.js';
 import paymentRouter from './routes/payment.js';
+import reviewsRouter from './routes/reviews.js';
+import couponsRouter from './routes/coupons.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +50,8 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/reviews', reviewsRouter);
+app.use('/api/coupons', couponsRouter);
 
 app.get('/', (req, res) => {
   res.status(200).send('OK');

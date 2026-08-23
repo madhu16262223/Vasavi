@@ -114,13 +114,25 @@ export const CartDrawer = () => {
 
               {/* Single Bold Checkout & Online Payment Button */}
               <button
-                onClick={() => setIsCheckoutOpen(true)}
+                onClick={() => {
+                  if (!currentUser) {
+                    openAuthModal('login');
+                  } else {
+                    setIsCheckoutOpen(true);
+                  }
+                }}
                 className="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-sm shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow"
               >
                 <Lock className="w-4 h-4" />
-                <span>CHECKOUT — WhatsApp Order or Cash on Delivery</span>
+                <span>{currentUser ? 'CHECKOUT — WhatsApp Order or Cash on Delivery' : '🔐 LOGIN / REGISTER TO CHECKOUT'}</span>
                 <ArrowRight className="w-4 h-4 ml-auto" />
               </button>
+
+              {!currentUser && (
+                <p className="text-[11px] text-center font-bold text-amber-700 bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-200">
+                  ⚠️ Please log in or sign up with your phone number to complete your order.
+                </p>
+              )}
 
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#666666] font-bold">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#c99632]" />

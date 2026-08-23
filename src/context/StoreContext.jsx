@@ -210,7 +210,14 @@ export const StoreProvider = ({ children }) => {
     }
   }, [isAdminLoggedIn, products, categories]);
 
-  // Live Order Fetching from Cloud for Admin Dashboard (every 10s)
+  // Live Order & Customer Fetching from Cloud for Admin Dashboard
+  const [coupons, setCoupons] = useState([
+    { id: 'coup-welcome50', code: 'WELCOME50', discountType: 'FLAT', discountValue: 50, minOrderAmount: 200, isActive: true },
+    { id: 'coup-vasavi10', code: 'VASAVI10', discountType: 'PERCENTAGE', discountValue: 10, minOrderAmount: 300, maxDiscountAmount: 200, isActive: true },
+    { id: 'coup-festive100', code: 'FESTIVE100', discountType: 'FLAT', discountValue: 100, minOrderAmount: 500, isActive: true }
+  ]);
+  const [reviewsList, setReviewsList] = useState([]);
+
   const fetchOrdersFromCloud = React.useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/orders?t=${Date.now()}`, {
@@ -227,13 +234,56 @@ export const StoreProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchCustomersFromCloud = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/customers?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setRegisteredUsers(data);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  const fetchCoupons = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/coupons?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCoupons(data);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  const fetchReviews = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reviews?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setReviewsList(data);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   useEffect(() => {
+    fetchCoupons();
+    fetchReviews();
     if (isAdminLoggedIn) {
       fetchOrdersFromCloud();
-      const orderInterval = setInterval(fetchOrdersFromCloud, 10000);
+      fetchCustomersFromCloud();
+      const orderInterval = setInterval(() => {
+        fetchOrdersFromCloud();
+        fetchCustomersFromCloud();
+        fetchReviews();
+      }, 10000);
       return () => clearInterval(orderInterval);
     }
-  }, [isAdminLoggedIn, fetchOrdersFromCloud]);
+  }, [isAdminLoggedIn, fetchOrdersFromCloud, fetchCustomersFromCloud, fetchCoupons, fetchReviews]);
 
   // Offline Sales / Shop Counter Income State
   const [offlineSales, setOfflineSales] = useState(() => {
@@ -401,34 +451,6 @@ export const StoreProvider = ({ children }) => {
       return { order, whatsappUrl };
     };
 
-  // Review Actions
-  const addReview = (productId, { author, rating, comment }) => {
-    const newRev = {
-      id: `rev-${Date.now()}`,
-      author,
-      rating: Number(rating),
-      comment,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    setReviews((prev) => {
-      const existingList = prev[productId] || [];
-      const updatedList = [newRev, ...existingList];
-      
-      // Recalculate Product Rating
-      const avgRating = (updatedList.reduce((s, r) => s + r.rating, 0) / updatedList.length).toFixed(1);
-      
-      setProducts((prods) =>
-        prods.map((p) => (p.id === productId ? { ...p, rating: Number(avgRating), reviewsCount: updatedList.length } : p))
-      );
-
-      return {
-        ...prev,
-        [productId]: updatedList
-      };
-    });
-  };
-
   // Product CRUD with Cloud Sync
   const addProduct = (productData) => {
     const newProd = {
@@ -556,6 +578,110 @@ export const StoreProvider = ({ children }) => {
       headers: ADMIN_API_HEADER,
       body: JSON.stringify({ status: newStatus, paymentStatus })
     }).catch((err) => console.warn('[Vasavi] Order status sync error:', err));
+  };
+
+  // Delete Order with Cloud Sync
+  const deleteOrder = (orderId) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId && o.orderNumber !== orderId));
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
+      method: 'DELETE',
+      headers: ADMIN_API_HEADER
+    }).catch((err) => console.error('[Vasavi] Order delete sync error:', err));
+  };
+
+  // Delete Customer with Cloud Sync
+  const deleteCustomer = (customerId) => {
+    setRegisteredUsers((prev) => prev.filter((u) => u.id !== customerId));
+
+    // Send to Cloud Database
+    fetch(`${API_BASE_URL}/api/auth/customers/${customerId}`, {
+      method: 'DELETE',
+      headers: ADMIN_API_HEADER
+    }).catch((err) => console.error('[Vasavi] Customer delete sync error:', err));
+  };
+
+  // Create Coupon with Cloud Sync
+  const createCoupon = (couponData) => {
+    const newCoupon = {
+      id: `coup-${Date.now()}`,
+      code: (couponData.code || 'SAVE10').toUpperCase().trim(),
+      discountType: couponData.discountType || 'PERCENTAGE',
+      discountValue: Number(couponData.discountValue) || 10,
+      minOrderAmount: Number(couponData.minOrderAmount) || 0,
+      maxDiscountAmount: couponData.maxDiscountAmount ? Number(couponData.maxDiscountAmount) : null,
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+
+    setCoupons((prev) => [newCoupon, ...prev]);
+
+    fetch(`${API_BASE_URL}/api/coupons`, {
+      method: 'POST',
+      headers: ADMIN_API_HEADER,
+      body: JSON.stringify(newCoupon)
+    }).catch((err) => console.error('[Vasavi] Coupon create sync error:', err));
+
+    return newCoupon;
+  };
+
+  // Delete Coupon with Cloud Sync
+  const deleteCoupon = (couponId) => {
+    setCoupons((prev) => prev.filter((c) => c.id !== couponId));
+
+    fetch(`${API_BASE_URL}/api/coupons/${couponId}`, {
+      method: 'DELETE',
+      headers: ADMIN_API_HEADER
+    }).catch((err) => console.error('[Vasavi] Coupon delete sync error:', err));
+  };
+
+  // Add Product Review with Cloud Sync
+  const addReview = (reviewData) => {
+    const newReview = {
+      id: `rev-${Date.now()}`,
+      productId: reviewData.productId,
+      productName: reviewData.productName || 'Store Item',
+      customerName: reviewData.customerName || (currentUser?.name || 'Customer'),
+      customerPhone: reviewData.customerPhone || (currentUser?.phone || null),
+      rating: Number(reviewData.rating) || 5,
+      comment: reviewData.comment || '',
+      isApproved: true,
+      createdAt: new Date().toISOString()
+    };
+
+    setReviewsList((prev) => [newReview, ...prev]);
+
+    fetch(`${API_BASE_URL}/api/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReview)
+    }).catch((err) => console.error('[Vasavi] Review add sync error:', err));
+
+    return newReview;
+  };
+
+  // Delete Review with Cloud Sync
+  const deleteReview = (reviewId) => {
+    setReviewsList((prev) => prev.filter((r) => r.id !== reviewId));
+
+    fetch(`${API_BASE_URL}/api/reviews/${reviewId}`, {
+      method: 'DELETE',
+      headers: ADMIN_API_HEADER
+    }).catch((err) => console.error('[Vasavi] Review delete sync error:', err));
+  };
+
+  // Approve Review with Cloud Sync
+  const approveReview = (reviewId, isApproved) => {
+    setReviewsList((prev) =>
+      prev.map((r) => (r.id === reviewId ? { ...r, isApproved } : r))
+    );
+
+    fetch(`${API_BASE_URL}/api/reviews/${reviewId}/approve`, {
+      method: 'PUT',
+      headers: ADMIN_API_HEADER,
+      body: JSON.stringify({ isApproved })
+    }).catch((err) => console.error('[Vasavi] Review approve sync error:', err));
   };
 
   const updateStoreSettings = (newSettings) => {
@@ -789,6 +915,14 @@ export const StoreProvider = ({ children }) => {
         updateCategory,
         deleteCategory,
         updateOrderStatus,
+        deleteOrder,
+        deleteCustomer,
+        coupons,
+        createCoupon,
+        deleteCoupon,
+        reviewsList,
+        deleteReview,
+        approveReview,
         updateStoreSettings,
         loginAdmin,
         logoutAdmin,

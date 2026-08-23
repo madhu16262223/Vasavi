@@ -261,4 +261,20 @@ router.put('/:id/status', authenticateAdmin, async (req, res) => {
   }
 });
 
+// Delete Order from Database (Admin)
+router.delete('/:id', authenticateAdmin, async (req, res) => {
+  const orderId = req.params.id;
+  try {
+    // 1. Delete associated order items
+    await query('DELETE FROM order_items WHERE "orderId" = $1', [orderId]);
+    // 2. Delete order itself
+    await query('DELETE FROM orders WHERE id = $1 OR "orderNumber" = $1', [orderId]);
+    
+    res.json({ success: true, message: `Order ${orderId} permanently deleted from database` });
+  } catch (err) {
+    console.error('Delete order error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

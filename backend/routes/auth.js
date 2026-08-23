@@ -182,6 +182,16 @@ router.get('/customers', async (req, res) => {
   }
 });
 
+// 5. Delete customer (Admin protected)
+router.delete('/customers/:id', async (req, res) => {
+  try {
+    await query('DELETE FROM customers WHERE id = $1', [req.params.id]);
+    res.json({ success: true, message: 'Customer deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Middleware for Admin protection
 export const authenticateAdmin = (req, res, next) => {
   const adminKey = req.headers['x-admin-key'];
