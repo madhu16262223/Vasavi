@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { ShoppingBag, Search, Shield, Menu, X, Package, Home, Store, User, ArrowRight, Sparkles, Mic, MicOff, Heart, Globe, Flame } from 'lucide-react';
+import { ShoppingBag, Search, Shield, Menu, X, Package, Home, Store, User, ArrowRight, Sparkles, Mic, MicOff, Heart, Globe } from 'lucide-react';
 
 export const Header = () => {
   const {
@@ -27,27 +27,6 @@ export const Header = () => {
   const [isListening, setIsListening] = useState(false);
   const searchContainerRef = useRef(null);
   const mobileSearchContainerRef = useRef(null);
-
-  // Raksha Bandhan Festive Live Countdown Timer (August 28, 2026)
-  const [timeLeft, setTimeLeft] = useState({ days: 4, hours: 11, minutes: 13, seconds: 54 });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      // Target: Raksha Bandhan Festive Date - August 28, 2026 23:59:59
-      const targetDate = new Date(2026, 7, 28, 23, 59, 59); // August is month 7 (0-indexed)
-      const diff = Math.max(0, targetDate - now);
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-
-      setTimeLeft({ days, hours, minutes, seconds });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   // Voice Search Handler (Web Speech Recognition)
   const handleVoiceSearch = () => {
@@ -154,52 +133,15 @@ export const Header = () => {
   }, [setActiveTab]);
 
   return (
-    <>
-      {/* Top Raksha Bandhan Festive Special Countdown Bar */}
-      <div className="bg-gradient-to-r from-[#171717] via-[#2a1d08] to-[#171717] text-[#fff8ed] py-1.5 px-3 text-[11px] font-bold border-b border-[#c99632]/40 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-2 mx-auto sm:mx-0">
-          <span className="flex items-center gap-1.5 text-[#ffd778] animate-pulse">
-            <span className="text-sm">🎁</span>
-            <span className="uppercase tracking-wider font-extrabold">
-              {language === 'te' 
-                ? 'రక్షాబంధన్ పండుగ ప్రత్యేక సేల్ — కోడ్ RAKHI100 తో ₹100 తగ్గింపు! | ఉచిత రాఖీ గిఫ్ట్ ప్యాకింగ్!' 
-                : 'RAKSHA BANDHAN SPECIAL SALE — FLAT ₹100 OFF WITH CODE RAKHI100 | FREE GIFT PACKING & EXPRESS DELIVERY!'}
-            </span>
-          </span>
-        </div>
-
-        {/* Real-time Ticking Countdown to Raksha Bandhan (Aug 28) */}
-        <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono font-black text-[#ffd778]">
-          <span className="text-[10px] text-[#cccccc] font-sans font-bold uppercase tracking-wider">
-            {language === 'te' ? 'రాఖీ పండుగకు సమయం:' : 'RAKSHA BANDHAN IN:'}
-          </span>
-          <span className="bg-[#c99632]/30 border border-[#c99632]/50 px-1.5 py-0.5 rounded text-white font-mono font-extrabold">
-            {timeLeft.days}d
-          </span>
-          :
-          <span className="bg-[#c99632]/30 border border-[#c99632]/50 px-1.5 py-0.5 rounded text-white font-mono font-extrabold">
-            {String(timeLeft.hours).padStart(2, '0')}h
-          </span>
-          :
-          <span className="bg-[#c99632]/30 border border-[#c99632]/50 px-1.5 py-0.5 rounded text-white font-mono font-extrabold">
-            {String(timeLeft.minutes).padStart(2, '0')}m
-          </span>
-          :
-          <span className="bg-[#c99632]/30 border border-[#c99632]/50 px-1.5 py-0.5 rounded text-[#ffd778] font-mono font-extrabold animate-pulse">
-            {String(timeLeft.seconds).padStart(2, '0')}s
-          </span>
-        </div>
-      </div>
-
-      <header className="sticky top-0 z-40 bg-[#fffcf7]/95 backdrop-blur-md border-b border-[#c99632]/30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            
-            {/* Brand Logo */}
-            <div
-              onClick={() => handleNavClick('home')}
-              className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group"
-            >
+    <header className="sticky top-0 z-40 bg-[#fffcf7]/95 backdrop-blur-md border-b border-[#c99632]/30 shadow-xs">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
+          
+          {/* Brand Logo */}
+          <div
+            onClick={() => handleNavClick('home')}
+            className="flex items-center gap-2.5 sm:gap-3.5 cursor-pointer group"
+          >
               {/* Vasavi Logo */}
               <div className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-full overflow-hidden border border-[#c99632]/60 shadow-sm">
                 <img
@@ -627,6 +569,5 @@ export const Header = () => {
         </div>
       )}
     </header>
-  </>
-);
+  );
 };
