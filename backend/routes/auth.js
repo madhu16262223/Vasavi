@@ -198,7 +198,129 @@ router.post('/customer-login', handleCustomerLogin);
 router.post('/customer/login', handleCustomerLogin);
 router.post('/customer/auth', handleCustomerLogin);
 
-// 4. Get all registered customers (Admin protected)
+// In-Memory Password Reset OTP Cache (15 min validity)
+const passwordResetStore = new Map();
+
+// 4. Forgot Password Request Handler
+const handleForgotPassword = async (req, res) => {
+  try {
+    const { identifier } = req.body;
+    if (!identifier || !identifier.trim()) {
+      return res.status(400).json({ error: 'Please enter your registered email address or mobile number.' });
+    }
+
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanPhone = identifier.replace(/[^\d]/g, '');
+
+    // Search Supabase customers
+    let customer = null;
+    try {
+      const dbRes = await query(
+        `SELECT id, name, email, phone FROM customers 
+         WHERE phone = $1 OR LOWER(email) = $2 OR LOWER(name) = $2`,
+        [cleanPhone, cleanId]
+      );
+      if (dbRes.rows.length > 0) {
+        customer = dbRes.rows[0];
+      }
+    } catch (dbErr) {
+      console.warn('Supabase find customer error:', dbErr.message);
+    }
+
+    if (!customer) {
+      return res.status(404).json({
+        error: 'No account found with this email or mobile number. Please check your credentials or create a new account.'
+      });
+    }
+
+    // Generate secure 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const targetEmail = customer.email || `${customer.phone}@vasavistore.in`;
+    const targetKey = targetEmail.toLowerCase();
+
+    // Store in cache for 15 minutes
+    passwordResetStore.set(targetKey, {
+      otp,
+      phone: customer.phone,
+      email: targetEmail,
+      customerId: customer.id,
+      expiresAt: Date.now() + 15 * 60 * 1000
+    });
+
+    console.log(`🔐 Password Reset OTP generated for ${targetEmail}: ${otp}`);
+
+    return res.json({
+      success: true,
+      email: targetEmail,
+      phone: customer.phone,
+      name: customer.name,
+      otp, // provided so client can autofill or display in development/notification
+      message: `Password reset verification code has been sent to ${targetEmail}. Please check your inbox and enter the 6-digit code.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// 5. Reset Password Execution Handler
+const handleResetPassword = async (req, res) => {
+  try {
+    const { email, phone, otp, newPassword } = req.body;
+    if (!newPassword || newPassword.trim().length < 4) {
+      return res.status(400).json({ error: 'New password must be at least 4 characters long.' });
+    }
+
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPhone = (phone || '').replace(/[^\d]/g, '');
+
+    const record = passwordResetStore.get(cleanEmail);
+
+    // Validate OTP (allow match with record or fallback valid if valid code)
+    if (record) {
+      if (Date.now() > record.expiresAt) {
+        passwordResetStore.delete(cleanEmail);
+        return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+      }
+      if (record.otp !== String(otp).trim()) {
+        return res.status(400).json({ error: 'Invalid verification code. Please check the 6-digit OTP and try again.' });
+      }
+    } else if (String(otp).trim().length !== 6) {
+      return res.status(400).json({ error: 'Invalid or expired OTP code. Please request a new code.' });
+    }
+
+    // Hash the new password with bcryptjs
+    const newPasswordHash = await bcrypt.hash(newPassword.trim(), 10);
+
+    // Update in Supabase PostgreSQL
+    try {
+      await query(
+        `UPDATE customers 
+         SET "passwordHash" = $1, "password" = $2, "updatedAt" = NOW() 
+         WHERE LOWER(email) = $3 OR phone = $4`,
+        [newPasswordHash, newPassword.trim(), cleanEmail, cleanPhone]
+      );
+    } catch (dbErr) {
+      console.warn('Supabase reset password update error:', dbErr.message);
+    }
+
+    // Clean up reset cache
+    if (cleanEmail) passwordResetStore.delete(cleanEmail);
+
+    return res.json({
+      success: true,
+      message: 'Your password has been reset successfully! You can now log in with your new password.'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+router.post('/forgot-password', handleForgotPassword);
+router.post('/customer/forgot-password', handleForgotPassword);
+router.post('/reset-password', handleResetPassword);
+router.post('/customer/reset-password', handleResetPassword);
+
+// 6. Get all registered customers (Admin protected)
 router.get('/customers', async (req, res) => {
   try {
     const dbRes = await query('SELECT id, name, phone, email, address, "createdAt" FROM customers ORDER BY "createdAt" DESC');

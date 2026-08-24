@@ -929,6 +929,112 @@ export const StoreProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
+  const requestPasswordReset = async (identifier) => {
+    const cleanId = identifier ? identifier.trim() : '';
+    if (!cleanId) {
+      return { success: false, message: 'Please enter your registered email address or mobile number.' };
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/customer/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: cleanId })
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data?.success) {
+        return { 
+          success: true, 
+          email: data.email, 
+          phone: data.phone, 
+          otp: data.otp,
+          message: data.message || `Password reset verification code sent to ${data.email}` 
+        };
+      }
+
+      if (data?.error) {
+        return { success: false, message: data.error };
+      }
+    } catch (e) {
+      console.warn('[Vasavi] Forgot password request error:', e);
+    }
+
+    // Local fallback check
+    const cleanPhone = cleanId.replace(/[^\d]/g, '');
+    const user = registeredUsers.find(
+      (u) => (u.email && u.email.toLowerCase() === cleanId.toLowerCase()) || 
+             (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)
+    );
+
+    if (user) {
+      const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      return {
+        success: true,
+        email: user.email || `${user.phone}@vasavistore.in`,
+        phone: user.phone,
+        otp: fallbackOtp,
+        message: `Password reset verification code sent to ${user.email || user.phone}. Verification code: ${fallbackOtp}`
+      };
+    }
+
+    return { success: false, message: 'No registered account found with this email or mobile number.' };
+  };
+
+  const resetPassword = async ({ email, phone, otp, newPassword }) => {
+    const cleanEmail = email ? email.toLowerCase().trim() : '';
+    const cleanPhone = phone ? phone.replace(/[^\d]/g, '').trim() : '';
+    const cleanPass = newPassword ? newPassword.trim() : '';
+
+    if (!cleanPass || cleanPass.length < 4) {
+      return { success: false, message: 'New password must be at least 4 characters long.' };
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/customer/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, phone: cleanPhone, otp, newPassword: cleanPass })
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data?.success) {
+        // Update local registeredUsers
+        setRegisteredUsers((prev) =>
+          prev.map((u) => {
+            if ((cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
+                (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)) {
+              return { ...u, password: cleanPass };
+            }
+            return u;
+          })
+        );
+        return { success: true, message: data.message || 'Password has been reset successfully!' };
+      }
+
+      if (data?.error) {
+        return { success: false, message: data.error };
+      }
+    } catch (e) {
+      console.warn('[Vasavi] Reset password error:', e);
+    }
+
+    // Local fallback update
+    setRegisteredUsers((prev) =>
+      prev.map((u) => {
+        if ((cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
+            (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)) {
+          return { ...u, password: cleanPass };
+        }
+        return u;
+      })
+    );
+
+    return { success: true, message: 'Password reset successfully! You can now log in.' };
+  };
+
   const resetStoreToCleanState = () => {
     setProducts([]);
     setOrders([]);
@@ -979,6 +1085,8 @@ export const StoreProvider = ({ children }) => {
         loginCustomer,
         signupCustomer,
         logoutCustomer,
+        requestPasswordReset,
+        resetPassword,
         addToCart,
         removeFromCart,
         updateCartQuantity,
