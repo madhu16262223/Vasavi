@@ -41,6 +41,7 @@ export const UserAuthModal = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
   // Forgot Password States
   const [forgotStep, setForgotStep] = useState(1);
@@ -657,6 +658,8 @@ export const UserAuthModal = () => {
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={password}
+                        onFocus={() => setIsPasswordFocused(true)}
+                        onBlur={() => setIsPasswordFocused(false)}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Vasavi@2026"
                         className={`w-full bg-white border rounded-xl py-2.5 pl-10 pr-10 text-xs font-medium text-[#171717] focus:outline-none transition-all ${
@@ -674,29 +677,40 @@ export const UserAuthModal = () => {
                       </button>
                     </div>
 
-                    {/* Live Password Character Combination Badges */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-2">
-                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasUpper ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                        <span>{pwdHasUpper ? '✓' : '○'}</span>
-                        <span>{language === 'te' ? 'పెద్ద అక్షరం (A-Z)' : 'Uppercase (A-Z)'}</span>
+                    {/* Live Password Character Combination Badges - Shown only when user enters / types */}
+                    {(isPasswordFocused || password.length > 0) && (
+                      <div className="space-y-1.5 pt-1.5 animate-fadeIn">
+                        {isPasswordComplex ? (
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{language === 'te' ? '✓ బలమైన పాస్‌వర్డ్ సెట్ చేయబడింది' : '✓ Strong password requirement met'}</span>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                            <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasUpper ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                              <span>{pwdHasUpper ? '✓' : '○'}</span>
+                              <span>{language === 'te' ? 'పెద్ద అక్షరం (A-Z)' : 'Uppercase (A-Z)'}</span>
+                            </div>
+                            <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasLower ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                              <span>{pwdHasLower ? '✓' : '○'}</span>
+                              <span>{language === 'te' ? 'చిన్న అక్షరం (a-z)' : 'Lowercase (a-z)'}</span>
+                            </div>
+                            <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasNumber ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                              <span>{pwdHasNumber ? '✓' : '○'}</span>
+                              <span>{language === 'te' ? 'అంకె (0-9)' : 'Number (0-9)'}</span>
+                            </div>
+                            <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasSpecial ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                              <span>{pwdHasSpecial ? '✓' : '○'}</span>
+                              <span>{language === 'te' ? 'స్పెషల్ (@#$%)' : 'Special (@#$%)'}</span>
+                            </div>
+                            <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasLength ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                              <span>{pwdHasLength ? '✓' : '○'}</span>
+                              <span>{language === 'te' ? 'కనీసం 6+ అక్షరాలు' : 'Min 6+ chars'}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasLower ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                        <span>{pwdHasLower ? '✓' : '○'}</span>
-                        <span>{language === 'te' ? 'చిన్న అక్షరం (a-z)' : 'Lowercase (a-z)'}</span>
-                      </div>
-                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasNumber ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                        <span>{pwdHasNumber ? '✓' : '○'}</span>
-                        <span>{language === 'te' ? 'అంకె (0-9)' : 'Number (0-9)'}</span>
-                      </div>
-                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasSpecial ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                        <span>{pwdHasSpecial ? '✓' : '○'}</span>
-                        <span>{language === 'te' ? 'స్పెషల్ (@#$%)' : 'Special (@#$%)'}</span>
-                      </div>
-                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasLength ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                        <span>{pwdHasLength ? '✓' : '○'}</span>
-                        <span>{language === 'te' ? 'కనీసం 6+ అక్షరాలు' : 'Min 6+ chars'}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Sign Up Submit Button */}
