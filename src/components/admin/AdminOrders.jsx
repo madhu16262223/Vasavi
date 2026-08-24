@@ -33,10 +33,12 @@ export const AdminOrders = () => {
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = selectedStatusFilter === 'ALL' || order.status === selectedStatusFilter;
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerPhone.includes(searchQuery);
+      !q ||
+      (order.orderNumber && order.orderNumber.toLowerCase().includes(q)) ||
+      (order.customerName && order.customerName.toLowerCase().includes(q)) ||
+      (order.customerPhone && String(order.customerPhone).includes(q));
     return matchesStatus && matchesSearch;
   });
 

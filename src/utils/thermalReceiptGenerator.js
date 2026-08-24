@@ -67,12 +67,12 @@ export const printThermalReceipt = (posSale) => {
             </tr>
           </thead>
           <tbody>
-            ${posSale.items.map(item => `
+            ${(posSale.items || []).map(item => `
               <tr>
-                <td align="left">${item.name.substring(0, 16)}</td>
-                <td align="center">${item.quantity}</td>
-                <td align="right">${item.price}</td>
-                <td align="right">${item.price * item.quantity}</td>
+                <td align="left">${(item.name || 'Item').substring(0, 16)}</td>
+                <td align="center">${item.quantity || 1}</td>
+                <td align="right">${item.price || 0}</td>
+                <td align="right">${(item.price || 0) * (item.quantity || 1)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -83,7 +83,7 @@ export const printThermalReceipt = (posSale) => {
         <table>
           <tr>
             <td><b>TOTAL ITEMS:</b></td>
-            <td class="text-right"><b>${posSale.items.reduce((s, i) => s + i.quantity, 0)}</b></td>
+            <td class="text-right"><b>${(posSale.items || []).reduce((s, i) => s + (i.quantity || 1), 0)}</b></td>
           </tr>
           ${posSale.discount > 0 ? `
           <tr>

@@ -11,11 +11,14 @@ export const ShopCatalog = () => {
   const [sortBy, setSortBy] = useState('popular');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  const activeCatObj = categories.find(c => c.slug === activeCategory || c.id === activeCategory);
+
   const filteredProducts = products.filter((p) => {
     // activeCategory can be 'all', a slug (e.g. 'jewellery'), or a categoryId (e.g. 'cat-2')
     const matchesCategory =
       activeCategory === 'all' ||
       p.categoryId === activeCategory ||
+      (activeCatObj && p.categoryId === activeCatObj.id) ||
       p.slug === activeCategory ||
       (p.category && p.category.toLowerCase().replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-')) ||
       (p.categoryName && p.categoryName.toLowerCase().replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-'));

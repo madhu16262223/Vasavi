@@ -20,7 +20,7 @@ export const OrderTracker = () => {
       (o) =>
         (o.orderNumber && o.orderNumber.toLowerCase().includes(query)) ||
         (o.id && o.id.toLowerCase().includes(query)) ||
-        (o.customerPhone && o.customerPhone.includes(query))
+        (o.customerPhone && String(o.customerPhone).includes(query))
     );
 
     setSearchedOrder(found || null);

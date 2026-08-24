@@ -127,6 +127,7 @@ export const ProductDetailModal = () => {
                 src={selectedProduct.image || selectedProduct.imageUrl || '/bangles.jpg'}
                 alt={selectedProduct.name}
                 referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/bangles.jpg'; }}
                 className="w-full max-h-[340px] object-contain rounded-2xl shadow-md transition-all duration-300 hover:scale-105"
               />
             </div>

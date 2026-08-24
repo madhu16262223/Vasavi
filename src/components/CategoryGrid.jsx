@@ -55,10 +55,12 @@ export const CategoryGrid = () => {
                 {/* Category Image */}
                 <div className="relative h-36 sm:h-40 overflow-hidden bg-[#faf8f5]">
                   <img
-                    src={cat.image}
+                    src={cat.image || cat.imageUrl || '/bangles.jpg'}
                     alt={cat.name}
+                    referrerPolicy="no-referrer"
                     onError={(e) => {
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?auto=format&fit=crop&w=800&q=80';
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/bangles.jpg';
                     }}
                     className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-500"
                   />

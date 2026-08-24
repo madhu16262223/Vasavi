@@ -51,6 +51,7 @@ export const ProductCard = ({ product }) => {
           alt={product.name}
           referrerPolicy="no-referrer"
           loading="lazy"
+          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/bangles.jpg'; }}
           className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500"
         />
 

@@ -16,8 +16,10 @@ export const AdminPOS = () => {
 
   // Filtered products for quick barcode / item select
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (p.brand && p.brand.toLowerCase().includes(searchTerm.toLowerCase()));
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = !q || 
+      (p.name && p.name.toLowerCase().includes(q)) || 
+      (p.brand && p.brand.toLowerCase().includes(q));
     const matchesCat = selectedCategory === 'ALL' || p.categoryId === selectedCategory;
     return matchesSearch && matchesCat && p.isActive !== false;
   });

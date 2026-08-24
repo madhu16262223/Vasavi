@@ -8,7 +8,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     getCartTotal,
     placeOrder,
     storeInfo,
-    currentUser
+    currentUser,
+    coupons = []
   } = useStore();
 
   const [step, setStep] = useState('DETAILS'); // 'DETAILS' | 'PAYMENT' | 'FAILURE'
@@ -52,14 +53,48 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    if (code === 'WELCOME50') {
+    // Check dynamic coupons from database first
+    const matchedCoupon = coupons.find(c => c.code.toUpperCase() === code && c.isActive);
+    if (matchedCoupon) {
+      const minReq = Number(matchedCoupon.minOrderAmount) || 0;
+      if (rawTotal < minReq) {
+        setCouponMsg(`Min order ₹${minReq} required for ${code}`);
+        return;
+      }
+      let disc = 0;
+      if (matchedCoupon.discountType === 'PERCENTAGE') {
+        const calculated = Math.round(rawTotal * ((Number(matchedCoupon.discountValue) || 10) / 100));
+        const maxLimit = Number(matchedCoupon.maxDiscountAmount) || 9999;
+        disc = Math.min(calculated, maxLimit);
+        setCouponDiscount(disc);
+        setAppliedCoupon(code);
+        setCouponMsg(`🎉 ${code} applied! ${matchedCoupon.discountValue}% OFF (Saved ₹${disc})`);
+      } else {
+        disc = Math.min(rawTotal, Number(matchedCoupon.discountValue) || 0);
+        setCouponDiscount(disc);
+        setAppliedCoupon(code);
+        setCouponMsg(`🎉 ${code} applied! Flat ₹${disc} OFF`);
+      }
+      return;
+    }
+
+    // Fallback static rules
+    if (code === 'RAKHI100' || code === 'FESTIVE100') {
+      if (rawTotal < 499) {
+        setCouponMsg(`Min order ₹499 required for ${code}`);
+        return;
+      }
+      setCouponDiscount(100);
+      setAppliedCoupon(code);
+      setCouponMsg(`🎉 ${code} applied! Flat ₹100 OFF`);
+    } else if (code === 'RAKHI50' || code === 'WELCOME50') {
       if (rawTotal < 200) {
-        setCouponMsg('Min order ₹200 required for WELCOME50');
+        setCouponMsg(`Min order ₹200 required for ${code}`);
         return;
       }
       setCouponDiscount(50);
-      setAppliedCoupon('WELCOME50');
-      setCouponMsg('🎉 WELCOME50 applied! ₹50 OFF');
+      setAppliedCoupon(code);
+      setCouponMsg(`🎉 ${code} applied! Flat ₹50 OFF`);
     } else if (code === 'VASAVI10') {
       if (rawTotal < 300) {
         setCouponMsg('Min order ₹300 required for VASAVI10');
@@ -69,14 +104,6 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       setCouponDiscount(disc);
       setAppliedCoupon('VASAVI10');
       setCouponMsg(`🎉 VASAVI10 applied! 10% OFF (Saved ₹${disc})`);
-    } else if (code === 'FESTIVE100') {
-      if (rawTotal < 500) {
-        setCouponMsg('Min order ₹500 required for FESTIVE100');
-        return;
-      }
-      setCouponDiscount(100);
-      setAppliedCoupon('FESTIVE100');
-      setCouponMsg('🎉 FESTIVE100 applied! ₹100 OFF');
     } else {
       setCouponMsg('❌ Invalid or expired coupon code.');
     }
@@ -189,9 +216,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
         message += `────────────────────────\n\n`;
 
         message += `💳 BILL SUMMARY:\n`;
-        message += `• Items Total: ₹${totalAmount}\n`;
+        message += `• Items Total: ₹${rawTotal}\n`;
+        if (couponDiscount > 0) {
+          message += `• Discount (${appliedCoupon}): -₹${couponDiscount}\n`;
+        }
         message += `• Delivery Charge: FREE (Nandyal)\n`;
-        message += `• TOTAL PAYABLE: ₹${totalAmount}\n\n`;
+        message += `• TOTAL PAYABLE: ₹${finalAmount}\n\n`;
 
         message += `────────────────────────\n`;
         message += `Please confirm my order and share your UPI QR / PhonePe number for payment. Thank you! 🙏`;

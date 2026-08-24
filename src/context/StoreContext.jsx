@@ -186,6 +186,10 @@ export const StoreProvider = ({ children }) => {
   }, [currentUser]);
 
   useEffect(() => {
+    localStorage.setItem('vasavi_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
+
+  useEffect(() => {
     localStorage.setItem('vasavi_registered_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
@@ -394,11 +398,15 @@ export const StoreProvider = ({ children }) => {
   };
 
   const getCartTotal = () => {
-    return cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
+    return cart.reduce((total, item) => {
+      const price = typeof item.product?.price === 'number' ? item.product.price : (parseFloat(item.product?.price) || 0);
+      const qty = item.quantity || 1;
+      return total + (price * qty);
+    }, 0);
   };
 
   const getCartCount = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    return cart.reduce((total, item) => total + (item.quantity || 0), 0);
   };
 
     // Order Placement (WhatsApp Direct or Cash on Delivery)

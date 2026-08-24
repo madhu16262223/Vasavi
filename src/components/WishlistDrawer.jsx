@@ -73,6 +73,7 @@ export const WishlistDrawer = () => {
                   src={product.image || product.imageUrl || '/bangles.jpg'}
                   alt={product.name}
                   referrerPolicy="no-referrer"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/bangles.jpg'; }}
                   className="w-16 h-16 object-cover rounded-xl shrink-0"
                 />
 
