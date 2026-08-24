@@ -89,6 +89,74 @@ export const AdminDashboard = () => {
   const [paymentLedgerType, setPaymentLedgerType] = useState('ALL'); // 'ALL' | 'ONLINE' | 'OFFLINE'
   const [customerSearch, setCustomerSearch] = useState('');
 
+  // Notification Bell State & Click-Outside Ref
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState([]);
+  const notificationRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
+
+  // Real Dynamic Notifications derived from Store Context
+  const alertPendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'PROCESSING' || o.paymentStatus !== 'PAID');
+  const lowStockProducts = products.filter(p => (p.stock !== undefined && p.stock !== null && p.stock <= 3));
+  const pendingReviews = reviewsList.filter(r => !r.isApproved);
+
+  const notificationsList = [
+    ...alertPendingOrders.map(order => ({
+      id: `ord-notif-${order.id || order.orderNumber}`,
+      type: 'order',
+      title: `New Online Order #${order.orderNumber || order.id}`,
+      description: `${order.customerName || 'Customer'} • ₹${order.totalAmount} • ${order.paymentMethod === 'ONLINE_UPI' ? '💳 Online Paid' : '💵 Cash on Delivery'}`,
+      time: order.createdAt ? formatFullDateTime(order.createdAt) : 'Recent Order',
+      unread: !readNotificationIds.includes(`ord-notif-${order.id || order.orderNumber}`),
+      actionTab: 'orders'
+    })),
+    ...lowStockProducts.map(prod => ({
+      id: `stock-notif-${prod.id}`,
+      type: 'stock',
+      title: `Low Stock Alert: ${prod.name}`,
+      description: `Only ${prod.stock} items remaining in stock. Restock soon to prevent out-of-stock.`,
+      time: 'Inventory Alert',
+      unread: !readNotificationIds.includes(`stock-notif-${prod.id}`),
+      actionTab: 'products'
+    })),
+    ...pendingReviews.map(rev => ({
+      id: `rev-notif-${rev.id}`,
+      type: 'review',
+      title: `New Review from ${rev.customerName || 'Customer'}`,
+      description: `Rated ${rev.rating}⭐: "${rev.comment || 'Product feedback'}"`,
+      time: rev.createdAt ? formatFullDateTime(rev.createdAt) : 'Recent',
+      unread: !readNotificationIds.includes(`rev-notif-${rev.id}`),
+      actionTab: 'overview'
+    }))
+  ];
+
+  if (notificationsList.length === 0) {
+    notificationsList.push({
+      id: 'default-notif-1',
+      type: 'info',
+      title: 'Vasavi Store Live & Connected',
+      description: 'Cloud database is connected and syncing real-time orders, products & POS sales.',
+      time: 'System Status',
+      unread: false,
+      actionTab: 'overview'
+    });
+  }
+
+  const unreadCount = notificationsList.filter(n => n.unread).length;
+
   // Offline Sale Modal Form State
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
   const [offAmount, setOffAmount] = useState('');
@@ -321,12 +389,137 @@ export const AdminDashboard = () => {
               <Search className="w-3.5 h-3.5 text-[#777777] absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
 
-            {/* Notification Bell */}
-            <div className="relative p-2 rounded-full bg-[#faf8f5] border border-[#c99632]/30 text-[#171717]">
-              <Bell className="w-4 h-4 text-[#c99632]" />
-              <span className="absolute -top-1 -right-1 bg-[#e88a9a] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                5
-              </span>
+            {/* Interactive Notification Bell */}
+            <div className="relative" ref={notificationRef}>
+              <button
+                type="button"
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`relative p-2 rounded-full border transition-all ${
+                  showNotifications
+                    ? 'bg-[#fff3c4] border-[#c99632] text-[#c99632] shadow-sm'
+                    : 'bg-[#faf8f5] border-[#c99632]/30 text-[#171717] hover:bg-white hover:border-[#c99632]'
+                }`}
+                title="Store Alerts & Notifications"
+              >
+                <Bell className="w-4 h-4 text-[#c99632]" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#e88a9a] to-rose-600 text-white text-[9px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow-xs border border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown Modal Panel */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-[#c99632]/40 rounded-3xl shadow-2xl z-50 overflow-hidden font-sans animate-fadeIn">
+                  
+                  {/* Dropdown Header */}
+                  <div className="bg-gradient-to-r from-[#faf8f5] to-[#fff3c4]/60 px-4 py-3 border-b border-[#c99632]/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-lg bg-[#c99632]/20 text-[#c99632]">
+                        <Bell className="w-3.5 h-3.5 text-[#c99632]" />
+                      </div>
+                      <h4 className="font-bold text-xs text-[#171717]">Store Alerts & Notifications</h4>
+                      {unreadCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-extrabold">
+                          {unreadCount} New
+                        </span>
+                      )}
+                    </div>
+
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={() => setReadNotificationIds(notificationsList.map(n => n.id))}
+                        className="text-[10px] font-bold text-[#c99632] hover:text-[#a6751d] hover:underline"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Notifications List */}
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    {notificationsList.map((notif) => (
+                      <div
+                        key={notif.id}
+                        onClick={() => {
+                          if (notif.actionTab) setAdminTab(notif.actionTab);
+                          if (!readNotificationIds.includes(notif.id)) {
+                            setReadNotificationIds(prev => [...prev, notif.id]);
+                          }
+                          setShowNotifications(false);
+                        }}
+                        className={`p-3.5 hover:bg-[#fffcf7] cursor-pointer transition-colors flex items-start gap-3 ${
+                          notif.unread ? 'bg-[#fffaf0]/60' : 'bg-white opacity-85'
+                        }`}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          {notif.type === 'order' && (
+                            <div className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shadow-xs">
+                              📦
+                            </div>
+                          )}
+                          {notif.type === 'stock' && (
+                            <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shadow-xs">
+                              ⚠️
+                            </div>
+                          )}
+                          {notif.type === 'review' && (
+                            <div className="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs shadow-xs">
+                              ⭐
+                            </div>
+                          )}
+                          {notif.type === 'info' && (
+                            <div className="w-7 h-7 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shadow-xs">
+                              ℹ️
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <h5 className={`text-xs truncate ${notif.unread ? 'font-bold text-[#171717]' : 'font-medium text-[#444444]'}`}>
+                              {notif.title}
+                            </h5>
+                            {notif.unread && (
+                              <span className="w-2 h-2 rounded-full bg-[#e88a9a] shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#666666] line-clamp-2 mt-0.5 leading-snug">
+                            {notif.description}
+                          </p>
+                          <span className="text-[9px] font-semibold text-[#888888] block mt-1">
+                            {notif.time}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dropdown Footer Actions */}
+                  <div className="p-2.5 bg-[#faf8f5] border-t border-[#c99632]/20 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => {
+                        setAdminTab('orders');
+                        setShowNotifications(false);
+                      }}
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-white border border-[#c99632]/30 text-[11px] font-bold text-[#171717] hover:bg-[#fff3c4]/50 transition-colors text-center"
+                    >
+                      📦 View Orders
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAdminTab('pos');
+                        setShowNotifications(false);
+                      }}
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-[#c99632] text-white text-[11px] font-bold hover:brightness-110 transition-all text-center gold-glow"
+                    >
+                      🧾 Open POS
+                    </button>
+                  </div>
+
+                </div>
+              )}
             </div>
 
             {/* Store Switcher Dropdown */}
