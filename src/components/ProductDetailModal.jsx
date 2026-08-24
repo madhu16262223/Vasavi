@@ -51,10 +51,6 @@ export const ProductDetailModal = () => {
   };
 
   const handleInstantBuyNow = () => {
-    if (!currentUser) {
-      openAuthModal('login');
-      return;
-    }
     addToCart(selectedProduct, quantity);
     setSelectedProduct(null);
     setIsCartOpen(true);

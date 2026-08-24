@@ -9,7 +9,13 @@ export const OrderConfirmationModal = () => {
   if (!isOrderConfirmedModal || !lastPlacedOrder) return null;
 
   const handleCopyOrderId = () => {
-    navigator.clipboard.writeText(lastPlacedOrder.orderNumber);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lastPlacedOrder.orderNumber || '');
+      }
+    } catch {
+      // Ignore clipboard fallback
+    }
     alert(language === 'te' ? `ఆర్డర్ ID ${lastPlacedOrder.orderNumber} కాపీ చేయబడింది!` : `Order ID ${lastPlacedOrder.orderNumber} copied to clipboard!`);
   };
 

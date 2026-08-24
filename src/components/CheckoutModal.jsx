@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { cleanIndianPhone, isValidIndianPhone } from '../utils/phoneUtils';
 import { X, CreditCard, ShieldCheck, ArrowRight, Lock, Sparkles, Building, AlertCircle, RefreshCw } from 'lucide-react';
 
 export const CheckoutModal = ({ isOpen, onClose }) => {
   const {
-    cart,
+    cart = [],
     getCartTotal,
     placeOrder,
     storeInfo,
@@ -44,19 +45,19 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const rawTotal = getCartTotal();
-  const finalAmount = Math.max(0, rawTotal - couponDiscount);
+  const rawTotal = typeof getCartTotal === 'function' ? getCartTotal() : 0;
+  const finalAmount = Math.max(0, rawTotal - (couponDiscount || 0));
 
   const handleApplyCoupon = () => {
     setCouponMsg('');
-    const code = couponCode.trim().toUpperCase();
+    const code = (couponCode || '').trim().toUpperCase();
     if (!code) {
       setCouponMsg(language === 'te' ? 'దయచేసి కూపన్ కోడ్ నమోదు చేయండి.' : 'Please enter a coupon code.');
       return;
     }
 
     // Check dynamic coupons from database first
-    const matchedCoupon = coupons.find(c => c.code.toUpperCase() === code && c.isActive);
+    const matchedCoupon = (coupons || []).find(c => c && c.code && c.code.toUpperCase() === code && c.isActive);
     if (matchedCoupon) {
       const minReq = Number(matchedCoupon.minOrderAmount) || 0;
       if (rawTotal < minReq) {
@@ -118,9 +119,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    const cleanPhone = customerPhone.replace(/\D/g, '');
-    if (cleanPhone.length < 10) {
-      setErrorMessage(language === 'te' ? 'దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter a valid 10-digit phone number.');
+    const cleanPhone = cleanIndianPhone(customerPhone);
+    if (!isValidIndianPhone(cleanPhone)) {
+      setErrorMessage(language === 'te' ? 'దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter a valid 10-digit Indian phone number.');
       return;
     }
 
@@ -135,15 +136,15 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     try {
       const orderPayload = {
         customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
+        customerPhone: cleanIndianPhone(customerPhone),
         customerAddress: `${customerAddress.trim()}, ${customerCity.trim()} - ${pincode.trim()}`,
-        items: cart.map(i => ({
-          productId: i.product.id,
-          productName: i.product.name,
-          quantity: i.quantity,
-          price: i.product.price,
-          subtotal: i.product.price * i.quantity,
-          image: i.product.image || i.product.imageUrl || ''
+        items: (cart || []).map(i => ({
+          productId: i.product?.id || `item-${Math.random()}`,
+          productName: i.product?.name || i.productName || 'Vasavi Fancy Store Item',
+          quantity: i.quantity || 1,
+          price: Number(i.product?.price) || Number(i.price) || 0,
+          subtotal: (Number(i.product?.price) || Number(i.price) || 0) * (i.quantity || 1),
+          image: i.product?.image || i.product?.imageUrl || '/bangles.jpg'
         })),
         totalAmount: finalAmount,
         discountAmount: couponDiscount,
@@ -159,14 +160,17 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
         const waNumber = storeInfo?.whatsappNumber || '918309917665';
         let msg = `🛍️ *NEW ORDER - VASAVI FANCY STORE*\n`;
         msg += `────────────────────────\n`;
-        msg += `📋 *Order ID:* ${result.orderNumber || result.id}\n`;
+        msg += `📋 *Order ID:* ${result?.orderNumber || result?.id || 'NEW'}\n`;
         msg += `👤 *Customer:* ${customerName.trim()}\n`;
         msg += `📞 *Phone:* ${customerPhone.trim()}\n`;
         msg += `📍 *Delivery Address:* ${customerAddress.trim()}, ${customerCity} - ${pincode}\n\n`;
         msg += `📦 *ITEMS ORDERED:*\n`;
 
-        cart.forEach((item, idx) => {
-          msg += `${idx + 1}. ${item.product.name} (Qty: ${item.quantity}) - ₹${item.product.price * item.quantity}\n`;
+        (cart || []).forEach((item, idx) => {
+          const pName = item?.product?.name || item?.productName || 'Product';
+          const pPrice = Number(item?.product?.price) || Number(item?.price) || 0;
+          const pQty = item?.quantity || 1;
+          msg += `${idx + 1}. ${pName} (Qty: ${pQty}) - ₹${pPrice * pQty}\n`;
         });
 
         msg += `\n💵 *Total Amount:* ₹${finalAmount}\n`;
@@ -184,7 +188,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       onClose();
     } catch (err) {
       setIsProcessing(false);
-      setErrorMessage(err.message || 'Could not process order. Please try again.');
+      setErrorMessage(err?.message || 'Could not process order. Please try again.');
     }
   };
 

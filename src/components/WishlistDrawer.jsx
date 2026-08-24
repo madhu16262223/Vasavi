@@ -20,11 +20,14 @@ export const WishlistDrawer = () => {
     msg += `────────────────────────\n`;
     msg += `Hello Ramcharan Garu! I have saved these items in my wishlist on your store:\n\n`;
 
-    wishlist.forEach((p, idx) => {
-      msg += `${idx + 1}. ${p.name} - ₹${p.price}\n`;
+    (wishlist || []).forEach((p, idx) => {
+      const pName = p?.name || 'Vasavi Fancy Store Item';
+      const pPrice = Number(p?.price) || 0;
+      msg += `${idx + 1}. ${pName} - ₹${pPrice}\n`;
     });
 
-    msg += `\nTotal Estimated: ₹${wishlist.reduce((s, p) => s + (p.price || 0), 0)}\n`;
+    const totalEst = (wishlist || []).reduce((s, p) => s + (Number(p?.price) || 0), 0);
+    msg += `\nTotal Estimated: ₹${totalEst}\n`;
     msg += `────────────────────────\n`;
     msg += `Please let me know if these are in stock. Thank you! 🙏`;
 
