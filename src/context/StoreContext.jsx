@@ -16,20 +16,26 @@ const ADMIN_API_HEADER = {
 // ─── DATA VERSION GUARD ───────────────────────────────────────────────────────
 // Increment this number any time you want to force-clear old localStorage data.
 // When the version changes, ALL store data is automatically wiped on first load.
-const DATA_VERSION = 'vasavi_v8_live_deploy';
+const DATA_VERSION = 'vasavi_v10_permanent_clean';
 
 const runAutoReset = () => {
-  const stored = localStorage.getItem('vasavi_data_version');
-  if (stored !== DATA_VERSION) {
-    // Wipe all old demo/test data
-    [
-      'vasavi_products', 'vasavi_orders', 'vasavi_offline_sales',
-      'vasavi_cart', 'vasavi_reviews', 'vasavi_categories',
-      'vasavi_customer_user'
-    ].forEach(k => localStorage.removeItem(k));
-    // Stamp the new version so it won't wipe again on next load
-    localStorage.setItem('vasavi_data_version', DATA_VERSION);
-    console.info('[Vasavi] Cloud Sync initialized: fresh data version active.');
+  try {
+    const stored = localStorage.getItem('vasavi_data_version');
+    if (stored !== DATA_VERSION) {
+      // Wipe all old bulky demo/test data and oversized caches
+      [
+        'vasavi_products', 'vasavi_orders', 'vasavi_offline_sales',
+        'vasavi_cart', 'vasavi_reviews', 'vasavi_categories',
+        'vasavi_customer_user', 'vasavi_registered_users'
+      ].forEach(k => {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+      // Stamp the new version
+      try { localStorage.setItem('vasavi_data_version', DATA_VERSION); } catch (e) {}
+      console.info('[Vasavi] Cloud Sync initialized: fresh v10 data version active.');
+    }
+  } catch (err) {
+    console.warn('[Vasavi] Auto reset caught:', err);
   }
 };
 
@@ -40,20 +46,29 @@ runAutoReset();
 export const StoreProvider = ({ children }) => {
   // Store Settings State
   const [storeSettings, setStoreSettings] = useState(() => {
-    const saved = localStorage.getItem('vasavi_store_settings');
-    return saved ? JSON.parse(saved) : {
-      whatsappNumber: STORE_INFO.whatsappNumber,
-      displayPhone: STORE_INFO.displayPhone,
-      deliveryFee: 0,
-      announcementBanner: "Order directly on WhatsApp — Instant Confirmation & Delivery in Nandyal!"
-    };
+    try {
+      const saved = localStorage.getItem('vasavi_store_settings');
+      return saved ? JSON.parse(saved) : {
+        whatsappNumber: STORE_INFO.whatsappNumber,
+        displayPhone: STORE_INFO.displayPhone,
+        deliveryFee: 0,
+        announcementBanner: "Order directly on WhatsApp — Instant Confirmation & Delivery in Nandyal!"
+      };
+    } catch (e) {
+      return {
+        whatsappNumber: STORE_INFO.whatsappNumber,
+        displayPhone: STORE_INFO.displayPhone,
+        deliveryFee: 0,
+        announcementBanner: "Order directly on WhatsApp — Instant Confirmation & Delivery in Nandyal!"
+      };
+    }
   });
 
   // Products State
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('vasavi_products');
-    if (!saved) return INITIAL_PRODUCTS;
     try {
+      const saved = localStorage.getItem('vasavi_products');
+      if (!saved) return INITIAL_PRODUCTS;
       return JSON.parse(saved);
     } catch (e) {
       return INITIAL_PRODUCTS;
@@ -62,44 +77,70 @@ export const StoreProvider = ({ children }) => {
 
   // Categories State
   const [categories, setCategories] = useState(() => {
-    const saved = localStorage.getItem('vasavi_categories');
-    return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+    try {
+      const saved = localStorage.getItem('vasavi_categories');
+      return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+    } catch (e) {
+      return INITIAL_CATEGORIES;
+    }
   });
 
   // Orders State
   const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem('vasavi_orders');
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    try {
+      const saved = localStorage.getItem('vasavi_orders');
+      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    } catch (e) {
+      return INITIAL_ORDERS;
+    }
   });
 
   // Cart State
   const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('vasavi_cart');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('vasavi_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
 
   // Product Reviews State
   const [reviews, setReviews] = useState(() => {
-    const saved = localStorage.getItem('vasavi_reviews');
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem('vasavi_reviews');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
   });
 
   // Wishlist State
   const [wishlist, setWishlist] = useState(() => {
-    const saved = localStorage.getItem('vasavi_wishlist');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('vasavi_wishlist');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
   // Language State ('en' | 'te')
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('vasavi_lang') || 'en';
+    try {
+      return localStorage.getItem('vasavi_lang') || 'en';
+    } catch (e) {
+      return 'en';
+    }
   });
 
   const toggleLanguage = () => {
     setLanguage((prev) => {
       const next = prev === 'en' ? 'te' : 'en';
-      localStorage.setItem('vasavi_lang', next);
+      try {
+        localStorage.setItem('vasavi_lang', next);
+      } catch (e) {}
       return next;
     });
   };
@@ -133,27 +174,41 @@ export const StoreProvider = ({ children }) => {
 
   // Customer Auth State
   const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('vasavi_customer_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('vasavi_customer_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
   });
 
   const [registeredUsers, setRegisteredUsers] = useState(() => {
-    const saved = localStorage.getItem('vasavi_registered_users');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('vasavi_registered_users');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
 
+  // Permanent Safe Storage Setter (Guaranteed to NEVER throw QuotaExceededError)
   const safeLocalStorageSet = (key, value) => {
     try {
       const stringVal = typeof value === 'string' ? value : JSON.stringify(value);
       localStorage.setItem(key, stringVal);
     } catch (err) {
-      console.warn(`[Vasavi] Storage quota issue for ${key}:`, err.message);
+      console.warn(`[Vasavi] Storage quota reached while setting ${key}. Auto-evicting bulky caches...`);
       try {
         localStorage.removeItem('vasavi_products');
         localStorage.removeItem('vasavi_categories');
+        localStorage.removeItem('vasavi_orders');
+        localStorage.removeItem('vasavi_offline_sales');
+        localStorage.removeItem('vasavi_reviews');
         const stringVal = typeof value === 'string' ? value : JSON.stringify(value);
         localStorage.setItem(key, stringVal);
-      } catch (e) {}
+      } catch (finalErr) {
+        // Silently swallow error so React never throws Uncaught QuotaExceededError
+      }
     }
   };
 
@@ -179,7 +234,7 @@ export const StoreProvider = ({ children }) => {
 
   useEffect(() => {
     // Sanitize cart to prevent base64 data URL overflow
-    const sanitizedCart = cart.map(item => ({
+    const sanitizedCart = (cart || []).map(item => ({
       id: item.id,
       name: item.name,
       price: item.price,
@@ -203,7 +258,7 @@ export const StoreProvider = ({ children }) => {
     if (currentUser) {
       safeLocalStorageSet('vasavi_customer_user', currentUser);
     } else {
-      localStorage.removeItem('vasavi_customer_user');
+      try { localStorage.removeItem('vasavi_customer_user'); } catch (e) {}
     }
   }, [currentUser]);
 
@@ -353,7 +408,7 @@ export const StoreProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('vasavi_offline_sales', JSON.stringify(offlineSales));
+    safeLocalStorageSet('vasavi_offline_sales', offlineSales);
   }, [offlineSales]);
 
   const addOfflineSale = ({ amount, paymentMethod, customerName, notes, date }) => {
@@ -862,30 +917,46 @@ export const StoreProvider = ({ children }) => {
       };
     }
 
-    // 1. Try Cloud Login via Supabase API
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/customer-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: isPhone ? cleanPhone : cleanEmail, password: cleanPass })
-      });
+    // 1. Try Cloud Login via Supabase API with endpoint resilience
+    const loginEndpoints = [
+      `${API_BASE_URL}/api/auth/customer-login`,
+      `${API_BASE_URL}/api/auth/customer/login`,
+      `${API_BASE_URL}/api/auth/login`
+    ];
 
-      const data = await res.json().catch(() => null);
+    let cloudAuthSucceeded = false;
 
-      if (res.ok && data?.user) {
-        setCurrentUser(data.user);
-        setRegisteredUsers((prev) => {
-          const exists = prev.some((u) => u.id === data.user.id || u.phone === data.user.phone);
-          return exists ? prev : [data.user, ...prev];
+    for (const endpoint of loginEndpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: isPhone ? cleanPhone : cleanEmail, password: cleanPass })
         });
-        return { success: true, user: data.user };
-      }
 
-      if (data?.error) {
-        return { success: false, message: data.error };
+        if (res.status === 404) {
+          continue; // Endpoint variant not mounted on current server release, try next alias
+        }
+
+        const data = await res.json().catch(() => null);
+
+        if (res.ok && data?.user) {
+          setCurrentUser(data.user);
+          setRegisteredUsers((prev) => {
+            const exists = prev.some((u) => u.id === data.user.id || u.phone === data.user.phone);
+            return exists ? prev : [data.user, ...prev];
+          });
+          cloudAuthSucceeded = true;
+          return { success: true, user: data.user };
+        }
+
+        if (data?.error) {
+          // Authentication error explicitly returned from database
+          return { success: false, message: data.error };
+        }
+      } catch (e) {
+        // Network timeout / Render cold start
       }
-    } catch (e) {
-      console.warn('[Vasavi] Cloud customer login fetch error:', e);
     }
 
     // 2. Local fallback check with strict password verification

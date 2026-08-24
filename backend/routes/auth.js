@@ -245,6 +245,7 @@ const handleCustomerLogin = async (req, res) => {
 router.post('/customer-login', handleCustomerLogin);
 router.post('/customer/login', handleCustomerLogin);
 router.post('/customer/auth', handleCustomerLogin);
+router.post('/login', handleCustomerLogin);
 
 // In-Memory Password Reset OTP Cache (15 min validity)
 const passwordResetStore = new Map();
