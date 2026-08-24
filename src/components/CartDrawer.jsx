@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { getTranslatedProductName } from '../utils/translations';
 import { X, Trash2, ShoppingBag, ArrowRight, Sparkles, ShieldCheck, CreditCard, Lock } from 'lucide-react';
 import { CheckoutModal } from './CheckoutModal';
 
@@ -80,7 +81,7 @@ export const CartDrawer = () => {
                       className="w-16 h-16 object-cover rounded-xl bg-[#fffcf7]"
                     />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-[#171717] truncate">{prod.name || 'Vasavi Store Item'}</h4>
+                      <h4 className="text-xs font-bold text-[#171717] truncate">{getTranslatedProductName(prod, language) || 'Vasavi Store Item'}</h4>
                       <p className="text-xs text-[#c99632] font-bold mt-0.5">₹{prodPrice}</p>
                       
                       {/* Quantity adjustment */}

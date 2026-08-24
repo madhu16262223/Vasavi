@@ -132,13 +132,24 @@ export const TRANSLATIONS = {
     track_cancelled: "Order Cancelled",
     track_download_invoice: "Download Tax Invoice (PDF)",
 
+    // Order Confirmation Modal ("Last Page")
+    order_confirmed_badge: "ORDER CONFIRMED & SERVER VERIFIED",
+    order_confirmed_thank_you: "Thank you! Your order has been recorded and will be processed immediately.",
+    order_method_label: "Order Method:",
+    order_payment_mode: "Payment Method:",
+    order_amount_paid: "Amount Paid / Payable:",
+    order_download_invoice: "Download Official PDF Bill Invoice",
+    order_copy_id: "Copy Order ID",
+    order_track_status: "Track Order Status",
+    order_wa_confirmation: "Send Confirmation on WhatsApp",
+
     // Footer
     footer_tagline: "Your Premier Bridal Jewellery, Cosmetics & Fancy Boutique in Nandyal.",
     footer_quick_links: "Quick Navigation",
     footer_categories: "Top Categories",
     footer_store_info: "Store Address & Timings",
     footer_address: "NK Rd, Nadigadda, Telugu peta, Nandyal, Andhra Pradesh - 518501",
-    footer_hours: "Open Daily: 9:30 AM – 10:00 PM (All 7 Days)",
+    footer_hours: "Open Daily: 9:00 AM – 9:30 PM (Mon - Sat) | 10:00 AM - 4:00 PM (Sun)",
     footer_rights: "All Rights Reserved. Handcrafted with Royal Luxury."
   },
 
@@ -275,13 +286,24 @@ export const TRANSLATIONS = {
     track_cancelled: "ఆర్డర్ రద్దు చేయబడింది",
     track_download_invoice: "టాక్స్ ఇన్వాయిస్ డౌన్‌లోడ్ చేయండి (PDF)",
 
+    // Order Confirmation Modal ("Last Page")
+    order_confirmed_badge: "ఆర్డర్ నిర్ధారించబడింది & ధృవీకరించబడింది",
+    order_confirmed_thank_you: "ధన్యవాదాలు! మీ ఆర్డర్ స్వీకరించబడింది మరియు వెంటనే డెలివరీకి పంపబడుతుంది.",
+    order_method_label: "ఆర్డర్ పద్ధతి:",
+    order_payment_mode: "చెల్లింపు విధానం:",
+    order_amount_paid: "చెల్లించవలసిన మొత్తం:",
+    order_download_invoice: "అధికారిక PDF బిల్లు ఇన్‌వాయిస్ డౌన్‌లోడ్ చేయండి",
+    order_copy_id: "ఆర్డర్ ID కాపీ చేయండి",
+    order_track_status: "ఆర్డర్ స్టేటస్ చూడండి",
+    order_wa_confirmation: "వాట్సాప్‌లో నిర్ధారణ పంపండి",
+
     // Footer
     footer_tagline: "నంద్యాలలో బ్రైడల్ జ్యువెలరీ, కాస్మెటిక్స్ మరియు ఫ్యాన్సీ వస్తువుల ప్రముఖ కేంద్రం.",
     footer_quick_links: "ముఖ్యమైన లింకులు",
     footer_categories: "టాప్ కేటగిరీలు",
     footer_store_info: "షాప్ చిరునామా & సమయాలు",
-    footer_address: "NK రోడ్, నడిగడ్డ, తెలుగుపేట, నంద్యాల, ఆంధ్రప్రదేశ్ - 518501",
-    footer_hours: "ప్రతిరోజూ తెరిచి ఉంటుంది: ఉదయం 9:30 – రాత్రి 10:00 (వారం మొత్తం)",
+    footer_address: "ఎన్‌కే రోడ్, నదిగడ్డ, తెలుగు పేట, నంద్యాల, ఆంధ్రప్రదేశ్ - 518501",
+    footer_hours: "సోమ - శని: ఉదయం 9:00 – రాత్రి 9:30 | ఆదివారం: ఉదయం 10:00 - సాయంత్రం 4:00",
     footer_rights: "సర్వ హక్కులు ప్రత్యేకించబడ్డాయి. రాయల్ లగ్జరీ వాసవి స్టోర్."
   }
 };
@@ -289,4 +311,34 @@ export const TRANSLATIONS = {
 export const getTranslation = (lang, key, fallback = '') => {
   const currentLang = lang === 'te' ? 'te' : 'en';
   return TRANSLATIONS[currentLang]?.[key] || TRANSLATIONS['en']?.[key] || fallback || key;
+};
+
+export const getTranslatedProductName = (product, lang = 'en') => {
+  if (!product) return '';
+  if (lang !== 'te') return product.name || '';
+  if (product.name_te) return product.name_te;
+  
+  const name = (product.name || '').toLowerCase();
+  if (name.includes('kundan') && name.includes('bangle')) return 'రాయల్ కుందన్ వెల్వెట్ గాజుల సెట్ (24 ముక్కలు)';
+  if (name.includes('maybelline') || name.includes('lipstick')) return 'మేబెల్లిన్ సూపర్ స్టే మ్యాట్ లిక్విడ్ లిప్‌స్టిక్';
+  if (name.includes('temple') || name.includes('choker') || name.includes('necklace')) return 'టెంపుల్ గోల్డ్ చోకర్ నెక్లెస్ & జుంకీల సెట్';
+  if (name.includes('tiara') || name.includes('hair comb')) return 'డిజైనర్ బ్రైడల్ ఫ్లోరల్ హెయిర్ కోంబ్ టియారా';
+  if (name.includes('potli') || name.includes('handbag')) return 'లగ్జరీ జర్దోసీ ఎంబ్రాయిడరీ బ్రైడల్ పోట్లీ బ్యాగ్';
+  
+  return product.name;
+};
+
+export const getTranslatedProductDesc = (product, lang = 'en') => {
+  if (!product) return '';
+  if (lang !== 'te') return product.description || '';
+  if (product.description_te) return product.description_te;
+  
+  const name = (product.name || '').toLowerCase();
+  if (name.includes('kundan') && name.includes('bangle')) return 'అందమైన 24 ముక్కల రాయల్ రెడ్ వెల్వెట్ మరియు 24K గోల్డ్ ప్లేటెడ్ కుందన్ పెళ్లికూతురి గాజుల సెట్, వేలాడే లట్కన్ జుంకీలతో.';
+  if (name.includes('maybelline') || name.includes('lipstick')) return '16 గంటల వరకు ఉండే సూపర్ మ్యాట్ ఫినిష్, అద్భుతమైన పిగ్మెంట్ కవరేజ్ మరియు ప్రెసిషన్ బాణం ఆకారపు అప్లికేటర్.';
+  if (name.includes('temple') || name.includes('choker') || name.includes('necklace')) return 'లక్ష్మీ దేవి నగిషీలతో కూడిన సాంప్రదాయ 24K గోల్డ్ మైక్రోప్లేటెడ్ టెంపుల్ చోకర్ నెక్లెస్ మరియు సరిపోయే జుంకీలు.';
+  if (name.includes('tiara') || name.includes('hair comb')) return 'దక్షిణ భారత సాంప్రదాయ కేశాలంకరణ కోసం రూపొందించిన చేతితో తయారుచేసిన బ్రైడల్ పెర్ల్ మరియు గోల్డ్ ఫ్లోరల్ హెయిర్ కోంబ్.';
+  if (name.includes('potli') || name.includes('handbag')) return 'గోల్డెన్ జర్దోసీ వర్క్, ముత్యాల కుచ్చులు మరియు డ్రాస్ట్రింగ్ క్లోజర్‌తో కూడిన ప్రీమియం వెల్వెట్ బ్రైడల్ పోట్లీ బ్యాగ్.';
+  
+  return product.description || 'వాసవి ఫ్యాన్సీ స్టోర్, నంద్యాలలో ప్రత్యేకంగా లభించే నాణ్యమైన అసలైన వస్తువు.';
 };

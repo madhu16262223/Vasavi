@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { getTranslatedProductName, getTranslatedProductDesc } from '../utils/translations';
 import { X, ShoppingBag, Star, Zap, Check, ShieldCheck, Truck, MessageCircle, Heart, Sparkles, Award } from 'lucide-react';
 
 export const ProductDetailModal = () => {
@@ -113,7 +114,7 @@ export const ProductDetailModal = () => {
             </div>
 
             {/* Product Image Display */}
-            <div className="w-full max-h-[360px] flex items-center justify-center p-2">
+            <div className="w-full relative flex items-center justify-center">
               <img
                 src={selectedProduct.image || selectedProduct.imageUrl || '/bangles.jpg'}
                 alt={selectedProduct.name}
@@ -127,11 +128,11 @@ export const ProductDetailModal = () => {
             <div className="grid grid-cols-2 gap-2 w-full pt-4 text-[10px] font-bold text-[#555555]">
               <div className="flex items-center gap-1.5 bg-[#faf8f5] p-2 rounded-xl border border-[#c99632]/20">
                 <Award className="w-4 h-4 text-[#c99632] shrink-0" />
-                <span>100% Authentic Quality</span>
+                <span>{language === 'te' ? '100% ఒరిజినల్ క్వాలిటీ' : '100% Authentic Quality'}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-[#faf8f5] p-2 rounded-xl border border-[#c99632]/20">
                 <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Fast Nandyal Delivery</span>
+                <span>{language === 'te' ? 'నంద్యాలలో వేగవంతమైన డెలివరీ' : 'Fast Nandyal Delivery'}</span>
               </div>
             </div>
 
@@ -177,7 +178,7 @@ export const ProductDetailModal = () => {
                     )}
                   </div>
                   <h3 className="text-xl font-bold font-serif-luxury text-[#171717] mt-0.5 leading-tight">
-                    {selectedProduct.name}
+                    {getTranslatedProductName(selectedProduct, language)}
                   </h3>
                   
                   {/* Social Proof Urgency Badge */}
@@ -213,7 +214,7 @@ export const ProductDetailModal = () => {
 
                 {/* Description */}
                 <p className="text-xs text-[#555555] leading-relaxed">
-                  {selectedProduct.description || 'Authentic premium quality product exclusively available at Vasavi Fancy Store, Nandyal.'}
+                  {getTranslatedProductDesc(selectedProduct, language)}
                 </p>
 
                 {/* Quantity Selector */}

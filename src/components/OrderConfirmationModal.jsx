@@ -4,13 +4,13 @@ import { generateInvoicePDF } from '../utils/invoiceGenerator';
 import { CheckCircle2, MessageCircle, Package, Copy, X, FileText, ShieldCheck, CreditCard } from 'lucide-react';
 
 export const OrderConfirmationModal = () => {
-  const { isOrderConfirmedModal, setIsOrderConfirmedModal, lastPlacedOrder, setActiveTab, storeInfo } = useStore();
+  const { isOrderConfirmedModal, setIsOrderConfirmedModal, lastPlacedOrder, setActiveTab, storeInfo, t, language } = useStore();
 
   if (!isOrderConfirmedModal || !lastPlacedOrder) return null;
 
   const handleCopyOrderId = () => {
     navigator.clipboard.writeText(lastPlacedOrder.orderNumber);
-    alert(`Order ID ${lastPlacedOrder.orderNumber} copied to clipboard!`);
+    alert(language === 'te' ? `ఆర్డర్ ID ${lastPlacedOrder.orderNumber} కాపీ చేయబడింది!` : `Order ID ${lastPlacedOrder.orderNumber} copied to clipboard!`);
   };
 
   const isPaidOnline = lastPlacedOrder.paymentMethod === 'ONLINE_UPI' || lastPlacedOrder.paymentStatus === 'PAID';
@@ -34,53 +34,61 @@ export const OrderConfirmationModal = () => {
 
         <div>
           <span className="text-xs uppercase font-bold text-emerald-700 tracking-wider flex items-center justify-center gap-1">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" /> ORDER CONFIRMED & SERVER VERIFIED
+            <ShieldCheck className="w-4 h-4 text-emerald-600" /> {t('order_confirmed_badge')}
           </span>
-          <h2 className="text-2xl font-bold font-serif-luxury text-[#171717] mt-1">Order #{lastPlacedOrder.orderNumber}</h2>
+          <h2 className="text-2xl font-bold font-serif-luxury text-[#171717] mt-1">
+            {language === 'te' ? `ఆర్డర్ నంబర్ #${lastPlacedOrder.orderNumber}` : `Order #${lastPlacedOrder.orderNumber}`}
+          </h2>
           <p className="text-xs text-[#666666] mt-2 font-medium">
-            Thank you, {lastPlacedOrder.customerName}! Your order has been recorded and will be processed immediately.
+            {language === 'te' 
+              ? `ధన్యవాదాలు, ${lastPlacedOrder.customerName} గారు! మీ ఆర్డర్ స్వీకరించబడింది మరియు వెంటనే ప్రాసెస్ చేయబడుతుంది.`
+              : `Thank you, ${lastPlacedOrder.customerName}! Your order has been recorded and will be processed immediately.`}
           </p>
         </div>
 
         {/* Payment & Order Details Card */}
         <div className="bg-white p-4 rounded-2xl border border-[#c99632]/30 text-left space-y-2 text-xs shadow-xs">
           <div className="flex justify-between items-center pb-2 border-b border-[#c99632]/20">
-            <span className="text-[#666666] font-semibold">Order Method:</span>
+            <span className="text-[#666666] font-semibold">{t('order_method_label')}</span>
             <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
               lastPlacedOrder.paymentMethod === 'WHATSAPP' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
             }`}>
-              {lastPlacedOrder.paymentMethod === 'WHATSAPP' ? '💬 WHATSAPP ORDER' : '💵 CASH ON DELIVERY'}
+              {lastPlacedOrder.paymentMethod === 'WHATSAPP' 
+                ? (language === 'te' ? '💬 వాట్సాప్ ఆర్డర్' : '💬 WHATSAPP ORDER') 
+                : (language === 'te' ? '💵 క్యాష్ ఆన్ డెలివరీ' : '💵 CASH ON DELIVERY')}
             </span>
           </div>
 
           <div className="flex justify-between text-[#666666]">
-            <span>Payment Method:</span>
+            <span>{t('order_payment_mode')}</span>
             <span className="text-[#171717] font-bold">
-              {lastPlacedOrder.paymentMethod === 'WHATSAPP' ? 'WhatsApp Order & UPI Pay' : 'Pay Cash on Delivery'}
+              {lastPlacedOrder.paymentMethod === 'WHATSAPP' 
+                ? (language === 'te' ? 'వాట్సాప్ ఆర్డర్ & UPI చెల్లింపు' : 'WhatsApp Order & UPI Pay') 
+                : (language === 'te' ? 'ఇంటి వద్దకే వచ్చాక నగదు (COD)' : 'Pay Cash on Delivery')}
             </span>
           </div>
 
           {isPaidOnline && (
             <div className="flex justify-between text-[#666666]">
-              <span>Transaction Ref ID:</span>
+              <span>{language === 'te' ? 'ట్రాన్సాక్షన్ ID:' : 'Transaction Ref ID:'}</span>
               <span className="text-[#c99632] font-mono font-bold">{paymentId}</span>
             </div>
           )}
 
           <div className="flex justify-between text-[#666666]">
-            <span>Customer Name:</span>
+            <span>{language === 'te' ? 'కస్టమర్ పేరు:' : 'Customer Name:'}</span>
             <span className="text-[#171717] font-bold">{lastPlacedOrder.customerName}</span>
           </div>
           <div className="flex justify-between text-[#666666]">
-            <span>Phone Number:</span>
+            <span>{language === 'te' ? 'మొబైల్ నంబర్:' : 'Phone Number:'}</span>
             <span className="text-[#171717] font-bold">{lastPlacedOrder.customerPhone}</span>
           </div>
           <div className="flex justify-between text-[#666666]">
-            <span>Delivery Address:</span>
+            <span>{language === 'te' ? 'డెలివరీ చిరునామా:' : 'Delivery Address:'}</span>
             <span className="text-[#171717] font-bold truncate max-w-[200px]">{lastPlacedOrder.customerAddress}</span>
           </div>
           <div className="flex justify-between text-[#666666] border-t border-[#c99632]/20 pt-2 font-bold text-sm">
-            <span>Amount Paid:</span>
+            <span>{t('order_amount_paid')}</span>
             <span className="text-[#c99632] text-base">₹{lastPlacedOrder.totalAmount}</span>
           </div>
         </div>
@@ -92,7 +100,7 @@ export const OrderConfirmationModal = () => {
             className="w-full py-3 px-4 rounded-xl bg-white border border-[#c99632]/40 text-[#171717] hover:bg-[#e8c7b5]/30 font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all"
           >
             <FileText className="w-4 h-4 text-[#c99632]" />
-            <span>Download Official PDF Bill Invoice</span>
+            <span>{t('order_download_invoice')}</span>
           </button>
 
           <div className="grid grid-cols-2 gap-2">
@@ -100,7 +108,7 @@ export const OrderConfirmationModal = () => {
               onClick={handleCopyOrderId}
               className="py-3 px-3 rounded-xl bg-white border border-slate-200 text-[#171717] font-semibold text-xs flex items-center justify-center gap-1 hover:bg-slate-50 transition-all"
             >
-              <Copy className="w-3.5 h-3.5 text-[#c99632]" /> Copy Order ID
+              <Copy className="w-3.5 h-3.5 text-[#c99632]" /> {t('order_copy_id')}
             </button>
 
             <button
@@ -110,7 +118,7 @@ export const OrderConfirmationModal = () => {
               }}
               className="py-3 px-3 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs flex items-center justify-center gap-1 shadow-md hover:brightness-110 transition-all"
             >
-              <Package className="w-3.5 h-3.5" /> Track Order Status
+              <Package className="w-3.5 h-3.5" /> {t('order_track_status')}
             </button>
           </div>
 
@@ -120,7 +128,7 @@ export const OrderConfirmationModal = () => {
             rel="noreferrer"
             className="w-full py-3 px-4 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:bg-emerald-700 transition-all block mt-2"
           >
-            <MessageCircle className="w-4 h-4" /> Send Confirmation on WhatsApp
+            <MessageCircle className="w-4 h-4" /> {t('order_wa_confirmation')}
           </a>
         </div>
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { generateInvoicePDF } from '../utils/invoiceGenerator';
+import { getTranslatedProductName } from '../utils/translations';
 import { Package, Search, Clock, CheckCircle2, Truck, AlertCircle, PhoneCall, FileText } from 'lucide-react';
 
 export const OrderTracker = () => {
@@ -138,7 +139,7 @@ export const OrderTracker = () => {
                     {searchedOrder.items?.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center text-xs p-3 rounded-xl bg-[#faf8f5] border border-slate-100">
                         <div>
-                          <span className="font-bold text-[#171717]">{item.productName}</span>
+                          <span className="font-bold text-[#171717]">{getTranslatedProductName({ name: item.productName }, language) || item.productName}</span>
                           <span className="text-[#666666] block text-[10px]">Qty: {item.quantity}</span>
                         </div>
                         <span className="font-bold text-[#c99632]">₹{item.subtotal}</span>

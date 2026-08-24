@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
+import { getTranslatedProductName } from '../utils/translations';
 import { Heart, X, ShoppingBag, Trash2, ArrowRight, Share2, Sparkles } from 'lucide-react';
 
 export const WishlistDrawer = () => {
@@ -78,7 +79,7 @@ export const WishlistDrawer = () => {
                 />
 
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-xs text-[#171717] truncate">{product.name}</h4>
+                  <h4 className="font-bold text-xs text-[#171717] truncate">{getTranslatedProductName(product, language)}</h4>
                   <div className="flex items-baseline gap-2 mt-0.5">
                     <span className="text-sm font-extrabold text-[#c99632]">₹{product.price}</span>
                     {product.originalPrice && product.originalPrice > product.price && (

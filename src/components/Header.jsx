@@ -557,14 +557,16 @@ export const Header = () => {
             >
               <Package className="w-4 h-4" /> {language === 'te' ? 'ఆర్డర్ ట్రాకింగ్' : 'Track Order Status'}
             </button>
-            <button
-              onClick={() => handleNavClick('admin')}
-              className={`p-2.5 rounded-lg text-left text-xs uppercase font-bold flex items-center gap-2 ${
-                activeTab === 'admin' ? 'bg-[#e8c7b5]/50 text-[#c99632]' : 'text-[#171717]'
-              }`}
-            >
-              <Shield className="w-4 h-4 text-[#c99632]" /> {language === 'te' ? 'అడ్మిన్ పోర్టల్' : 'Admin Control Panel'}
-            </button>
+            {isAdminLoggedIn && (
+              <button
+                onClick={() => handleNavClick('admin')}
+                className={`p-2.5 rounded-lg text-left text-xs uppercase font-bold flex items-center gap-2 ${
+                  activeTab === 'admin' ? 'bg-[#e8c7b5]/50 text-[#c99632]' : 'text-[#171717]'
+                }`}
+              >
+                <Shield className="w-4 h-4 text-[#c99632]" /> {language === 'te' ? 'అడ్మిన్ పోర్టల్' : 'Admin Control Panel'}
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { getTranslatedProductName } from '../utils/translations';
 import { ShoppingBag, Star, Eye, Sparkles, Zap, Check, Heart } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
@@ -137,7 +138,7 @@ export const ProductCard = ({ product }) => {
           </div>
 
           <h3 className="text-xs sm:text-sm font-bold text-[#171717] line-clamp-2 leading-snug group-hover:text-[#c99632] transition-colors mb-2">
-            {product.name}
+            {getTranslatedProductName(product, language)}
           </h3>
         </div>
 

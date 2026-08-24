@@ -34,7 +34,7 @@ export const Footer = () => {
                   </div>
                   <div>
                     <strong className="block text-[#171717]">{language === 'te' ? 'చిరునామా:' : 'Address:'}</strong>
-                    <span className="text-[#555555]">{storeInfo.address}</span>
+                    <span className="text-[#555555]">{language === 'te' ? (storeInfo.address_te || t('footer_address')) : storeInfo.address}</span>
                   </div>
                 </div>
 
@@ -44,7 +44,7 @@ export const Footer = () => {
                   </div>
                   <div>
                     <strong className="block text-[#171717]">{language === 'te' ? 'ఫోన్ / వాట్సాప్:' : 'Store Phone / WhatsApp:'}</strong>
-                    <span className="text-[#555555]">{storeInfo.displayPhone || storeInfo.phone} ({storeInfo.ownerName})</span>
+                    <span className="text-[#555555]">{storeInfo.displayPhone || storeInfo.phone} ({language === 'te' ? 'రామ్‌చరణ్ గారు' : storeInfo.owner})</span>
                   </div>
                 </div>
 
@@ -54,7 +54,7 @@ export const Footer = () => {
                   </div>
                   <div>
                     <strong className="block text-[#171717]">{language === 'te' ? 'సమయాలు:' : 'Store Timings:'}</strong>
-                    <span className="text-emerald-700 font-semibold">{language === 'te' ? 'సోమ - శని: 9:00 AM - 9:30 PM | ఆదివారం: 10:00 AM - 4:00 PM' : 'Mon - Sat: 9:00 AM - 9:30 PM | Sun: 10:00 AM - 4:00 PM'}</span>
+                    <span className="text-emerald-700 font-semibold">{language === 'te' ? 'సోమ - శని: ఉదయం 9:00 - రాత్రి 9:30 | ఆదివారం: ఉదయం 10:00 - సాయంత్రం 4:00' : 'Mon - Sat: 9:00 AM - 9:30 PM | Sun: 10:00 AM - 4:00 PM'}</span>
                   </div>
                 </div>
               </div>
@@ -67,7 +67,7 @@ export const Footer = () => {
                   rel="noreferrer"
                   className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-md hover:brightness-110 flex items-center gap-1.5 gold-glow transition-all"
                 >
-                  <MapPin className="w-4 h-4" /> {language === 'te' ? 'గూగుల్ మ్యాప్స్‌లో తెరవండి' : 'Open in Google Maps'}
+                  <MapPin className="w-4 h-4" /> {language === 'te' ? 'గూగుల్ మ్యాప్స్‌లో చూడండి' : 'Open in Google Maps'}
                 </a>
 
                 <a
@@ -76,7 +76,7 @@ export const Footer = () => {
                   rel="noreferrer"
                   className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-md hover:bg-emerald-700 flex items-center gap-1.5 transition-all"
                 >
-                  📲 {language === 'te' ? 'ఓనర్ చరణ్ గారితో చాట్ చేయండి' : 'WhatsApp Shop Owner'}
+                  📲 {language === 'te' ? 'ఓనర్ రామ్‌చరణ్ గారితో చాట్ చేయండి' : 'WhatsApp Shop Owner'}
                 </a>
               </div>
             </div>
@@ -98,34 +98,12 @@ export const Footer = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           
-          {/* Col 1: Brand Info */}
-          <div className="space-y-4 md:col-span-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border border-[#c99632]/50 bg-white flex items-center justify-center shrink-0 shadow-xs">
-                <img src="/vasavi_logo.png" alt="Vasavi Logo" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <h3 className="font-serif-luxury text-lg font-bold text-[#171717] tracking-wide">
-                  VASAVI <span className="text-[#c99632] text-xs font-sans font-bold uppercase">FANCY STORE</span>
-                </h3>
-                <p className="text-[10px] text-[#666666] uppercase tracking-wider font-semibold">
-                  {language === 'te' ? 'నంద్యాల ప్రముఖ ఫ్యాన్సీ స్టోర్' : "Nandyal's Beauty Hub"}
-                </p>
-              </div>
-            </div>
-
-            <p className="text-[#444444] leading-relaxed font-normal">
+          {/* Col 1: Store Brand Info */}
+          <div className="space-y-3">
+            <h4 className="font-serif-luxury font-bold text-base text-[#171717]">{language === 'te' ? 'వాసవి ఫ్యాన్సీ స్టోర్' : 'Vasavi Fancy Store'}</h4>
+            <p className="leading-relaxed text-[#555555]">
               {t('footer_tagline')}
             </p>
-
-            <div className="pt-1">
-              <button
-                onClick={() => { setActiveTab('shop'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#c99632] text-white font-bold hover:bg-[#a6751d] transition-all shadow-xs"
-              >
-                <CreditCard className="w-4 h-4" /> {language === 'te' ? 'ఇప్పుడే ఆన్‌లైన్‌లో కొనండి' : 'SHOP ONLINE NOW'}
-              </button>
-            </div>
           </div>
 
           {/* Col 2: Quick Links */}
@@ -150,7 +128,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Col 3: Featured Categories */}
+          {/* Col 3: Categories */}
           <div className="space-y-3">
             <h4 className="font-bold text-[#171717] uppercase text-xs tracking-wider text-[#c99632]">{t('footer_categories')}</h4>
             <ul className="space-y-2 font-medium">
@@ -168,7 +146,7 @@ export const Footer = () => {
             <div className="space-y-2.5 font-medium text-[#444444]">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-[#e88a9a] shrink-0 mt-0.5" />
-                <span className="leading-snug">{storeInfo.address}</span>
+                <span className="leading-snug">{language === 'te' ? (storeInfo.address_te || t('footer_address')) : storeInfo.address}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-[#c99632] shrink-0" />
@@ -177,8 +155,8 @@ export const Footer = () => {
               <div className="flex items-start gap-2 pt-0.5">
                 <Clock className="w-4 h-4 text-[#c99632] shrink-0 mt-0.5" />
                 <div className="flex flex-col text-xs leading-snug">
-                  <span className="font-semibold text-[#171717]">Mon - Sat: 9:00 AM - 9:30 PM</span>
-                  <span className="font-semibold text-[#171717]">Sunday: 10:00 AM - 4:00 PM</span>
+                  <span className="font-semibold text-[#171717]">{language === 'te' ? 'సోమ - శని: ఉదయం 9:00 - రాత్రి 9:30' : 'Mon - Sat: 9:00 AM - 9:30 PM'}</span>
+                  <span className="font-semibold text-[#171717]">{language === 'te' ? 'ఆదివారం: ఉదయం 10:00 - సాయంత్రం 4:00' : 'Sunday: 10:00 AM - 4:00 PM'}</span>
                 </div>
               </div>
             </div>
