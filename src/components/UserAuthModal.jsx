@@ -5,6 +5,17 @@ import { X, Mail, Lock, User, Phone, Eye, EyeOff, CheckCircle2, ArrowRight, User
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
+const cleanIndianPhone = (phoneInput) => {
+  if (!phoneInput) return '';
+  let str = String(phoneInput).trim().replace(/\D/g, ''); // strip spaces, dashes, +
+  if (str.startsWith('91') && str.length === 12) {
+    str = str.slice(2);
+  } else if (str.startsWith('0') && str.length === 11) {
+    str = str.slice(1);
+  }
+  return str;
+};
+
 export const UserAuthModal = () => {
   const {
     isAuthModalOpen,
