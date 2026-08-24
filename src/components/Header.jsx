@@ -349,14 +349,14 @@ export const Header = () => {
                     <span className="w-6 h-6 rounded-full bg-[#c99632] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
                       {currentUser.avatar || '👤'}
                     </span>
-                    <span className="hidden sm:inline font-bold truncate max-w-[100px]">{currentUser.name.split(' ')[0]}</span>
+                    <span className="hidden sm:inline font-bold truncate max-w-[100px]">{(currentUser.name || 'Customer').split(' ')[0]}</span>
                   </button>
 
                   {/* Dropdown Menu on Hover */}
                   <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#c99632]/30 rounded-2xl shadow-xl p-2 hidden group-hover:block transition-all z-50">
                     <div className="p-3 border-b border-[#c99632]/15 bg-[#fffcf7] rounded-xl mb-1">
-                      <p className="text-xs font-bold text-[#171717] truncate">{currentUser.name}</p>
-                      <p className="text-[11px] text-[#666666] truncate">{currentUser.email}</p>
+                      <p className="text-xs font-bold text-[#171717] truncate">{currentUser.name || 'Customer'}</p>
+                      <p className="text-[11px] text-[#666666] truncate">{currentUser.email || currentUser.phone || ''}</p>
                       <span className="inline-block mt-1 text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
                         ✓ Active Customer
                       </span>
@@ -505,8 +505,8 @@ export const Header = () => {
                   {currentUser.avatar || '👤'}
                 </span>
                 <div>
-                  <p className="text-xs font-bold text-[#171717]">{currentUser.name}</p>
-                  <p className="text-[10px] text-[#666666]">{currentUser.email}</p>
+                  <p className="text-xs font-bold text-[#171717]">{currentUser.name || 'Customer'}</p>
+                  <p className="text-[10px] text-[#666666]">{currentUser.email || currentUser.phone || ''}</p>
                 </div>
               </div>
               <button

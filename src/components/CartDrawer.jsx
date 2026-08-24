@@ -10,7 +10,9 @@ export const CartDrawer = () => {
     setIsCartOpen,
     removeFromCart,
     updateCartQuantity,
-    getCartTotal
+    getCartTotal,
+    currentUser,
+    openAuthModal
   } = useStore();
 
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);

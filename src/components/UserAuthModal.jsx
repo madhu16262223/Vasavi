@@ -121,9 +121,9 @@ export const UserAuthModal = () => {
                 <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-extrabold uppercase tracking-widest mb-1">
                   <UserCheck className="w-3 h-3 text-emerald-600" /> LOGGED IN CUSTOMER
                 </span>
-                <h3 className="text-xl font-black font-serif-luxury text-[#171717]">{currentUser.name}</h3>
-                <p className="text-xs text-[#666666] font-medium">{currentUser.email}</p>
-                <p className="text-xs text-[#888888] font-mono mt-0.5">📞 {currentUser.phone}</p>
+                <h3 className="text-xl font-black font-serif-luxury text-[#171717]">{currentUser.name || 'Valued Customer'}</h3>
+                {currentUser.email && <p className="text-xs text-[#666666] font-medium">{currentUser.email}</p>}
+                {currentUser.phone && <p className="text-xs text-[#888888] font-mono mt-0.5">📞 {currentUser.phone}</p>}
               </div>
 
               <div className="flex gap-3">
