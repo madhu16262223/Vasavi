@@ -11,7 +11,8 @@ export const UserAuthModal = () => {
     signupCustomer,
     logoutCustomer,
     authModalMode,
-    setAuthModalMode
+    setAuthModalMode,
+    language
   } = useStore();
 
   const [mode, setMode] = useState(authModalMode || 'login'); // 'login' | 'signup'
@@ -42,18 +43,18 @@ export const UserAuthModal = () => {
     setSuccessMsg('');
 
     if (!email.trim() || !password.trim()) {
-      setError('Please enter both your email address and password.');
+      setError(language === 'te' ? 'దయచేసి ఈమెయిల్ మరియు పాస్‌వర్డ్ నమోదు చేయండి.' : 'Please enter both your email address and password.');
       return;
     }
 
     const res = await loginCustomer(email, password);
     if (res && res.success) {
-      setSuccessMsg('Signed in successfully!');
+      setSuccessMsg(language === 'te' ? 'విజయవంతంగా లాగిన్ అయ్యారు!' : 'Signed in successfully!');
       setTimeout(() => {
         closeAuthModal();
       }, 700);
     } else {
-      setError((res && res.message) || 'Invalid email or password. Please check your credentials.');
+      setError((res && res.message) || (language === 'te' ? 'చెల్లని ఈమెయిల్ లేదా పాస్‌వర్డ్. దయచేసి వివరాలను సరిచూసుకోండి.' : 'Invalid email or password. Please check your credentials.'));
     }
   };
 
@@ -63,18 +64,18 @@ export const UserAuthModal = () => {
     setSuccessMsg('');
 
     if (!name.trim() || !phone.trim()) {
-      setError('Please fill in your name and 10-digit mobile number.');
+      setError(language === 'te' ? 'దయచేసి మీ పేరు మరియు 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please fill in your name and 10-digit mobile number.');
       return;
     }
 
     const res = await signupCustomer({ name, email, phone, password });
     if (res && res.success) {
-      setSuccessMsg('Account created successfully! Welcome to Vasavi Fancy Store.');
+      setSuccessMsg(language === 'te' ? 'ఖాతా విజయవంతంగా సృష్టించబడింది! వాసవి ఫ్యాన్సీ స్టోర్‌కు స్వాగతం.' : 'Account created successfully! Welcome to Vasavi Fancy Store.');
       setTimeout(() => {
         closeAuthModal();
       }, 900);
     } else {
-      setError((res && res.message) || 'Registration failed. Please check your details.');
+      setError((res && res.message) || (language === 'te' ? 'రిజిస్ట్రేషన్ విఫలమైంది. దయచేసి మీ వివరాలను సరిచూసుకోండి.' : 'Registration failed. Please check your details.'));
     }
   };
 
@@ -95,7 +96,9 @@ export const UserAuthModal = () => {
                 VASAVI FANCY STORE
               </h3>
               <p className="text-[10px] text-amber-100 font-medium tracking-wide mt-0.5">
-                {currentUser ? 'Customer Account' : 'Customer Sign In & Account'}
+                {currentUser 
+                  ? (language === 'te' ? 'కస్టమర్ ప్రొఫైల్' : 'Customer Account') 
+                  : (language === 'te' ? 'కస్టమర్ సైన్ ఇన్ & రిజిస్ట్రేషన్' : 'Customer Sign In & Account')}
               </p>
             </div>
           </div>
@@ -119,7 +122,7 @@ export const UserAuthModal = () => {
 
               <div>
                 <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-extrabold uppercase tracking-widest mb-1">
-                  <UserCheck className="w-3 h-3 text-emerald-600" /> LOGGED IN CUSTOMER
+                  <UserCheck className="w-3 h-3 text-emerald-600" /> {language === 'te' ? 'లాగిన్ అయిన కస్టమర్' : 'LOGGED IN CUSTOMER'}
                 </span>
                 <h3 className="text-xl font-black font-serif-luxury text-[#171717]">{currentUser.name || 'Valued Customer'}</h3>
                 {currentUser.email && <p className="text-xs text-[#666666] font-medium">{currentUser.email}</p>}
@@ -134,17 +137,17 @@ export const UserAuthModal = () => {
                   }}
                   className="flex-1 py-3 rounded-xl bg-[#faf8f5] border border-[#c99632]/40 text-xs font-bold text-[#171717] hover:bg-[#fff3c4]/50 transition-colors"
                 >
-                  📦 My Orders
+                  📦 {language === 'te' ? 'నా ఆర్డర్లు' : 'My Orders'}
                 </button>
 
                 <button
                   onClick={() => {
                     logoutCustomer();
-                    setSuccessMsg('Signed out cleanly.');
+                    setSuccessMsg(language === 'te' ? 'లాగౌట్ అయ్యారు.' : 'Signed out cleanly.');
                   }}
                   className="flex-1 py-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors"
                 >
-                  🚪 Sign Out
+                  🚪 {language === 'te' ? 'లాగౌట్' : 'Sign Out'}
                 </button>
               </div>
             </div>
@@ -160,7 +163,7 @@ export const UserAuthModal = () => {
                       : 'text-[#666666] hover:text-[#171717]'
                   }`}
                 >
-                  🔐 SIGN IN
+                  🔐 {language === 'te' ? 'లాగిన్' : 'SIGN IN'}
                 </button>
                 <button
                   onClick={() => { setMode('signup'); setError(''); setSuccessMsg(''); }}
@@ -170,7 +173,7 @@ export const UserAuthModal = () => {
                       : 'text-[#666666] hover:text-[#171717]'
                   }`}
                 >
-                  ✨ CREATE ACCOUNT
+                  ✨ {language === 'te' ? 'కొత్త ఖాతా' : 'CREATE ACCOUNT'}
                 </button>
               </div>
 
@@ -191,14 +194,16 @@ export const UserAuthModal = () => {
               {mode === 'login' && (
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Email Address</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">
+                      {language === 'te' ? 'ఈమెయిల్ లేదా ఫోన్ నంబర్' : 'Email Address'}
+                    </label>
                     <div className="relative">
                       <input
-                        type="email"
+                        type="text"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="yourname@gmail.com"
+                        placeholder={language === 'te' ? 'మీ ఈమెయిల్ లేదా మొబైల్' : 'yourname@gmail.com'}
                         className="w-full bg-white border border-[#c99632]/30 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-[#171717] placeholder-slate-400 focus:outline-none focus:border-[#c99632]"
                       />
                       <Mail className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -206,7 +211,9 @@ export const UserAuthModal = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Password</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">
+                      {language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}
+                    </label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -232,7 +239,7 @@ export const UserAuthModal = () => {
                     type="submit"
                     className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#c99632] via-[#e5b85c] to-[#a6751d] text-white font-bold text-xs shadow-md hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow mt-2"
                   >
-                    <span>SIGN IN TO MY ACCOUNT</span>
+                    <span>{language === 'te' ? 'నా ఖాతాలోకి లాగిన్ అవ్వండి' : 'SIGN IN TO MY ACCOUNT'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
@@ -242,14 +249,16 @@ export const UserAuthModal = () => {
               {mode === 'signup' && (
                 <form onSubmit={handleSignupSubmit} className="space-y-3.5">
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Full Name *</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">
+                      {language === 'te' ? 'పూర్తి పేరు *' : 'Full Name *'}
+                    </label>
                     <div className="relative">
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Enter your full name"
+                        placeholder={language === 'te' ? 'మీ పూర్తి పేరు' : 'Enter your full name'}
                         className="w-full bg-white border border-[#c99632]/30 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
                       />
                       <User className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -257,14 +266,16 @@ export const UserAuthModal = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Phone Number (WhatsApp) *</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">
+                      {language === 'te' ? 'మొబైల్ నంబర్ (వాట్సాప్) *' : 'Phone Number (WhatsApp) *'}
+                    </label>
                     <div className="relative">
                       <input
                         type="tel"
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Enter 10-digit mobile number"
+                        placeholder={language === 'te' ? '10 అంకెల మొబైల్ నంబర్' : 'Enter 10-digit mobile number'}
                         className="w-full bg-white border border-[#c99632]/30 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
                       />
                       <Phone className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -272,14 +283,16 @@ export const UserAuthModal = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Email Address *</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">
+                      {language === 'te' ? 'ఈమెయిల్ అడ్రస్ *' : 'Email Address *'}
+                    </label>
                     <div className="relative">
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter email address"
+                        placeholder={language === 'te' ? 'మీ ఈమెయిల్ అడ్రస్' : 'Enter email address'}
                         className="w-full bg-white border border-[#c99632]/30 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
                       />
                       <Mail className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -287,14 +300,16 @@ export const UserAuthModal = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#171717] mb-1">Create Password *</label>
+                    <label className="block text-xs font-bold text-[#171717] mb-1">
+                      {language === 'te' ? 'పాస్‌వర్డ్ సృష్టించండి *' : 'Create Password *'}
+                    </label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="At least 6 characters"
+                        placeholder={language === 'te' ? 'కనీసం 6 అక్షరాలు' : 'At least 6 characters'}
                         className="w-full bg-white border border-[#c99632]/30 rounded-xl py-2.5 pl-10 pr-10 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
                       />
                       <Lock className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -313,7 +328,7 @@ export const UserAuthModal = () => {
                     type="submit"
                     className="w-full py-3 rounded-xl bg-gradient-to-r from-[#c99632] via-[#e5b85c] to-[#a6751d] text-white font-bold text-xs shadow-md hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow mt-2"
                   >
-                    <span>CREATE ACCOUNT</span>
+                    <span>{language === 'te' ? 'ఖాతా సృష్టించండి' : 'CREATE ACCOUNT'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>

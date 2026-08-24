@@ -1,6 +1,6 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_ORDERS, STORE_INFO } from '../data/mockData';
+import { getTranslation } from '../utils/translations';
 
 const StoreContext = createContext();
 
@@ -799,59 +799,62 @@ export const StoreProvider = ({ children }) => {
     const cleanPass = passInput ? passInput.trim() : '';
 
     if (!cleanEmail || !cleanPass) {
-      return { success: false, message: 'Please provide both your email address and password.' };
+      return { success: false, message: 'Please provide both your email/phone and password.' };
     }
 
-    // Try cloud login first
+    // 1. Try Cloud Login via API (Supabase)
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/customer-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: cleanEmail, password: cleanPass })
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          setCurrentUser(data.user);
-          setRegisteredUsers((prev) => {
-            const exists = prev.some((u) => u.email === data.user.email);
-            return exists ? prev : [data.user, ...prev];
-          });
-          return { success: true, user: data.user };
-        }
-      }
-    } catch (e) {}
 
-    // Local fallback check
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data?.user) {
+        setCurrentUser(data.user);
+        setRegisteredUsers((prev) => {
+          const exists = prev.some((u) => u.id === data.user.id || u.phone === data.user.phone);
+          return exists ? prev : [data.user, ...prev];
+        });
+        return { success: true, user: data.user };
+      }
+
+      if (data?.error) {
+        return { success: false, message: data.error };
+      }
+    } catch (e) {
+      console.warn('[Vasavi] Cloud customer login fetch error:', e);
+    }
+
+    // 2. Local fallback check with password verification
+    const cleanPhone = cleanEmail.replace(/[^\d]/g, '');
     const user = registeredUsers.find(
-      (u) => (u.email && u.email.toLowerCase() === cleanEmail) || (u.phone && u.phone.includes(cleanEmail))
+      (u) => (u.email && u.email.toLowerCase() === cleanEmail) || 
+             (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)
     );
 
     if (user) {
+      if (user.password && user.password !== cleanPass) {
+        return { success: false, message: 'Incorrect password. Please enter the correct password.' };
+      }
       setCurrentUser(user);
       return { success: true, user };
     }
 
-    // Allow fast guest/direct login if valid email or phone
-    const fallbackUser = {
-      id: `usr-${Date.now()}`,
-      name: cleanEmail.includes('@') ? cleanEmail.split('@')[0] : 'Customer',
-      email: cleanEmail,
-      phone: cleanEmail.replace(/[^\d]/g, '') || '9876543210',
-      avatar: cleanEmail.charAt(0).toUpperCase(),
-      isVip: true,
-      createdAt: new Date().toISOString()
+    return { 
+      success: false, 
+      message: 'Account not found. Please create a new account before signing in.' 
     };
-    setCurrentUser(fallbackUser);
-    setRegisteredUsers((prev) => [fallbackUser, ...prev]);
-    return { success: true, user: fallbackUser };
   };
 
   const signupCustomer = async ({ name, email, phone, password, address }) => {
     const cleanEmail = email ? email.toLowerCase().trim() : '';
     const cleanName = sanitizeInput(name);
-    const cleanPhone = phone ? phone.replace(/[^\d+]/g, '').trim() : '';
+    const cleanPhone = phone ? phone.replace(/[^\d]/g, '').trim() : '';
     const cleanAddress = address ? sanitizeInput(address) : 'Nandyal, Andhra Pradesh';
+    const cleanPass = password ? password.trim() : '';
 
     if (!cleanName || cleanName.length < 2) {
       return { success: false, message: 'Please enter a valid full name.' };
@@ -861,20 +864,38 @@ export const StoreProvider = ({ children }) => {
       return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
     }
 
+    if (!cleanPass || cleanPass.length < 4) {
+      return { success: false, message: 'Password must be at least 4 characters long.' };
+    }
+
+    // Check local duplicate
+    const localExists = registeredUsers.some(
+      (u) => (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone) ||
+             (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail)
+    );
+
+    if (localExists) {
+      return { 
+        success: false, 
+        message: 'An account with this phone number or email already exists. Please log in.' 
+      };
+    }
+
     const newUser = {
-      id: `usr-${Date.now()}`,
+      id: `cust-${Date.now()}`,
       name: cleanName,
       email: cleanEmail || `${cleanPhone}@vasavistore.in`,
       phone: cleanPhone,
       address: cleanAddress,
+      password: cleanPass,
       avatar: cleanName ? cleanName.charAt(0).toUpperCase() : '👤',
       isVip: true,
       createdAt: new Date().toISOString()
     };
 
-    // Save to Cloud Backend (Supabase customers table)
+    // 1. Save to Cloud Database (Supabase customers table)
     try {
-      fetch(`${API_BASE_URL}/api/auth/register`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -882,14 +903,26 @@ export const StoreProvider = ({ children }) => {
           email: cleanEmail,
           phone: cleanPhone,
           address: cleanAddress,
-          password: password || '123456'
+          password: cleanPass
         })
-      }).catch(() => {});
-    } catch (e) {}
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        if (res.status === 409 || data?.error) {
+          return { success: false, message: data?.error || 'Account already registered with this phone number.' };
+        }
+      } else if (data?.user) {
+        newUser.id = data.user.id || newUser.id;
+      }
+    } catch (e) {
+      console.warn('[Vasavi] Cloud customer register fetch error:', e);
+    }
 
     setRegisteredUsers((prev) => [newUser, ...prev]);
     setCurrentUser(newUser);
-    return { success: true, user: newUser };
+    return { success: true, user: newUser, message: 'Account registered successfully!' };
   };
 
   const logoutCustomer = () => {
@@ -978,6 +1011,7 @@ export const StoreProvider = ({ children }) => {
         setIsWishlistOpen,
         language,
         toggleLanguage,
+        t: (key, fallback) => getTranslation(language, key, fallback),
         loginAdmin,
         logoutAdmin,
         refreshCloudData: fetchCloudData,

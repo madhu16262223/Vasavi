@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { X, ShoppingBag, Star, Zap, Check, ShieldCheck, Truck, MessageCircle, Heart, Sparkles, Award } from 'lucide-react';
 
 export const ProductDetailModal = () => {
-  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviewsList = [], addReview, currentUser, openAuthModal, storeInfo, toggleWishlist, isInWishlist, language, categories = [] } = useStore();
+  const { selectedProduct, setSelectedProduct, addToCart, setIsCartOpen, reviewsList = [], addReview, currentUser, openAuthModal, storeInfo, toggleWishlist, isInWishlist, language, categories = [], t } = useStore();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'reviews'
@@ -18,21 +18,35 @@ export const ProductDetailModal = () => {
 
   const inWishlist = isInWishlist(selectedProduct.id);
   const productReviews = reviewsList.filter((r) => r.productId === selectedProduct.id);
-  const avgRating = productReviews.length > 0
-    ? (productReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / productReviews.length).toFixed(1)
-    : '4.8';
+  const avgRating = productReviews.length
+    ? (productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1)
+    : (selectedProduct.rating || 5.0);
 
   const isOutOfStock = selectedProduct.stock <= 0;
-  const maxAvailable = selectedProduct.stock || 1;
-
   const discountPercent = selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price
     ? Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)
     : 0;
 
-  const handleAddToCart = () => {
-    addToCart(selectedProduct, quantity);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000);
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
+
+    if (!reviewComment.trim()) return;
+
+    addReview({
+      productId: selectedProduct.id,
+      rating: reviewRating,
+      customerName: reviewName.trim() || currentUser.name || 'Verified Customer',
+      customerPhone: currentUser?.phone || null,
+      comment: reviewComment.trim()
+    });
+
+    setReviewSuccess(true);
+    setReviewComment('');
+    setTimeout(() => setReviewSuccess(false), 3000);
   };
 
   const handleInstantBuyNow = () => {
@@ -45,53 +59,30 @@ export const ProductDetailModal = () => {
     setIsCartOpen(true);
   };
 
-  const handleReviewSubmit = (e) => {
-    e.preventDefault();
-    if (!reviewName.trim()) return;
-
-    addReview({
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
-      customerName: reviewName.trim(),
-      customerPhone: currentUser?.phone || null,
-      rating: reviewRating,
-      comment: reviewComment.trim()
-    });
-
-    setReviewComment('');
-    setReviewSuccess(true);
-    setTimeout(() => setReviewSuccess(false), 3000);
-  };
-
-  const handleWhatsAppQuickOrder = () => {
+  const handleWhatsAppInquiry = () => {
+    let msg = `Hello Vasavi Fancy Store 👋\n`;
+    msg += `I am interested in buying *${selectedProduct.name}* (Price: ₹${selectedProduct.price}).\n`;
+    msg += `Is this item currently available in stock? Thank you!`;
     const waNumber = storeInfo?.whatsappNumber || '918309917665';
-    let msg = `🛍️ PRODUCT INQUIRY - VASAVI FANCY STORE\n`;
-    msg += `────────────────────────\n`;
-    msg += `Hello Ramcharan Garu! I am interested in ordering this product:\n\n`;
-    msg += `📦 Product: ${selectedProduct.name}\n`;
-    msg += `💰 Price: ₹${selectedProduct.price} ${selectedProduct.originalPrice ? `(M.R.P. ₹${selectedProduct.originalPrice})` : ''}\n`;
-    msg += `🔢 Quantity: ${quantity}\n`;
-    msg += `💵 Total Amount: ₹${selectedProduct.price * quantity}\n`;
-    msg += `────────────────────────\n\n`;
-    msg += `Please confirm stock availability and share UPI QR / payment details. Thank you! 🙏`;
-
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
-      <div className="relative w-full max-w-4xl bg-[#fffcf7] border border-[#c99632]/40 rounded-3xl overflow-hidden shadow-2xl text-[#171717]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+      <div className="relative w-full max-w-4xl bg-[#fffcf7] border border-[#c99632]/40 rounded-3xl overflow-hidden shadow-2xl animate-scaleUp">
         
-        {/* Close & Wishlist Buttons */}
+        {/* Close & Wishlist Top Actions */}
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
           <button
             onClick={() => toggleWishlist(selectedProduct)}
-            className={`p-2.5 rounded-full backdrop-blur-md shadow-md transition-all ${
-              inWishlist ? 'bg-pink-50 text-pink-600 border border-pink-300' : 'bg-white/90 text-slate-500 hover:text-pink-600'
+            className={`p-2.5 rounded-full backdrop-blur-md transition-all shadow-md ${
+              inWishlist
+                ? 'bg-pink-50 text-pink-600 border border-pink-300'
+                : 'bg-white/90 text-[#666666] hover:text-pink-600 border border-[#c99632]/30'
             }`}
-            title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            title="Wishlist"
           >
-            <Heart className={`w-4 h-4 ${inWishlist ? 'fill-pink-500 text-pink-500' : ''}`} />
+            <Heart className={`w-5 h-5 ${inWishlist ? 'fill-pink-500 text-pink-500' : ''}`} />
           </button>
 
           <button
@@ -116,7 +107,7 @@ export const ProductDetailModal = () => {
               )}
               {selectedProduct.isTrending && (
                 <span className="bg-[#c99632] text-white font-black text-[10px] uppercase px-2.5 py-1 rounded-full shadow-md tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> TRENDING
+                  <Sparkles className="w-3 h-3" /> {t('card_trending')}
                 </span>
               )}
             </div>
@@ -134,11 +125,11 @@ export const ProductDetailModal = () => {
 
             {/* Micro Feature Highlights */}
             <div className="grid grid-cols-2 gap-2 w-full pt-4 text-[10px] font-bold text-[#555555]">
-              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-[#fffcf7] border border-[#c99632]/20">
-                <ShieldCheck className="w-4 h-4 text-[#c99632] shrink-0" />
+              <div className="flex items-center gap-1.5 bg-[#faf8f5] p-2 rounded-xl border border-[#c99632]/20">
+                <Award className="w-4 h-4 text-[#c99632] shrink-0" />
                 <span>100% Authentic Quality</span>
               </div>
-              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-[#fffcf7] border border-[#c99632]/20">
+              <div className="flex items-center gap-1.5 bg-[#faf8f5] p-2 rounded-xl border border-[#c99632]/20">
                 <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Fast Nandyal Delivery</span>
               </div>
@@ -146,7 +137,7 @@ export const ProductDetailModal = () => {
 
           </div>
 
-          {/* Right Column: Details & Reviews */}
+          {/* Right Column: Details & Purchasing */}
           <div className="p-6 sm:p-8 flex flex-col justify-between space-y-4 max-h-[550px] overflow-y-auto">
             
             {/* Header Tabs (Overview vs Reviews) */}
@@ -157,7 +148,7 @@ export const ProductDetailModal = () => {
                   activeTab === 'details' ? 'bg-[#c99632] text-white shadow-xs' : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                {language === 'te' ? 'వివరాలు' : 'Product Details'}
+                {t('modal_details_tab')}
               </button>
               <button
                 onClick={() => setActiveTab('reviews')}
@@ -165,7 +156,7 @@ export const ProductDetailModal = () => {
                   activeTab === 'reviews' ? 'bg-[#c99632] text-white shadow-xs' : 'text-[#666666] hover:text-[#171717]'
                 }`}
               >
-                <span>⭐ {language === 'te' ? 'రివ్యూలు' : 'Reviews'}</span>
+                <span>⭐ {t('modal_reviews_tab')}</span>
                 <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full font-bold">
                   {productReviews.length}
                 </span>
@@ -192,7 +183,7 @@ export const ProductDetailModal = () => {
                   {/* Social Proof Urgency Badge */}
                   <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-xl">
                     <span>🔥</span>
-                    <span>{language === 'te' ? 'ప్రస్తుతం 4 గురు ఈ వస్తువును చూస్తున్నారు • వేగంగా అమ్ముడవుతోంది!' : '4 people looking at this item right now in Nandyal • Selling Fast!'}</span>
+                    <span>{t('modal_live_viewers')}</span>
                   </div>
 
                   {/* Rating summary */}
@@ -201,7 +192,7 @@ export const ProductDetailModal = () => {
                       {'★'.repeat(5)}
                     </div>
                     <span className="text-xs font-bold text-[#171717]">{avgRating} / 5</span>
-                    <span className="text-xs text-[#888888]">({productReviews.length} {language === 'te' ? 'రివ్యూలు' : 'customer reviews'})</span>
+                    <span className="text-xs text-[#888888]">({productReviews.length} {language === 'te' ? 'కస్టమర్ రివ్యూలు' : 'customer reviews'})</span>
                   </div>
                 </div>
 
@@ -216,7 +207,7 @@ export const ProductDetailModal = () => {
                   <span className={`ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full ${
                     isOutOfStock ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
                   }`}>
-                    {isOutOfStock ? 'Out of Stock' : `In Stock: ${selectedProduct.stock} units`}
+                    {isOutOfStock ? (language === 'te' ? 'స్టాక్ అయిపోయింది' : 'Out of Stock') : (language === 'te' ? `స్టాక్ ఉంది: ${selectedProduct.stock}` : `In Stock: ${selectedProduct.stock} units`)}
                   </span>
                 </div>
 
@@ -227,7 +218,7 @@ export const ProductDetailModal = () => {
 
                 {/* Quantity Selector */}
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-bold text-[#171717]">Select Quantity:</span>
+                  <span className="text-xs font-bold text-[#171717]">{t('modal_quantity')}:</span>
                   <div className="flex items-center border border-[#c99632]/40 rounded-xl overflow-hidden bg-white shadow-2xs">
                     <button
                       disabled={quantity <= 1}
@@ -238,8 +229,8 @@ export const ProductDetailModal = () => {
                     </button>
                     <span className="px-4 py-1.5 text-xs font-black text-[#171717]">{quantity}</span>
                     <button
-                      disabled={quantity >= maxAvailable}
-                      onClick={() => setQuantity(Math.min(maxAvailable, quantity + 1))}
+                      disabled={quantity >= (selectedProduct.stock || 99)}
+                      onClick={() => setQuantity(quantity + 1)}
                       className="px-3 py-1.5 text-sm font-bold text-[#171717] hover:bg-[#e8c7b5]/30 disabled:opacity-40"
                     >
                       +
@@ -248,32 +239,30 @@ export const ProductDetailModal = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="space-y-2.5 pt-3 border-t border-[#c99632]/20">
-                  <button
-                    onClick={handleWhatsAppQuickOrder}
-                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:bg-emerald-700 transition-all"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>ORDER INSTANTLY VIA WHATSAPP</span>
-                  </button>
-
-                  <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-2 pt-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       disabled={isOutOfStock}
-                      onClick={handleAddToCart}
-                      className={`py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-xs ${
-                        isAdded
-                          ? 'bg-emerald-50 border border-emerald-500 text-emerald-700 font-bold'
-                          : 'bg-white border border-[#c99632] text-[#171717] hover:bg-[#e8c7b5]/30'
+                      onClick={() => {
+                        addToCart(selectedProduct, quantity);
+                        setIsAdded(true);
+                        setTimeout(() => setIsAdded(false), 2000);
+                      }}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+                        isOutOfStock
+                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                          : isAdded
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                          : 'bg-white border-[#c99632] text-[#171717] hover:bg-[#e8c7b5]/20 shadow-xs'
                       }`}
                     >
                       {isAdded ? (
                         <>
-                          <Check className="w-4 h-4 text-emerald-600" /> Added to Cart!
+                          <Check className="w-4 h-4 text-emerald-600" /> {language === 'te' ? 'కార్ట్‌కి చేర్చబడింది!' : 'Added to Cart!'}
                         </>
                       ) : (
                         <>
-                          <ShoppingBag className="w-4 h-4 text-[#c99632]" /> Add to Cart
+                          <ShoppingBag className="w-4 h-4 text-[#c99632]" /> {t('modal_add_to_cart')}
                         </>
                       )}
                     </button>
@@ -283,7 +272,7 @@ export const ProductDetailModal = () => {
                       onClick={handleInstantBuyNow}
                       className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md gold-glow"
                     >
-                      <Zap className="w-4 h-4" /> {currentUser ? 'Instant Buy' : '🔐 Login to Buy'}
+                      <Zap className="w-4 h-4" /> {currentUser ? t('modal_buy_now') : t('modal_login_to_buy')}
                     </button>
                   </div>
                 </div>

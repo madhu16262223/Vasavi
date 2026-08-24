@@ -9,7 +9,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     placeOrder,
     storeInfo,
     currentUser,
-    coupons = []
+    coupons = [],
+    t,
+    language
   } = useStore();
 
   const [step, setStep] = useState('DETAILS'); // 'DETAILS' | 'PAYMENT' | 'FAILURE'
@@ -49,7 +51,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     setCouponMsg('');
     const code = couponCode.trim().toUpperCase();
     if (!code) {
-      setCouponMsg('Please enter a coupon code.');
+      setCouponMsg(language === 'te' ? 'దయచేసి కూపన్ కోడ్ నమోదు చేయండి.' : 'Please enter a coupon code.');
       return;
     }
 
@@ -78,217 +80,151 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Fallback static rules
-    if (code === 'RAKHI100' || code === 'FESTIVE100') {
-      if (rawTotal < 499) {
-        setCouponMsg(`Min order ₹499 required for ${code}`);
-        return;
-      }
-      setCouponDiscount(100);
-      setAppliedCoupon(code);
-      setCouponMsg(`🎉 ${code} applied! Flat ₹100 OFF`);
-    } else if (code === 'RAKHI50' || code === 'WELCOME50') {
-      if (rawTotal < 200) {
-        setCouponMsg(`Min order ₹200 required for ${code}`);
+    // Fallback static coupons
+    if (code === 'WELCOME50') {
+      if (rawTotal < 300) {
+        setCouponMsg('Min order ₹300 required for WELCOME50');
         return;
       }
       setCouponDiscount(50);
-      setAppliedCoupon(code);
-      setCouponMsg(`🎉 ${code} applied! Flat ₹50 OFF`);
+      setAppliedCoupon('WELCOME50');
+      setCouponMsg('🎉 WELCOME50 applied! Flat ₹50 OFF');
     } else if (code === 'VASAVI10') {
-      if (rawTotal < 300) {
-        setCouponMsg('Min order ₹300 required for VASAVI10');
+      if (rawTotal < 500) {
+        setCouponMsg('Min order ₹500 required for VASAVI10');
         return;
       }
-      const disc = Math.min(200, Math.round(rawTotal * 0.10));
+      const disc = Math.round(rawTotal * 0.10);
       setCouponDiscount(disc);
       setAppliedCoupon('VASAVI10');
       setCouponMsg(`🎉 VASAVI10 applied! 10% OFF (Saved ₹${disc})`);
+    } else if (code === 'FESTIVE100') {
+      if (rawTotal < 1000) {
+        setCouponMsg('Min order ₹1000 required for FESTIVE100');
+        return;
+      }
+      setCouponDiscount(100);
+      setAppliedCoupon('FESTIVE100');
+      setCouponMsg('🎉 FESTIVE100 applied! Flat ₹100 OFF');
     } else {
-      setCouponMsg('❌ Invalid or expired coupon code.');
+      setCouponMsg(language === 'te' ? 'చెల్లని కూపన్ కోడ్. దయచేసి సరైన కోడ్ ఇవ్వండి.' : 'Invalid coupon code. Try WELCOME50 or VASAVI10');
     }
   };
 
-  const sanitizeText = (val) => {
-    if (!val || typeof val !== 'string') return '';
-    return val.replace(/[<>]/g, '').trim();
-  };
-
-  const handleProceedToPayment = (e) => {
+  const handleStepOneSubmit = (e) => {
     e.preventDefault();
-    const cleanName = sanitizeText(customerName);
-    const cleanPhone = customerPhone.replace(/[^\d]/g, '');
-    const cleanAddress = sanitizeText(customerAddress);
-    const cleanPincode = pincode.replace(/[^\d]/g, '');
-
-    if (!cleanName || cleanName.length < 2) {
-      setErrorMessage('Please enter a valid Full Name.');
+    if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
+      setErrorMessage(language === 'te' ? 'దయచేసి పేరు, ఫోన్ నంబర్ మరియు చిరునామా నమోదు చేయండి.' : 'Please fill out all required fields.');
       return;
     }
 
-    // Strict 10-digit Indian Mobile Number validation
-    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
-      setErrorMessage('Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).');
+    const cleanPhone = customerPhone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      setErrorMessage(language === 'te' ? 'దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter a valid 10-digit phone number.');
       return;
     }
 
-    if (!cleanAddress || cleanAddress.length < 5) {
-      setErrorMessage('Please enter your complete delivery address (House No, Street/Colony).');
-      return;
-    }
-
-    if (!/^\d{6}$/.test(cleanPincode)) {
-      setErrorMessage('Please enter a valid 6-digit postal PIN code (e.g. 518501).');
-      return;
-    }
-
-    setCustomerName(cleanName);
-    setCustomerPhone(cleanPhone);
-    setCustomerAddress(cleanAddress);
-    setPincode(cleanPincode);
     setErrorMessage('');
     setStep('PAYMENT');
   };
 
-  /**
-   * SUBMIT ORDER: WHATSAPP ORDER OR CASH ON DELIVERY (COD)
-   */
   const handleFinalSubmitOrder = async () => {
     setIsProcessing(true);
     setErrorMessage('');
 
-    const formattedItems = cart.map(item => {
-      const p = item.product || item;
-      return {
-        productId: p.id || 'custom-prod',
-        productName: sanitizeText(p.name) || 'Vasavi Store Item',
-        quantity: Math.max(1, parseInt(item.quantity) || 1),
-        price: typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0)
+    try {
+      const orderPayload = {
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerAddress: `${customerAddress.trim()}, ${customerCity.trim()} - ${pincode.trim()}`,
+        items: cart.map(i => ({
+          productId: i.product.id,
+          productName: i.product.name,
+          quantity: i.quantity,
+          price: i.product.price,
+          subtotal: i.product.price * i.quantity,
+          image: i.product.image || i.product.imageUrl || ''
+        })),
+        totalAmount: finalAmount,
+        discountAmount: couponDiscount,
+        couponCode: appliedCoupon || null,
+        paymentMethod: paymentMethod, // 'WHATSAPP' | 'COD'
+        paymentStatus: 'PENDING',
+        notes: customerNotes.trim()
       };
-    });
 
-    const cleanAddress = sanitizeText(customerAddress);
-    const cleanCity = sanitizeText(customerCity);
-    const fullAddress = `${cleanAddress}, ${cleanCity} - ${pincode}`;
-    const orderNum = `VSV-${Math.floor(10000 + Math.random() * 90000)}`;
+      const result = await placeOrder(orderPayload);
 
-    if (paymentMethod === 'WHATSAPP') {
-      try {
-        // Save order locally / DB
-        const newOrder = placeOrder({
-          name: customerName,
-          phone: customerPhone,
-          address: fullAddress,
-          city: customerCity,
-          pincode,
-          notes: customerNotes,
-          paymentMethod: 'WHATSAPP',
-          paymentStatus: 'UNPAID',
-          orderNumber: orderNum
-        });
-
-        // Format Clean, Highly Professional WhatsApp Message without star artifacts
-        let message = `🛍️ NEW ORDER - VASAVI FANCY STORE\n`;
-        message += `────────────────────────\n`;
-        message += `Hello Ramcharan Garu! I have placed a new order on your store website.\n\n`;
-
-        message += `📋 ORDER DETAILS:\n`;
-        message += `• Order ID: #${orderNum}\n`;
-        message += `• Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}\n`;
-        message += `• Payment: WhatsApp Order (UPI / Scanner)\n\n`;
-
-        message += `👤 CUSTOMER INFORMATION:\n`;
-        message += `• Name: ${customerName}\n`;
-        message += `• Phone: +91 ${customerPhone}\n`;
-        message += `• Address: ${fullAddress}\n`;
-        if (customerNotes) {
-          message += `• Landmark / Note: ${customerNotes}\n`;
-        }
-        message += `\n`;
-
-        message += `📦 ITEMS ORDERED:\n`;
-        message += `────────────────────────\n`;
-        cart.forEach((item, index) => {
-          const p = item.product || item;
-          message += `${index + 1}. ${p.name}\n`;
-          message += `   Qty: ${item.quantity} × ₹${p.price} = ₹${p.price * item.quantity}\n`;
-        });
-        message += `────────────────────────\n\n`;
-
-        message += `💳 BILL SUMMARY:\n`;
-        message += `• Items Total: ₹${rawTotal}\n`;
-        if (couponDiscount > 0) {
-          message += `• Discount (${appliedCoupon}): -₹${couponDiscount}\n`;
-        }
-        message += `• Delivery Charge: FREE (Nandyal)\n`;
-        message += `• TOTAL PAYABLE: ₹${finalAmount}\n\n`;
-
-        message += `────────────────────────\n`;
-        message += `Please confirm my order and share your UPI QR / PhonePe number for payment. Thank you! 🙏`;
-
+      if (paymentMethod === 'WHATSAPP') {
         const waNumber = storeInfo?.whatsappNumber || '918309917665';
-        const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+        let msg = `🛍️ *NEW ORDER - VASAVI FANCY STORE*\n`;
+        msg += `────────────────────────\n`;
+        msg += `📋 *Order ID:* ${result.orderNumber || result.id}\n`;
+        msg += `👤 *Customer:* ${customerName.trim()}\n`;
+        msg += `📞 *Phone:* ${customerPhone.trim()}\n`;
+        msg += `📍 *Delivery Address:* ${customerAddress.trim()}, ${customerCity} - ${pincode}\n\n`;
+        msg += `📦 *ITEMS ORDERED:*\n`;
 
-        setIsProcessing(false);
-        onClose();
-        window.open(waUrl, '_blank');
-      } catch (err) {
-        setIsProcessing(false);
-        setErrorMessage('Could not initialize WhatsApp order. Please try again.');
-      }
-    } else {
-      // CASH ON DELIVERY (COD)
-      try {
-        placeOrder({
-          name: customerName,
-          phone: customerPhone,
-          address: fullAddress,
-          city: customerCity,
-          pincode,
-          notes: customerNotes,
-          paymentMethod: 'COD',
-          paymentStatus: 'PENDING',
-          orderNumber: orderNum
+        cart.forEach((item, idx) => {
+          msg += `${idx + 1}. ${item.product.name} (Qty: ${item.quantity}) - ₹${item.product.price * item.quantity}\n`;
         });
-        setIsProcessing(false);
-        onClose();
-      } catch (err) {
-        setIsProcessing(false);
-        setErrorMessage('Failed to place Cash on Delivery order.');
+
+        msg += `\n💵 *Total Amount:* ₹${finalAmount}\n`;
+        if (couponDiscount > 0) {
+          msg += `🎟️ *Coupon Applied:* ${appliedCoupon} (-₹${couponDiscount})\n`;
+        }
+        msg += `💳 *Payment Option:* WhatsApp Order / UPI\n`;
+        msg += `────────────────────────\n`;
+        msg += `Hello Ramcharan Garu, please confirm this order and share UPI QR / Payment instructions. Thank you! 🙏`;
+
+        window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
       }
+
+      setIsProcessing(false);
+      onClose();
+    } catch (err) {
+      setIsProcessing(false);
+      setErrorMessage(err.message || 'Could not process order. Please try again.');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-[#fffcf7] border border-[#c99632]/40 rounded-3xl overflow-hidden shadow-2xl text-[#171717]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
+      <div className="relative w-full max-w-xl bg-[#fffcf7] border border-[#c99632]/40 rounded-3xl overflow-hidden shadow-2xl animate-scaleUp">
         
-        {/* Modal Header */}
-        <div className="p-5 sm:p-6 bg-white border-b border-[#c99632]/20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-[#c99632]" />
+        {/* Header */}
+        <div className="p-4 sm:p-6 bg-white border-b border-[#c99632]/20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-[#fff3c4] text-[#c99632]">
+              <Lock className="w-5 h-5" />
+            </div>
             <div>
-              <h2 className="text-lg font-bold font-serif-luxury text-[#171717]">Complete Your Order</h2>
-              <p className="text-[11px] text-[#666666] font-medium">Vasavi Fancy Store • WhatsApp & COD Checkout</p>
+              <h3 className="font-serif-luxury text-lg font-bold text-[#171717]">
+                {language === 'te' ? 'సురక్షిత చెక్అవుట్' : 'Secure Checkout'}
+              </h3>
+              <p className="text-[11px] text-[#666666]">
+                {language === 'te' ? 'వాసవి ఫ్యాన్సీ స్టోర్, నంద్యాల' : 'Vasavi Fancy Store, Nandyal'}
+              </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-[#fffcf7] text-[#171717] hover:bg-[#e8c7b5]/30 transition-colors"
+            className="p-2 rounded-full hover:bg-[#faf8f5] text-slate-500 hover:text-[#171717]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Content */}
-        <div className="p-5 sm:p-8 max-h-[80vh] overflow-y-auto space-y-6">
-
-          {/* STEP 1: Customer Shipping Details */}
+        {/* Content */}
+        <div className="p-4 sm:p-6 max-h-[75vh] overflow-y-auto space-y-6">
+          
+          {/* STEP 1: Customer Details */}
           {step === 'DETAILS' && (
-            <form onSubmit={handleProceedToPayment} className="space-y-4">
+            <form onSubmit={handleStepOneSubmit} className="space-y-4">
               <div className="flex items-center gap-2 text-xs uppercase font-bold tracking-wider text-[#c99632]">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>1. Customer & Shipping Address</span>
+                <span>1. {language === 'te' ? 'కస్టమర్ & డెలివరీ చిరునామా' : 'Customer & Shipping Address'}</span>
               </div>
 
               {errorMessage && (
@@ -300,7 +236,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">Full Name *</label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                    {language === 'te' ? 'పూర్తి పేరు *' : 'Full Name *'}
+                  </label>
                   <input
                     type="text"
                     required
@@ -312,7 +250,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">Phone Number *</label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                    {language === 'te' ? 'మొబైల్ నంబర్ *' : 'Phone Number *'}
+                  </label>
                   <input
                     type="tel"
                     required
@@ -325,7 +265,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#171717] mb-1">Delivery Address & Landmark *</label>
+                <label className="block text-xs font-bold text-[#171717] mb-1">
+                  {language === 'te' ? 'డెలివరీ చిరునామా & ల్యాండ్‌మార్క్ *' : 'Delivery Address & Landmark *'}
+                </label>
                 <textarea
                   required
                   rows={2}
@@ -338,7 +280,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">Town / City</label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                    {language === 'te' ? 'పట్టణం / ఊరు' : 'Town / City'}
+                  </label>
                   <input
                     type="text"
                     value={customerCity}
@@ -347,7 +291,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">Pincode</label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                    {language === 'te' ? 'పిన్‌కోడ్' : 'Pincode'}
+                  </label>
                   <input
                     type="text"
                     value={pincode}
@@ -361,7 +307,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               <div className="p-3.5 rounded-2xl bg-[#fffcf7] border border-[#c99632]/40 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-[#171717]">
                   <span className="flex items-center gap-1.5 text-[#c99632]">
-                    🎟️ Have a Coupon or Offer Code?
+                    🎟️ {language === 'te' ? 'కూపన్ లేదా ఆఫర్ కోడ్ ఉందా?' : 'Have a Coupon or Offer Code?'}
                   </span>
                   {appliedCoupon && (
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
@@ -383,7 +329,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     onClick={handleApplyCoupon}
                     className="px-4 py-2 bg-[#c99632] hover:bg-[#a6751d] text-white text-xs font-bold rounded-xl shadow-xs transition-all"
                   >
-                    Apply
+                    {language === 'te' ? 'వర్తించు' : 'Apply'}
                   </button>
                 </div>
 
@@ -392,52 +338,29 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     {couponMsg}
                   </p>
                 )}
-
-                {/* Quick Suggestion Pills */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => { setCouponCode('WELCOME50'); }}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-[#c99632]/30 text-[#c99632] hover:bg-[#fff3c4]"
-                  >
-                    WELCOME50 (₹50 OFF)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setCouponCode('VASAVI10'); }}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-[#c99632]/30 text-[#c99632] hover:bg-[#fff3c4]"
-                  >
-                    VASAVI10 (10% OFF)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setCouponCode('FESTIVE100'); }}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-[#c99632]/30 text-[#c99632] hover:bg-[#fff3c4]"
-                  >
-                    FESTIVE100 (₹100 OFF)
-                  </button>
-                </div>
               </div>
 
               {/* Summary Card */}
               <div className="p-4 rounded-2xl bg-white border border-[#c99632]/30 space-y-2 shadow-xs">
                 <div className="flex justify-between text-xs text-[#666666] font-medium">
-                  <span>Cart Subtotal:</span>
+                  <span>{language === 'te' ? 'కార్ట్ మొత్తం:' : 'Cart Subtotal:'}</span>
                   <span className="font-bold text-[#171717]">₹{rawTotal}</span>
                 </div>
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-xs text-emerald-700 font-bold">
-                    <span>Coupon Discount ({appliedCoupon}):</span>
+                    <span>{language === 'te' ? 'కూపన్ డిస్కౌంట్' : 'Coupon Discount'} ({appliedCoupon}):</span>
                     <span>-₹{couponDiscount}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-2 border-t border-[#c99632]/20">
                   <div>
-                    <span className="text-xs text-[#666666] font-medium block">Total Payable:</span>
+                    <span className="text-xs text-[#666666] font-medium block">
+                      {language === 'te' ? 'చెల్లించవలసిన మొత్తం:' : 'Total Payable:'}
+                    </span>
                     <span className="text-xl font-bold text-[#c99632]">₹{finalAmount}</span>
                   </div>
                   <span className="text-xs bg-[#e8c7b5]/50 text-[#171717] px-3 py-1 rounded-full font-bold">
-                    {cart.length} Products
+                    {cart.length} {language === 'te' ? 'వస్తువులు' : 'Products'}
                   </span>
                 </div>
               </div>
@@ -446,7 +369,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 type="submit"
                 className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-sm shadow-md hover:brightness-110 flex items-center justify-center gap-2 transition-all"
               >
-                <span>CHOOSE PAYMENT & ORDER METHOD</span>
+                <span>{language === 'te' ? 'చెల్లింపు విధానాన్ని ఎంచుకోండి' : 'CHOOSE PAYMENT & ORDER METHOD'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
@@ -458,13 +381,13 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs uppercase font-bold tracking-wider text-[#c99632]">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>2. Choose Order & Payment Option</span>
+                  <span>2. {language === 'te' ? 'ఆర్డర్ & చెల్లింపు విధానం' : 'Choose Order & Payment Option'}</span>
                 </div>
                 <button
                   onClick={() => setStep('DETAILS')}
                   className="text-xs text-[#c99632] hover:underline font-bold"
                 >
-                  ← Edit Address
+                  ← {language === 'te' ? 'చిరునామా మార్చండి' : 'Edit Address'}
                 </button>
               </div>
 
@@ -487,10 +410,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-[#171717] flex items-center gap-2">
-                          <span>Order via WhatsApp (Recommended)</span>
+                          <span>{language === 'te' ? 'వాట్సాప్ ద్వారా ఆర్డర్ చేయండి (సిఫార్సు)' : 'Order via WhatsApp (Recommended)'}</span>
                           <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">Fastest</span>
                         </h4>
-                        <p className="text-[11px] text-[#666666]">Send order to WhatsApp + Pay via UPI / GPay / PhonePe directly to store owner</p>
+                        <p className="text-[11px] text-[#666666]">
+                          {language === 'te' ? 'వాట్సాప్‌లో ఆర్డర్ పంపండి + UPI / GPay / PhonePe ద్వారా నేరుగా ఓనర్‌కి చెల్లించండి' : 'Send order to WhatsApp + Pay via UPI / GPay / PhonePe directly to store owner'}
+                        </p>
                       </div>
                     </div>
                     <input
@@ -518,8 +443,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                         <Building className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-[#171717]">Cash on Delivery (COD)</h4>
-                        <p className="text-[11px] text-[#666666]">Pay cash at your doorstep when delivered in Nandyal</p>
+                        <h4 className="text-sm font-bold text-[#171717]">
+                          {language === 'te' ? 'క్యాష్ ఆన్ డెలివరీ (COD)' : 'Cash on Delivery (COD)'}
+                        </h4>
+                        <p className="text-[11px] text-[#666666]">
+                          {language === 'te' ? 'నంద్యాలలో డెలివరీ సమయంలో నేరుగా నగదు చెల్లించండి' : 'Pay cash at your doorstep when delivered in Nandyal'}
+                        </p>
                       </div>
                     </div>
                     <input
@@ -537,16 +466,22 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               {/* Order Summary Line */}
               <div className="p-4 rounded-2xl bg-white border border-[#c99632]/30 space-y-2">
                 <div className="flex justify-between text-xs text-[#666666]">
-                  <span>Items Subtotal:</span>
-                  <span className="font-bold text-[#171717]">₹{totalAmount}</span>
+                  <span>{language === 'te' ? 'వస్తువుల మొత్తం:' : 'Items Subtotal:'}</span>
+                  <span className="font-bold text-[#171717]">₹{rawTotal}</span>
                 </div>
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-xs text-emerald-600 font-bold">
+                    <span>{language === 'te' ? 'డిస్కౌంట్' : 'Discount'} ({appliedCoupon}):</span>
+                    <span>-₹{couponDiscount}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs text-[#666666]">
-                  <span>Delivery Charge (Nandyal):</span>
-                  <span className="font-bold text-emerald-600">FREE</span>
+                  <span>{language === 'te' ? 'డెలివరీ చార్జీలు (నంద్యాల):' : 'Delivery Charge (Nandyal):'}</span>
+                  <span className="font-bold text-emerald-600">{language === 'te' ? 'ఉచితం' : 'FREE'}</span>
                 </div>
                 <div className="pt-2 border-t border-[#c99632]/20 flex justify-between items-center text-sm font-bold text-[#171717]">
-                  <span>Final Amount:</span>
-                  <span className="text-xl font-bold text-[#c99632]">₹{totalAmount}</span>
+                  <span>{language === 'te' ? 'మొత్తం బిల్లు:' : 'Final Amount:'}</span>
+                  <span className="text-xl font-bold text-[#c99632]">₹{finalAmount}</span>
                 </div>
               </div>
 
@@ -561,10 +496,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               >
                 <span>
                   {isProcessing
-                    ? 'Processing Order...'
+                    ? (language === 'te' ? 'ఆర్డర్ ప్రాసెస్ అవుతోంది...' : 'Processing Order...')
                     : paymentMethod === 'WHATSAPP'
-                    ? `SEND ORDER TO WHATSAPP (₹${totalAmount})`
-                    : 'CONFIRM CASH ON DELIVERY ORDER'}
+                    ? (language === 'te' ? `వాట్సాప్‌లో ఆర్డర్ పంపండి (₹${finalAmount})` : `SEND ORDER TO WHATSAPP (₹${finalAmount})`)
+                    : (language === 'te' ? `COD ఆర్డర్ నిర్ధారించండి (₹${finalAmount})` : `CONFIRM CASH ON DELIVERY ORDER (₹${finalAmount})`)}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -579,9 +514,11 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-[#171717]">Payment was not completed.</h3>
+                <h3 className="text-xl font-bold text-[#171717]">
+                  {language === 'te' ? 'చెల్లింపు పూర్తికాలేదు.' : 'Payment was not completed.'}
+                </h3>
                 <p className="text-xs text-[#666666] max-w-sm mx-auto">
-                  {errorMessage || 'The payment process was cancelled or encountered a gateway error.'}
+                  {errorMessage || 'The payment process was cancelled or encountered an error.'}
                 </p>
               </div>
 
@@ -593,7 +530,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   }}
                   className="py-3 px-4 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-md flex items-center justify-center gap-2"
                 >
-                  <RefreshCw className="w-4 h-4" /> Try Payment Again
+                  <RefreshCw className="w-4 h-4" /> {language === 'te' ? 'మళ్లీ ప్రయత్నించండి' : 'Try Payment Again'}
                 </button>
 
                 <button
@@ -603,7 +540,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   }}
                   className="py-3 px-4 rounded-xl bg-[#faf8f5] border border-[#c99632]/40 text-[#171717] font-bold text-xs hover:bg-[#fff3c4]/50 flex items-center justify-center gap-2"
                 >
-                  <Building className="w-4 h-4 text-[#c99632]" /> Continue with COD
+                  <Building className="w-4 h-4 text-[#c99632]" /> {language === 'te' ? 'COD తో కొనసాగించండి' : 'Continue with COD'}
                 </button>
               </div>
             </div>

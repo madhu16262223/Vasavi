@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { ShoppingBag, Star, Eye, Sparkles, Zap, Check, Heart } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
-  const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist, categories = [] } = useStore();
+  const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist, categories = [], t, language } = useStore();
 
   const [isAdded, setIsAdded] = useState(false);
   const isOutOfStock = product.stock <= 0;
@@ -11,7 +11,16 @@ export const ProductCard = ({ product }) => {
 
   // Match category name dynamically
   const catObj = categories.find(c => c.id === product.categoryId || c.slug === product.categoryId);
-  const categoryTitle = product.categoryName || catObj?.name || product.category || 'Vasavi';
+  let categoryTitle = product.categoryName || catObj?.name || product.category || 'Vasavi';
+  if (language === 'te') {
+    const nameLower = categoryTitle.toLowerCase();
+    if (nameLower.includes('cosmetic')) categoryTitle = t('cat_cosmetics');
+    else if (nameLower.includes('jewel')) categoryTitle = t('cat_jewellery');
+    else if (nameLower.includes('bangle')) categoryTitle = t('cat_bangles');
+    else if (nameLower.includes('bag')) categoryTitle = t('cat_handbags');
+    else if (nameLower.includes('hair')) categoryTitle = t('cat_hair');
+    else if (nameLower.includes('rakhi')) categoryTitle = t('cat_rakhis');
+  }
 
   const discountPct = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -60,12 +69,12 @@ export const ProductCard = ({ product }) => {
           <div className="flex flex-col gap-1">
             {product.isTrending && (
               <span className="text-[9px] uppercase font-bold bg-[#e88a9a] text-white px-2 py-0.5 rounded-full shadow-md flex items-center gap-0.5">
-                <Sparkles className="w-2.5 h-2.5" /> Trending
+                <Sparkles className="w-2.5 h-2.5" /> {t('card_trending')}
               </span>
             )}
             {product.isBestSeller && !product.isTrending && (
               <span className="text-[9px] uppercase font-bold bg-[#c99632] text-white px-2 py-0.5 rounded-full shadow-md">
-                Bestseller
+                {t('card_bestseller')}
               </span>
             )}
           </div>
@@ -73,19 +82,19 @@ export const ProductCard = ({ product }) => {
           <div className="flex items-center gap-1.5 pointer-events-auto">
             {discountPct && (
               <span className="text-[9px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-md">
-                {discountPct}% OFF
+                {discountPct}% {t('card_off')}
               </span>
             )}
 
             {/* Wishlist Heart Button */}
             <button
               onClick={handleWishlistToggle}
-              className={`p-1.5 rounded-full backdrop-blur-md shadow-md transition-all ${
-                inWishlist ? 'bg-pink-50 text-pink-600 border border-pink-300' : 'bg-white/80 text-slate-500 hover:text-pink-600 hover:bg-white'
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                inWishlist ? 'bg-rose-500 text-white shadow-md' : 'bg-white/90 text-[#666666] hover:text-rose-500 border border-slate-200 shadow-sm'
               }`}
-              title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              title="Add to Wishlist"
             >
-              <Heart className={`w-3.5 h-3.5 ${inWishlist ? 'fill-pink-500 text-pink-500' : ''}`} />
+              <Heart className={`w-3.5 h-3.5 ${inWishlist ? 'fill-white' : ''}`} />
             </button>
           </div>
         </div>
@@ -94,7 +103,7 @@ export const ProductCard = ({ product }) => {
         {isOutOfStock && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center">
             <span className="bg-red-50 border border-red-500 text-red-600 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-              Out of Stock
+              {t('card_out_of_stock')}
             </span>
           </div>
         )}
@@ -115,17 +124,19 @@ export const ProductCard = ({ product }) => {
       </div>
 
       {/* Content */}
-      <div className="p-2.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3 bg-white">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between bg-white">
         <div>
-          <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-[#666666] mb-1">
-            <span className="uppercase tracking-wider text-[#c99632] font-bold truncate max-w-[90px] sm:max-w-none">{categoryTitle}</span>
-            <div className="flex items-center gap-0.5 text-amber-500 font-bold shrink-0">
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <span className="text-[10px] uppercase font-extrabold tracking-wider text-[#c99632] truncate">
+              {categoryTitle}
+            </span>
+            <div className="flex items-center gap-0.5 text-amber-500">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-              <span>{product.rating || '4.9'}</span>
+              <span className="text-[11px] font-bold text-[#171717]">{product.rating || '5.0'}</span>
             </div>
           </div>
 
-          <h3 className="text-xs sm:text-sm font-bold text-[#171717] group-hover:text-[#c99632] transition-colors line-clamp-2 leading-snug">
+          <h3 className="text-xs sm:text-sm font-bold text-[#171717] line-clamp-2 leading-snug group-hover:text-[#c99632] transition-colors mb-2">
             {product.name}
           </h3>
         </div>
@@ -139,9 +150,9 @@ export const ProductCard = ({ product }) => {
             )}
             <span className="ml-auto text-[9px] sm:text-[10px] font-medium hidden xs:inline">
               {isOutOfStock ? (
-                <span className="text-red-500 font-bold">Stock: 0</span>
+                <span className="text-red-500 font-bold">{t('card_out_of_stock')}</span>
               ) : (
-                <span className="text-emerald-700 font-bold">In Stock</span>
+                <span className="text-emerald-700 font-bold">{language === 'te' ? 'స్టాక్ ఉంది' : 'In Stock'}</span>
               )}
             </span>
           </div>
@@ -163,12 +174,12 @@ export const ProductCard = ({ product }) => {
               {isAdded ? (
                 <>
                   <Check className="w-3 h-3 text-emerald-600" />
-                  <span>Added</span>
+                  <span>{language === 'te' ? 'చేర్చబడింది' : 'Added'}</span>
                 </>
               ) : (
                 <>
                   <ShoppingBag className="w-3 h-3 text-[#c99632]" />
-                  <span>Add</span>
+                  <span>{language === 'te' ? '+ కార్ట్' : 'Add'}</span>
                 </>
               )}
             </button>
@@ -184,7 +195,7 @@ export const ProductCard = ({ product }) => {
               }`}
             >
               <Zap className="w-3 h-3" />
-              <span>Buy</span>
+              <span>{language === 'te' ? 'కొనండి' : 'Buy'}</span>
             </button>
           </div>
         </div>

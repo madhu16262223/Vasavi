@@ -4,7 +4,7 @@ import { Sparkles, ArrowRight, Award, Truck, ShieldCheck, Headphones } from 'luc
 import { HeroFrameAnimation } from './HeroFrameAnimation';
 
 export const HeroSection = () => {
-  const { setActiveTab } = useStore();
+  const { setActiveTab, t, language } = useStore();
 
   return (
     <section className="relative overflow-hidden py-4 sm:py-6 lg:py-8 min-h-[calc(100vh-80px)] flex flex-col justify-between bg-[#fffcf7]">
@@ -18,9 +18,11 @@ export const HeroSection = () => {
           {/* Hero Left Content */}
           <div className="lg:col-span-5 space-y-4 text-center lg:text-left">
             
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.35rem] font-bold font-serif-luxury text-[#171717] tracking-tight leading-[1.12]">
-              BEAUTY THAT <br />
-              <span className="gold-gradient-text">DEFINES YOU ✨</span>
+            <h1 className="text-3xl sm:text-4xl lg:text-[3.2rem] font-bold font-serif-luxury text-[#171717] tracking-tight leading-[1.15]">
+              {language === 'te' ? 'రాచరిక సౌందర్యం ✨' : 'BEAUTY THAT'} <br />
+              <span className="gold-gradient-text">
+                {language === 'te' ? 'మీ కోసమే ప్రత్యేకం' : 'DEFINES YOU ✨'}
+              </span>
             </h1>
 
             {/* Decorative Divider */}
@@ -33,28 +35,25 @@ export const HeroSection = () => {
             {/* Stylish Attractive Description with Feature Badges */}
             <div className="space-y-3 pt-1">
               <p className="text-xs sm:text-sm text-[#444444] font-medium leading-relaxed max-w-lg mx-auto lg:mx-0">
-                Discover Nandyal’s finest luxury beauty collection. Handpicked authentic <strong className="text-[#171717] font-bold">Temple Jewellery</strong>, <strong className="text-[#171717] font-bold">Matte Lipsticks</strong>, <strong className="text-[#171717] font-bold">Designer Handbags</strong> & <strong className="text-[#171717] font-bold">Bridal Accessories</strong>.
+                {t('hero_desc')}
               </p>
 
               {/* Interactive Category Badges Pill */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 pt-1">
-                <span className="text-[10px] font-extrabold bg-[#fff3c4] text-[#8a6200] border border-[#c99632]/50 px-3 py-1 rounded-full shadow-xs flex items-center gap-1.5 animate-pulse">
-                  🎁 Raksha Bandhan Special (Aug 28)
-                </span>
                 <span className="text-[10px] font-bold bg-[#fff8ed] text-[#c99632] border border-[#c99632]/30 px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1">
-                  ✨ Bangles & Jewellery
+                  ✨ {t('cat_bangles')} & {t('cat_jewellery')}
                 </span>
                 <span className="text-[10px] font-bold bg-[#fff0f2] text-[#e88a9a] border border-[#e88a9a]/30 px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1">
-                  💄 Matte Lipsticks
+                  💄 {t('cat_cosmetics')}
                 </span>
                 <span className="text-[10px] font-bold bg-[#f0f9ff] text-sky-700 border border-sky-300/40 px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1">
-                  👜 Designer Bags
+                  👜 {t('cat_handbags')}
                 </span>
               </div>
 
               {/* Order Options Pill Tag */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300/50 text-[11px] font-bold text-emerald-800 shadow-2xs">
-                <span>💬 Easy WhatsApp Order & 💵 Cash on Delivery (COD)</span>
+                <span>💬 {language === 'te' ? 'వాట్సాప్ ఆర్డర్ & క్యాష్ ఆన్ డెలివరీ (COD)' : 'Easy WhatsApp Order & Cash on Delivery (COD)'}</span>
               </div>
             </div>
 
@@ -75,7 +74,7 @@ export const HeroSection = () => {
                 {/* Shimmer Light Effect */}
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
                 <Sparkles className="w-3.5 h-3.5 text-[#fff3c4] animate-pulse" />
-                <span>EXPLORE COLLECTION</span>
+                <span>{t('hero_shop_now')}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -90,32 +89,32 @@ export const HeroSection = () => {
         </div>
       </div>
 
-      {/* Trust Badges Row (Extending Left to Right across bottom, exactly matching Image 2) */}
+      {/* Trust Badges Row */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-2 relative z-10">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full">
           
           <div className="bg-[#f9f6f0] p-3.5 sm:p-4 rounded-2xl border border-[#c99632]/25 shadow-xs flex flex-col items-start justify-center space-y-1">
             <Award className="w-5 h-5 text-[#c99632]" />
-            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">100% Quality</h4>
-            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">Handpicked items</p>
+            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">{t('hero_feature_1_title')}</h4>
+            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">{t('hero_feature_1_desc')}</p>
           </div>
 
           <div className="bg-[#f9f6f0] p-3.5 sm:p-4 rounded-2xl border border-[#c99632]/25 shadow-xs flex flex-col items-start justify-center space-y-1">
             <Truck className="w-5 h-5 text-[#e88a9a]" />
-            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">Fast Delivery</h4>
-            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">Same-day Nandyal</p>
+            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">{t('hero_feature_3_title')}</h4>
+            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">{t('hero_feature_3_desc')}</p>
           </div>
 
           <div className="bg-[#f9f6f0] p-3.5 sm:p-4 rounded-2xl border border-[#c99632]/25 shadow-xs flex flex-col items-start justify-center space-y-1">
             <Headphones className="w-5 h-5 text-[#c99632]" />
-            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">Easy Orders</h4>
-            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">WhatsApp & COD</p>
+            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">{t('hero_feature_2_title')}</h4>
+            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">{t('hero_feature_2_desc')}</p>
           </div>
 
           <div className="bg-[#f9f6f0] p-3.5 sm:p-4 rounded-2xl border border-[#c99632]/25 shadow-xs flex flex-col items-start justify-center space-y-1">
             <ShieldCheck className="w-5 h-5 text-[#c99632]" />
-            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">Secure Shopping</h4>
-            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">Your data is safe</p>
+            <h4 className="text-xs sm:text-sm font-bold text-[#171717]">{t('hero_feature_4_title')}</h4>
+            <p className="text-[10px] sm:text-xs text-[#666666] font-medium">{t('hero_feature_4_desc')}</p>
           </div>
 
         </div>

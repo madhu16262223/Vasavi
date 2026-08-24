@@ -60,36 +60,50 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 2. Customer Registration (Saves to Supabase `customers` table)
-router.post('/register', async (req, res) => {
+// 2. Customer Registration Handler (Checks duplicates and hashes password)
+const handleCustomerRegister = async (req, res) => {
   try {
     const { name, email, phone, password, address } = req.body;
     if (!name || !phone) {
-      return res.status(400).json({ error: 'Name and phone number are required' });
+      return res.status(400).json({ error: 'Full name and phone number are required' });
+    }
+    if (!password || password.trim().length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters long' });
     }
 
     const cleanName = name.trim();
-    const cleanPhone = phone.replace(/[^\d+]/g, '').trim();
+    const cleanPhone = phone.replace(/[^\d]/g, '').trim();
     const cleanEmail = email ? email.trim().toLowerCase() : `${cleanPhone}@vasavistore.in`;
     const cleanAddress = address ? address.trim() : 'Nandyal, Andhra Pradesh';
     const customerId = `cust-${Date.now()}`;
 
-    // Upsert into Supabase customers table
+    // Check if phone or email already registered
     try {
-      const existing = await query('SELECT * FROM customers WHERE phone = $1', [cleanPhone]);
+      const existing = await query(
+        'SELECT * FROM customers WHERE phone = $1 OR LOWER(email) = $2',
+        [cleanPhone, cleanEmail]
+      );
       if (existing.rows.length > 0) {
-        await query(
-          'UPDATE customers SET name = $1, address = $2 WHERE phone = $3',
-          [cleanName, cleanAddress, cleanPhone]
-        );
-      } else {
-        await query(
-          'INSERT INTO customers (id, name, phone, address, "createdAt") VALUES ($1, $2, $3, $4, NOW())',
-          [customerId, cleanName, cleanPhone, cleanAddress]
-        );
+        return res.status(409).json({
+          error: 'An account with this phone number or email already exists. Please sign in instead.'
+        });
       }
     } catch (dbErr) {
-      console.warn('Supabase customer register error:', dbErr.message);
+      console.warn('Supabase check duplicate customer error:', dbErr.message);
+    }
+
+    // Hash the password
+    const passwordHash = await bcrypt.hash(password.trim(), 10);
+
+    // Insert into Supabase customers table
+    try {
+      await query(
+        `INSERT INTO customers (id, name, phone, email, address, "password", "passwordHash", "createdAt", "updatedAt") 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+        [customerId, cleanName, cleanPhone, cleanEmail, cleanAddress, password.trim(), passwordHash]
+      );
+    } catch (dbErr) {
+      console.warn('Supabase customer insert error:', dbErr.message);
     }
 
     const user = {
@@ -103,41 +117,64 @@ router.post('/register', async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       user,
-      message: 'Account registered successfully'
+      message: 'Account registered successfully!'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
 
-// 3. Customer Login (Supports Phone or Email)
-router.post('/customer-login', async (req, res) => {
+router.post('/register', handleCustomerRegister);
+router.post('/customer/register', handleCustomerRegister);
+
+// 3. Customer Login Handler (Strict password verification)
+const handleCustomerLogin = async (req, res) => {
   try {
     const { identifier, password } = req.body;
-    if (!identifier) {
-      return res.status(400).json({ error: 'Email or phone number is required' });
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'Email/Phone and Password are required' });
     }
 
     const cleanId = identifier.trim().toLowerCase();
     const cleanPhone = identifier.replace(/[^\d]/g, '');
+    const cleanPass = password.trim();
 
+    // Query Supabase for customer
     try {
       const dbRes = await query(
-        'SELECT * FROM customers WHERE phone = $1 OR LOWER(name) = $2',
+        `SELECT * FROM customers 
+         WHERE phone = $1 OR LOWER(email) = $2 OR LOWER(name) = $2`,
         [cleanPhone, cleanId]
       );
+
       if (dbRes.rows.length > 0) {
         const c = dbRes.rows[0];
+
+        // Check password match (supports bcrypt hash or direct password)
+        let isPassValid = false;
+        if (c.passwordHash) {
+          isPassValid = await bcrypt.compare(cleanPass, c.passwordHash);
+        }
+        if (!isPassValid && c.password) {
+          isPassValid = (c.password === cleanPass);
+        }
+
+        if (!isPassValid) {
+          return res.status(401).json({
+            error: 'Incorrect password. Please enter the correct password.'
+          });
+        }
+
         return res.json({
           success: true,
           user: {
             id: c.id,
             name: c.name,
             phone: c.phone,
-            email: `${c.phone}@vasavistore.in`,
+            email: c.email || `${c.phone}@vasavistore.in`,
             address: c.address || 'Nandyal, Andhra Pradesh',
             avatar: c.name ? c.name.charAt(0).toUpperCase() : '👤',
             isVip: true,
@@ -146,36 +183,25 @@ router.post('/customer-login', async (req, res) => {
         });
       }
     } catch (dbErr) {
-      console.warn('Supabase customer login error:', dbErr.message);
+      console.warn('Supabase customer login query error:', dbErr.message);
     }
 
-    // Default fast login for demo / valid phone numbers
-    if (cleanPhone.length >= 10) {
-      return res.json({
-        success: true,
-        user: {
-          id: `cust-${Date.now()}`,
-          name: cleanId.includes('@') ? cleanId.split('@')[0] : 'Customer',
-          phone: cleanPhone,
-          email: cleanId.includes('@') ? cleanId : `${cleanPhone}@vasavistore.in`,
-          address: 'Nandyal, Andhra Pradesh',
-          avatar: '👤',
-          isVip: true,
-          createdAt: new Date().toISOString()
-        }
-      });
-    }
-
-    return res.status(404).json({ error: 'Customer not found. Please sign up.' });
+    return res.status(404).json({
+      error: 'No account found with this phone or email. Please create a new account.'
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+};
+
+router.post('/customer-login', handleCustomerLogin);
+router.post('/customer/login', handleCustomerLogin);
+router.post('/customer/auth', handleCustomerLogin);
 
 // 4. Get all registered customers (Admin protected)
 router.get('/customers', async (req, res) => {
   try {
-    const dbRes = await query('SELECT * FROM customers ORDER BY "createdAt" DESC');
+    const dbRes = await query('SELECT id, name, phone, email, address, "createdAt" FROM customers ORDER BY "createdAt" DESC');
     res.json(dbRes.rows);
   } catch (err) {
     res.status(200).json([]);

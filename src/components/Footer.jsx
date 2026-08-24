@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { Sparkles, MapPin, Phone, Clock, CreditCard, Heart, Shield } from 'lucide-react';
 
 export const Footer = () => {
-  const { storeInfo, setActiveTab } = useStore();
+  const { storeInfo, setActiveTab, t, language } = useStore();
 
   return (
     <footer className="bg-white border-t border-[#c99632]/30 pt-12 pb-8 text-[#555555] text-xs shadow-inner">
@@ -16,15 +16,15 @@ export const Footer = () => {
             {/* Left Store Location Details */}
             <div className="lg:col-span-5 space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fff3c4] border border-[#c99632]/40 text-[#c99632] font-bold text-[11px] uppercase tracking-wider">
-                <MapPin className="w-3.5 h-3.5 text-[#c99632]" /> Physical Store Location
+                <MapPin className="w-3.5 h-3.5 text-[#c99632]" /> {language === 'te' ? 'స్టోర్ లొకేషన్ & చిరునామా' : 'Physical Store Location'}
               </div>
 
               <h3 className="font-serif-luxury text-2xl font-bold text-[#171717]">
-                Visit Vasavi Fancy Store in Nandyal 📍
+                {language === 'te' ? 'నంద్యాల వాసవి ఫ్యాన్సీ స్టోర్‌ను సందర్శించండి 📍' : 'Visit Vasavi Fancy Store in Nandyal 📍'}
               </h3>
 
               <p className="text-xs text-[#555555] leading-relaxed font-medium">
-                Experience our exquisite collection of Temple Jewellery, Matte Cosmetics, and Bridal Handbags in person.
+                {language === 'te' ? 'మా టెంపుల్ జ్యువెలరీ, మ్యాట్ కాస్మెటిక్స్ మరియు బ్రైడల్ హ్యాండ్‌బ్యాగ్‌ల అద్భుతమైన కలెక్షన్‌ను నేరుగా వచ్చి పరిశీలించండి.' : 'Experience our exquisite collection of Temple Jewellery, Matte Cosmetics, and Bridal Handbags in person.'}
               </p>
 
               <div className="space-y-2.5 text-xs text-[#171717] font-medium pt-1">
@@ -33,7 +33,7 @@ export const Footer = () => {
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
-                    <strong className="block text-[#171717]">Address:</strong>
+                    <strong className="block text-[#171717]">{language === 'te' ? 'చిరునామా:' : 'Address:'}</strong>
                     <span className="text-[#555555]">{storeInfo.address}</span>
                   </div>
                 </div>
@@ -43,7 +43,7 @@ export const Footer = () => {
                     <Phone className="w-4 h-4" />
                   </div>
                   <div>
-                    <strong className="block text-[#171717]">Store Phone / WhatsApp:</strong>
+                    <strong className="block text-[#171717]">{language === 'te' ? 'ఫోన్ / వాట్సాప్:' : 'Store Phone / WhatsApp:'}</strong>
                     <span className="text-[#555555]">{storeInfo.displayPhone || storeInfo.phone} ({storeInfo.ownerName})</span>
                   </div>
                 </div>
@@ -53,8 +53,8 @@ export const Footer = () => {
                     <Clock className="w-4 h-4" />
                   </div>
                   <div>
-                    <strong className="block text-[#171717]">Store Timings:</strong>
-                    <span className="text-emerald-700 font-semibold">Mon - Sat: 9:00 AM - 9:30 PM | Sun: 10:00 AM - 4:00 PM</span>
+                    <strong className="block text-[#171717]">{language === 'te' ? 'సమయాలు:' : 'Store Timings:'}</strong>
+                    <span className="text-emerald-700 font-semibold">{language === 'te' ? 'సోమ - శని: 9:00 AM - 9:30 PM | ఆదివారం: 10:00 AM - 4:00 PM' : 'Mon - Sat: 9:00 AM - 9:30 PM | Sun: 10:00 AM - 4:00 PM'}</span>
                   </div>
                 </div>
               </div>
@@ -67,7 +67,7 @@ export const Footer = () => {
                   rel="noreferrer"
                   className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-md hover:brightness-110 flex items-center gap-1.5 gold-glow transition-all"
                 >
-                  <MapPin className="w-4 h-4" /> Open in Google Maps
+                  <MapPin className="w-4 h-4" /> {language === 'te' ? 'గూగుల్ మ్యాప్స్‌లో తెరవండి' : 'Open in Google Maps'}
                 </a>
 
                 <a
@@ -76,7 +76,7 @@ export const Footer = () => {
                   rel="noreferrer"
                   className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-md hover:bg-emerald-700 flex items-center gap-1.5 transition-all"
                 >
-                  📲 WhatsApp Shop Owner
+                  📲 {language === 'te' ? 'ఓనర్ చరణ్ గారితో చాట్ చేయండి' : 'WhatsApp Shop Owner'}
                 </a>
               </div>
             </div>
@@ -108,12 +108,14 @@ export const Footer = () => {
                 <h3 className="font-serif-luxury text-lg font-bold text-[#171717] tracking-wide">
                   VASAVI <span className="text-[#c99632] text-xs font-sans font-bold uppercase">FANCY STORE</span>
                 </h3>
-                <p className="text-[10px] text-[#666666] uppercase tracking-wider font-semibold">Nandyal's Beauty Hub</p>
+                <p className="text-[10px] text-[#666666] uppercase tracking-wider font-semibold">
+                  {language === 'te' ? 'నంద్యాల ప్రముఖ ఫ్యాన్సీ స్టోర్' : "Nandyal's Beauty Hub"}
+                </p>
               </div>
             </div>
 
             <p className="text-[#444444] leading-relaxed font-normal">
-              Nandyal's premier store for authentic Temple Jewellery, Matte Cosmetics, Designer Handbags, and Hair Accessories. Order easily via WhatsApp or Cash on Delivery (COD)!
+              {t('footer_tagline')}
             </p>
 
             <div className="pt-1">
@@ -121,28 +123,28 @@ export const Footer = () => {
                 onClick={() => { setActiveTab('shop'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#c99632] text-white font-bold hover:bg-[#a6751d] transition-all shadow-xs"
               >
-                <CreditCard className="w-4 h-4" /> SHOP ONLINE NOW
+                <CreditCard className="w-4 h-4" /> {language === 'te' ? 'ఇప్పుడే ఆన్‌లైన్‌లో కొనండి' : 'SHOP ONLINE NOW'}
               </button>
             </div>
           </div>
 
           {/* Col 2: Quick Links */}
           <div className="space-y-3">
-            <h4 className="font-bold text-[#171717] uppercase text-xs tracking-wider text-[#c99632]">Quick Links</h4>
+            <h4 className="font-bold text-[#171717] uppercase text-xs tracking-wider text-[#c99632]">{t('footer_quick_links')}</h4>
             <ul className="space-y-2 font-medium">
               <li>
                 <button onClick={() => { setActiveTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-[#c99632] transition-colors">
-                  Home Page
+                  {t('nav_home')}
                 </button>
               </li>
               <li>
                 <button onClick={() => { setActiveTab('shop'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-[#c99632] transition-colors">
-                  Shop Products Catalog
+                  {t('nav_shop')}
                 </button>
               </li>
               <li>
                 <button onClick={() => { setActiveTab('track'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-[#c99632] transition-colors">
-                  Track Order Status
+                  {t('nav_track')}
                 </button>
               </li>
             </ul>
@@ -150,19 +152,19 @@ export const Footer = () => {
 
           {/* Col 3: Featured Categories */}
           <div className="space-y-3">
-            <h4 className="font-bold text-[#171717] uppercase text-xs tracking-wider text-[#c99632]">Featured Categories</h4>
+            <h4 className="font-bold text-[#171717] uppercase text-xs tracking-wider text-[#c99632]">{t('footer_categories')}</h4>
             <ul className="space-y-2 font-medium">
-              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> Matte Lipsticks &amp; Cosmetics</li>
-              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> Temple Jewellery Sets</li>
-              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> Designer Bangles &amp; Churi Sets</li>
-              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> Zari Embroidered Potli Bags</li>
-              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> Bridal Hair Accessories</li>
+              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> {t('cat_cosmetics')}</li>
+              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> {t('cat_jewellery')}</li>
+              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> {t('cat_bangles')}</li>
+              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> {t('cat_handbags')}</li>
+              <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-[#c99632]" /> {t('cat_hair')}</li>
             </ul>
           </div>
 
           {/* Col 4: Visit Store (Nandyal Location) */}
           <div className="space-y-3">
-            <h4 className="font-bold text-[#171717] uppercase text-xs tracking-wider text-[#c99632]">Visit Store</h4>
+            <h4 className="font-bold text-[#171717] uppercase text-xs tracking-wider text-[#c99632]">{t('footer_store_info')}</h4>
             <div className="space-y-2.5 font-medium text-[#444444]">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-[#e88a9a] shrink-0 mt-0.5" />

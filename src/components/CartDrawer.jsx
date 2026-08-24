@@ -12,7 +12,9 @@ export const CartDrawer = () => {
     updateCartQuantity,
     getCartTotal,
     currentUser,
-    openAuthModal
+    openAuthModal,
+    t,
+    language
   } = useStore();
 
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -30,9 +32,9 @@ export const CartDrawer = () => {
           <div className="p-4 sm:p-6 bg-white border-b border-[#c99632]/20 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-[#c99632]" />
-              <h2 className="text-lg font-bold font-serif-luxury text-[#171717]">Your Shopping Cart</h2>
+              <h2 className="text-lg font-bold font-serif-luxury text-[#171717]">{t('cart_title')}</h2>
               <span className="text-xs bg-[#e8c7b5]/50 text-[#171717] px-2.5 py-0.5 rounded-full font-bold">
-                {cart.reduce((a, c) => a + c.quantity, 0)} Items
+                {cart.reduce((a, c) => a + c.quantity, 0)} {language === 'te' ? 'వస్తువులు' : 'Items'}
               </span>
             </div>
             <button
@@ -50,12 +52,13 @@ export const CartDrawer = () => {
                 <div className="w-16 h-16 rounded-full bg-white border border-[#c99632]/30 flex items-center justify-center mx-auto text-[#c99632] shadow-sm">
                   <ShoppingBag className="w-8 h-8" />
                 </div>
-                <p className="text-sm font-semibold text-[#666666]">Your shopping cart is currently empty.</p>
+                <p className="text-sm font-semibold text-[#666666]">{t('cart_empty_title')}</p>
+                <p className="text-xs text-[#888888] max-w-xs mx-auto">{t('cart_empty_desc')}</p>
                 <button
                   onClick={() => setIsCartOpen(false)}
                   className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white text-xs font-bold hover:brightness-110 shadow-md"
                 >
-                  Explore Collection
+                  {t('cart_explore_btn')}
                 </button>
               </div>
             ) : (
@@ -118,7 +121,7 @@ export const CartDrawer = () => {
             <div className="p-4 sm:p-6 bg-white border-t border-[#c99632]/20 space-y-4 shadow-lg">
               
               <div className="flex items-center justify-between text-sm font-bold text-[#171717] p-3.5 rounded-2xl bg-[#fffcf7] border border-[#c99632]/30">
-                <span>Grand Total:</span>
+                <span>{language === 'te' ? 'మొత్తం బిల్లు:' : 'Grand Total:'}</span>
                 <span className="text-xl font-bold text-[#c99632]">₹{totalAmount}</span>
               </div>
 
@@ -134,19 +137,19 @@ export const CartDrawer = () => {
                 className="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-sm shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow"
               >
                 <Lock className="w-4 h-4" />
-                <span>{currentUser ? 'CHECKOUT — WhatsApp Order or Cash on Delivery' : '🔐 LOGIN / REGISTER TO CHECKOUT'}</span>
+                <span>{currentUser ? t('cart_checkout_btn') : t('cart_login_checkout')}</span>
                 <ArrowRight className="w-4 h-4 ml-auto" />
               </button>
 
               {!currentUser && (
                 <p className="text-[11px] text-center font-bold text-amber-700 bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-200">
-                  ⚠️ Please log in or sign up with your phone number to complete your order.
+                  {language === 'te' ? '⚠️ ఆర్డర్ పూర్తి చేయడానికి దయచేసి మీ మొబైల్ నంబర్‌తో లాగిన్ అవ్వండి.' : '⚠️ Please log in or sign up with your phone number to complete your order.'}
                 </p>
               )}
 
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#666666] font-bold">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#c99632]" />
-                <span>100% Encrypted Payment • Instant Order Confirmation</span>
+                <span>{language === 'te' ? '100% సురక్షిత చెల్లింపులు • తక్షణ ఆర్డర్ నిర్ధారణ' : '100% Encrypted Payment • Instant Order Confirmation'}</span>
               </div>
 
             </div>

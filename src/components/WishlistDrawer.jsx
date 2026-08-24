@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { Heart, X, ShoppingBag, Trash2, ArrowRight, Share2, Sparkles } from 'lucide-react';
 
 export const WishlistDrawer = () => {
-  const { wishlist = [], toggleWishlist, isWishlistOpen, setIsWishlistOpen, addToCart, setIsCartOpen, storeInfo } = useStore();
+  const { wishlist = [], toggleWishlist, isWishlistOpen, setIsWishlistOpen, addToCart, setIsCartOpen, storeInfo, t, language } = useStore();
 
   if (!isWishlistOpen) return null;
 
@@ -41,8 +41,8 @@ export const WishlistDrawer = () => {
               <Heart className="w-4 h-4 fill-pink-500" />
             </div>
             <div>
-              <h3 className="font-bold font-serif-luxury text-base text-[#171717]">My Saved Wishlist</h3>
-              <p className="text-[11px] text-[#666666]">{wishlist.length} luxury items saved</p>
+              <h3 className="font-bold font-serif-luxury text-base text-[#171717]">{t('wishlist_title')}</h3>
+              <p className="text-[11px] text-[#666666]">{wishlist.length} {language === 'te' ? 'వస్తువులు సేవ్ అయ్యాయి' : 'luxury items saved'}</p>
             </div>
           </div>
           <button
@@ -58,9 +58,9 @@ export const WishlistDrawer = () => {
           {wishlist.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <div className="text-5xl">💖</div>
-              <h4 className="font-bold text-sm text-[#171717]">Your Wishlist is Empty</h4>
+              <h4 className="font-bold text-sm text-[#171717]">{t('wishlist_empty_title')}</h4>
               <p className="text-xs text-[#666666] max-w-xs mx-auto">
-                Click the heart icon on any product in our cosmetics, bangles, and jewellery collections to save them here!
+                {t('wishlist_empty_desc')}
               </p>
             </div>
           ) : (
@@ -85,7 +85,7 @@ export const WishlistDrawer = () => {
                       <span className="text-[10px] text-slate-400 line-through">₹{product.originalPrice}</span>
                     )}
                   </div>
-                  <span className="text-[9px] text-emerald-700 font-bold">✔ In Stock</span>
+                  <span className="text-[9px] text-emerald-700 font-bold">✔ {language === 'te' ? 'స్టాక్ ఉంది' : 'In Stock'}</span>
                 </div>
 
                 <div className="flex flex-col gap-1.5 shrink-0">
@@ -95,7 +95,7 @@ export const WishlistDrawer = () => {
                       toggleWishlist(product);
                     }}
                     className="p-2 rounded-xl bg-[#c99632] hover:bg-[#a6751d] text-white shadow-xs"
-                    title="Move to Cart"
+                    title={t('wishlist_move_cart')}
                   >
                     <ShoppingBag className="w-4 h-4" />
                   </button>
@@ -120,7 +120,7 @@ export const WishlistDrawer = () => {
               className="w-full py-3.5 bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs rounded-xl shadow-md hover:brightness-110 flex items-center justify-center gap-2"
             >
               <ShoppingBag className="w-4 h-4" />
-              <span>MOVE ALL ITEMS TO CART</span>
+              <span>{language === 'te' ? 'అన్ని వస్తువులను కార్ట్‌కి మార్చండి' : 'MOVE ALL ITEMS TO CART'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -129,7 +129,7 @@ export const WishlistDrawer = () => {
               className="w-full py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>SHARE WISHLIST WITH STORE OWNER</span>
+              <span>{language === 'te' ? 'వాట్సాప్‌లో ఓనర్‌తో షేర్ చేయండి' : 'SHARE WISHLIST WITH STORE OWNER'}</span>
             </button>
           </div>
         )}

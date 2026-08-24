@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { Sparkles, ChevronRight } from 'lucide-react';
 
 export const CategoryGrid = () => {
-  const { products, categories, activeCategory, setActiveCategory, setActiveTab } = useStore();
+  const { products, categories, activeCategory, setActiveCategory, setActiveTab, t, language } = useStore();
 
   const handleCategorySelect = (slug) => {
     setActiveCategory(slug);
@@ -16,6 +16,18 @@ export const CategoryGrid = () => {
     }
   };
 
+  const getTranslatedCatName = (cat) => {
+    if (language !== 'te') return cat.name;
+    const nameLower = (cat.name || '').toLowerCase();
+    if (nameLower.includes('cosmetic')) return t('cat_cosmetics');
+    if (nameLower.includes('jewel')) return t('cat_jewellery');
+    if (nameLower.includes('bangle')) return t('cat_bangles');
+    if (nameLower.includes('bag')) return t('cat_handbags');
+    if (nameLower.includes('hair')) return t('cat_hair');
+    if (nameLower.includes('rakhi')) return t('cat_rakhis');
+    return cat.name;
+  };
+
   return (
     <section className="py-12 bg-[#fffcf7] border-t border-b border-[#c99632]/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,17 +37,17 @@ export const CategoryGrid = () => {
           <div>
             <div className="flex items-center gap-2 text-xs uppercase font-bold tracking-widest text-[#e88a9a] mb-1">
               <Sparkles className="w-3.5 h-3.5 text-[#c99632]" />
-              <span>EXPLORE CATEGORIES</span>
+              <span>{t('cat_explore')}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold font-serif-luxury text-[#171717]">
-              Shop By <span className="gold-gradient-text">Category</span>
+              {t('cat_shop_by')} <span className="gold-gradient-text">{t('cat_highlight')}</span>
             </h2>
           </div>
           <button
             onClick={() => handleCategorySelect('all')}
             className="text-xs text-[#c99632] hover:text-[#a6751d] font-bold flex items-center gap-1 mt-2 md:mt-0 transition-colors"
           >
-            <span>View All Categories ({categories.length})</span>
+            <span>{t('cat_view_all')} ({categories.length})</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -44,6 +56,7 @@ export const CategoryGrid = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
           {categories.map((cat) => {
             const isSelected = activeCategory === cat.slug;
+            const catName = getTranslatedCatName(cat);
             return (
               <div
                 key={cat.id}
@@ -74,9 +87,11 @@ export const CategoryGrid = () => {
                 {/* Info */}
                 <div className="p-3 text-center bg-white border-t border-[#c99632]/10">
                   <h3 className="text-xs font-bold text-[#171717] group-hover:text-[#c99632] transition-colors">
-                    {cat.name}
+                    {catName}
                   </h3>
-                  <p className="text-[10px] text-[#666666]">Explore collection</p>
+                  <p className="text-[10px] text-[#666666]">
+                    {language === 'te' ? 'కలెక్షన్ చూడండి' : 'Explore collection'}
+                  </p>
                 </div>
               </div>
             );

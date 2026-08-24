@@ -539,7 +539,7 @@ export const Header = () => {
                 activeTab === 'home' ? 'bg-[#e8c7b5]/50 text-[#c99632]' : 'text-[#171717]'
               }`}
             >
-              <Home className="w-4 h-4" /> Home
+              <Home className="w-4 h-4" /> {language === 'te' ? 'హోమ్' : 'Home'}
             </button>
             <button
               onClick={() => handleNavClick('shop')}
@@ -547,7 +547,7 @@ export const Header = () => {
                 activeTab === 'shop' ? 'bg-[#e8c7b5]/50 text-[#c99632]' : 'text-[#171717]'
               }`}
             >
-              <Store className="w-4 h-4" /> Shop Catalog
+              <Store className="w-4 h-4" /> {language === 'te' ? 'షాప్ ప్రొడక్ట్స్' : 'Shop Catalog'}
             </button>
             <button
               onClick={() => handleNavClick('track')}
@@ -555,7 +555,7 @@ export const Header = () => {
                 activeTab === 'track' ? 'bg-[#e8c7b5]/50 text-[#c99632]' : 'text-[#171717]'
               }`}
             >
-              <Package className="w-4 h-4" /> Track Order Status
+              <Package className="w-4 h-4" /> {language === 'te' ? 'ఆర్డర్ ట్రాకింగ్' : 'Track Order Status'}
             </button>
             <button
               onClick={() => handleNavClick('admin')}
@@ -563,7 +563,7 @@ export const Header = () => {
                 activeTab === 'admin' ? 'bg-[#e8c7b5]/50 text-[#c99632]' : 'text-[#171717]'
               }`}
             >
-              <Shield className="w-4 h-4 text-[#c99632]" /> Admin Control Panel
+              <Shield className="w-4 h-4 text-[#c99632]" /> {language === 'te' ? 'అడ్మిన్ పోర్టల్' : 'Admin Control Panel'}
             </button>
           </div>
         </div>
