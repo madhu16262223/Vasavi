@@ -791,20 +791,41 @@ export const StoreProvider = ({ children }) => {
     return text.replace(/[<>]/g, '').trim();
   };
 
-  const loginCustomer = async (emailInput, passInput) => {
-    const cleanEmail = emailInput ? emailInput.toLowerCase().trim() : '';
-    const cleanPass = passInput ? passInput.trim() : '';
+  const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const PHONE_REGEX = /^[6-9]\d{9}$/;
 
-    if (!cleanEmail || !cleanPass) {
-      return { success: false, message: 'Please provide both your email/phone and password.' };
+  const loginCustomer = async (emailInput, passInput) => {
+    const rawInput = (emailInput || '').trim();
+    const cleanPass = (passInput || '').trim();
+
+    if (!rawInput) {
+      return { success: false, message: 'Please enter your registered email address or 10-digit mobile number.' };
     }
 
-    // 1. Try Cloud Login via API (Supabase)
+    if (!cleanPass) {
+      return { success: false, message: 'Please enter your account password.' };
+    }
+
+    const cleanEmail = rawInput.toLowerCase();
+    const cleanPhone = rawInput.replace(/[^\d]/g, '');
+
+    // Validate format
+    const isEmail = EMAIL_REGEX.test(cleanEmail);
+    const isPhone = PHONE_REGEX.test(cleanPhone);
+
+    if (!isEmail && !isPhone) {
+      return {
+        success: false,
+        message: 'Please enter a valid email address (e.g. name@gmail.com) or a 10-digit mobile number starting with 6-9.'
+      };
+    }
+
+    // 1. Try Cloud Login via Supabase API
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/customer-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: cleanEmail, password: cleanPass })
+        body: JSON.stringify({ identifier: isPhone ? cleanPhone : cleanEmail, password: cleanPass })
       });
 
       const data = await res.json().catch(() => null);
@@ -819,14 +840,14 @@ export const StoreProvider = ({ children }) => {
       }
 
       if (data?.error) {
+        // Return exact backend validation / authentication error
         return { success: false, message: data.error };
       }
     } catch (e) {
       console.warn('[Vasavi] Cloud customer login fetch error:', e);
     }
 
-    // 2. Local fallback check with password verification
-    const cleanPhone = cleanEmail.replace(/[^\d]/g, '');
+    // 2. Local fallback check with strict password verification
     const user = registeredUsers.find(
       (u) => (u.email && u.email.toLowerCase() === cleanEmail) || 
              (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)
@@ -834,7 +855,7 @@ export const StoreProvider = ({ children }) => {
 
     if (user) {
       if (user.password && user.password !== cleanPass) {
-        return { success: false, message: 'Incorrect password. Please enter the correct password.' };
+        return { success: false, message: 'Incorrect password. Please enter the correct password or use Forgot Password.' };
       }
       setCurrentUser(user);
       return { success: true, user };
@@ -842,42 +863,65 @@ export const StoreProvider = ({ children }) => {
 
     return { 
       success: false, 
-      message: 'Account not found. Please create a new account before signing in.' 
+      message: 'No registered account found with this email or mobile number. Please Create an Account first.' 
     };
   };
 
   const signupCustomer = async ({ name, email, phone, password, address }) => {
-    const cleanEmail = email ? email.toLowerCase().trim() : '';
     const cleanName = sanitizeInput(name);
-    const cleanPhone = phone ? phone.replace(/[^\d]/g, '').trim() : '';
+    const cleanPhone = (phone || '').replace(/[^\d]/g, '').trim();
+    const cleanEmail = (email || '').toLowerCase().trim();
     const cleanAddress = address ? sanitizeInput(address) : 'Nandyal, Andhra Pradesh';
-    const cleanPass = password ? password.trim() : '';
+    const cleanPass = (password || '').trim();
 
-    if (!cleanName || cleanName.length < 2) {
-      return { success: false, message: 'Please enter a valid full name.' };
+    // 1. Strict Name Validation
+    if (!cleanName || cleanName.length < 3) {
+      return { success: false, message: 'Please enter a valid full name (at least 3 characters).' };
     }
 
-    if (!cleanPhone || cleanPhone.length < 10) {
-      return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
+    // 2. Strict Phone Validation (10-digit Indian Mobile)
+    if (!PHONE_REGEX.test(cleanPhone)) {
+      return { success: false, message: 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' };
     }
 
-    if (!cleanPass || cleanPass.length < 4) {
-      return { success: false, message: 'Password must be at least 4 characters long.' };
+    // 3. Strict Email Validation
+    if (cleanEmail && !EMAIL_REGEX.test(cleanEmail)) {
+      return { success: false, message: 'Please enter a valid email address (e.g. name@gmail.com).' };
+    }
+
+    // 4. Strict Password Validation
+    if (!cleanPass || cleanPass.length < 6) {
+      return { success: false, message: 'Password must be at least 6 characters long for your account security.' };
+    }
+
+    const finalEmail = cleanEmail || `${cleanPhone}@vasavistore.in`;
+
+    // 5. Check Local Duplicates
+    const localExists = registeredUsers.some(
+      (u) => (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone) ||
+             (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail)
+    );
+
+    if (localExists) {
+      return {
+        success: false,
+        message: 'An account with this mobile number or email already exists. Please Sign In instead.'
+      };
     }
 
     const newUser = {
       id: `cust-${Date.now()}`,
       name: cleanName,
-      email: cleanEmail || `${cleanPhone}@vasavistore.in`,
+      email: finalEmail,
       phone: cleanPhone,
       address: cleanAddress,
       password: cleanPass,
-      avatar: cleanName ? cleanName.charAt(0).toUpperCase() : '👤',
+      avatar: cleanName.charAt(0).toUpperCase(),
       isVip: true,
       createdAt: new Date().toISOString()
     };
 
-    // 1. Save to Cloud Database (Supabase customers table)
+    // 6. Save to Cloud Database (Supabase customers table)
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
@@ -893,23 +937,20 @@ export const StoreProvider = ({ children }) => {
 
       const data = await res.json().catch(() => null);
 
-      if (res.ok && data?.user) {
+      if (!res.ok) {
+        if (res.status === 409 || data?.error) {
+          return { success: false, message: data?.error || 'An account with this mobile number or email already exists. Please Sign In.' };
+        }
+      } else if (data?.user) {
         newUser.id = data.user.id || newUser.id;
       }
     } catch (e) {
       console.warn('[Vasavi] Cloud customer register fetch error:', e);
     }
 
-    setRegisteredUsers((prev) => {
-      const filtered = prev.filter(
-        (u) => !((cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone) ||
-                 (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail))
-      );
-      return [newUser, ...filtered];
-    });
-
+    setRegisteredUsers((prev) => [newUser, ...prev]);
     setCurrentUser(newUser);
-    return { success: true, user: newUser, message: 'Account registered successfully!' };
+    return { success: true, user: newUser, message: 'Account registered successfully! Welcome to Vasavi Fancy Store.' };
   };
 
   const logoutCustomer = () => {
@@ -917,17 +958,20 @@ export const StoreProvider = ({ children }) => {
   };
 
   const requestPasswordReset = async (identifier) => {
-    const cleanId = identifier ? identifier.trim() : '';
-    if (!cleanId) {
+    const rawInput = (identifier || '').trim();
+    if (!rawInput) {
       return { success: false, message: 'Please enter your registered email address or mobile number.' };
     }
+
+    const cleanEmail = rawInput.toLowerCase();
+    const cleanPhone = rawInput.replace(/[^\d]/g, '');
 
     // 1. Attempt Cloud API request
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/customer/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: cleanId })
+        body: JSON.stringify({ identifier: rawInput })
       });
 
       const data = await res.json().catch(() => null);
@@ -935,37 +979,50 @@ export const StoreProvider = ({ children }) => {
       if (res.ok && data?.success) {
         return { 
           success: true, 
-          email: data.email || cleanId, 
+          email: data.email || rawInput, 
           phone: data.phone || '', 
           otp: data.otp,
-          message: data.message || `Password reset verification code sent to ${data.email || cleanId}` 
+          message: data.message || `Password reset verification code sent to ${data.email || rawInput}` 
         };
+      }
+
+      if (data?.error) {
+        return { success: false, message: data.error };
       }
     } catch (e) {
       console.warn('[Vasavi] Forgot password request error:', e);
     }
 
-    // 2. Guaranteed Resilient Fallback (Never blocks customer)
-    const cleanPhone = cleanId.replace(/[^\d]/g, '');
-    const cleanEmail = cleanId.includes('@') ? cleanId.toLowerCase() : (cleanPhone ? `${cleanPhone}@vasavistore.in` : cleanId);
-    const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    // 2. Check local users
+    const user = registeredUsers.find(
+      (u) => (u.email && u.email.toLowerCase() === cleanEmail) || 
+             (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)
+    );
+
+    if (user) {
+      const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      return {
+        success: true,
+        email: user.email || `${user.phone}@vasavistore.in`,
+        phone: user.phone,
+        otp: fallbackOtp,
+        message: `Password reset verification code sent to ${user.email || user.phone}. Verification code: ${fallbackOtp}`
+      };
+    }
 
     return {
-      success: true,
-      email: cleanEmail,
-      phone: cleanPhone,
-      otp: fallbackOtp,
-      message: `Password reset verification code generated for ${cleanEmail}. Enter the 6-digit code below.`
+      success: false,
+      message: 'No registered account found with this email or mobile number. Please check your credentials or Create an Account.'
     };
   };
 
   const resetPassword = async ({ email, phone, otp, newPassword }) => {
-    const cleanEmail = email ? email.toLowerCase().trim() : '';
-    const cleanPhone = phone ? phone.replace(/[^\d]/g, '').trim() : '';
-    const cleanPass = newPassword ? newPassword.trim() : '';
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const cleanPhone = (phone || '').replace(/[^\d]/g, '').trim();
+    const cleanPass = (newPassword || '').trim();
 
-    if (!cleanPass || cleanPass.length < 4) {
-      return { success: false, message: 'New password must be at least 4 characters long.' };
+    if (!cleanPass || cleanPass.length < 6) {
+      return { success: false, message: 'New password must be at least 6 characters long.' };
     }
 
     // 1. Sync with Cloud Database
@@ -980,68 +1037,38 @@ export const StoreProvider = ({ children }) => {
 
       if (res.ok && data?.success) {
         // Update local registeredUsers
-        setRegisteredUsers((prev) => {
-          const exists = prev.some(
-            (u) => (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
-                   (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)
-          );
-          if (exists) {
-            return prev.map((u) => {
-              if ((cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
-                  (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)) {
-                return { ...u, password: cleanPass };
-              }
-              return u;
-            });
-          }
-          return [
-            ...prev,
-            {
-              id: `cust-${Date.now()}`,
-              name: cleanEmail.split('@')[0] || 'Customer',
-              email: cleanEmail,
-              phone: cleanPhone || '9704381790',
-              password: cleanPass,
-              avatar: '👤'
+        setRegisteredUsers((prev) =>
+          prev.map((u) => {
+            if ((cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
+                (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)) {
+              return { ...u, password: cleanPass };
             }
-          ];
-        });
+            return u;
+          })
+        );
 
         return { success: true, message: data.message || 'Password has been reset successfully!' };
+      }
+
+      if (data?.error) {
+        return { success: false, message: data.error };
       }
     } catch (e) {
       console.warn('[Vasavi] Reset password error:', e);
     }
 
     // 2. Local Fallback Update
-    setRegisteredUsers((prev) => {
-      const exists = prev.some(
-        (u) => (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
-               (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)
-      );
-      if (exists) {
-        return prev.map((u) => {
-          if ((cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
-              (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)) {
-            return { ...u, password: cleanPass };
-          }
-          return u;
-        });
-      }
-      return [
-        ...prev,
-        {
-          id: `cust-${Date.now()}`,
-          name: cleanEmail.split('@')[0] || 'Customer',
-          email: cleanEmail,
-          phone: cleanPhone || '9704381790',
-          password: cleanPass,
-          avatar: '👤'
+    setRegisteredUsers((prev) =>
+      prev.map((u) => {
+        if ((cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
+            (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)) {
+          return { ...u, password: cleanPass };
         }
-      ];
-    });
+        return u;
+      })
+    );
 
-    return { success: true, message: 'Password reset successfully! You can now log in with your new password.' };
+    return { success: true, message: 'Password reset successfully! You can now sign in with your new password.' };
   };
 
   const resetStoreToCleanState = () => {

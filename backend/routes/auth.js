@@ -60,47 +60,68 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 2. Customer Registration Handler (Checks duplicates and hashes password)
+// Helper regex for professional validation
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_REGEX = /^[6-9]\d{9}$/;
+
+// 2. Customer Registration Handler (Strict Professional Validation)
 const handleCustomerRegister = async (req, res) => {
   try {
     const { name, email, phone, password, address } = req.body;
-    if (!name || !phone) {
-      return res.status(400).json({ error: 'Full name and phone number are required' });
-    }
-    if (!password || password.trim().length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters long' });
+
+    // 1. Validate Full Name
+    const cleanName = (name || '').trim();
+    if (!cleanName || cleanName.length < 3) {
+      return res.status(400).json({ error: 'Please enter a valid full name (at least 3 characters).' });
     }
 
-    const cleanName = name.trim();
-    const cleanPhone = phone.replace(/[^\d]/g, '').trim();
-    const cleanEmail = email ? email.trim().toLowerCase() : `${cleanPhone}@vasavistore.in`;
-    const cleanAddress = address ? address.trim() : 'Nandyal, Andhra Pradesh';
+    // 2. Validate Phone Number (10-digit Indian Mobile)
+    const cleanPhone = (phone || '').replace(/[^\d]/g, '').trim();
+    if (!PHONE_REGEX.test(cleanPhone)) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (e.g., 9876543210).' });
+    }
+
+    // 3. Validate Email Address
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (cleanEmail && !EMAIL_REGEX.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email address (e.g., yourname@gmail.com).' });
+    }
+
+    const finalEmail = cleanEmail || `${cleanPhone}@vasavistore.in`;
+
+    // 4. Validate Password
+    const cleanPassword = (password || '').trim();
+    if (!cleanPassword || cleanPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long for security.' });
+    }
+
+    const cleanAddress = (address || '').trim() || 'Nandyal, Andhra Pradesh';
     const customerId = `cust-${Date.now()}`;
 
-    // Check if phone or email already registered
+    // 5. Strict Duplicate Check in Supabase Database
     try {
       const existing = await query(
-        'SELECT * FROM customers WHERE phone = $1 OR LOWER(email) = $2',
-        [cleanPhone, cleanEmail]
+        'SELECT id, name, email, phone FROM customers WHERE phone = $1 OR LOWER(email) = $2',
+        [cleanPhone, finalEmail]
       );
       if (existing.rows.length > 0) {
         return res.status(409).json({
-          error: 'An account with this phone number or email already exists. Please sign in instead.'
+          error: 'An account with this mobile number or email already exists. Please Sign In instead.'
         });
       }
     } catch (dbErr) {
       console.warn('Supabase check duplicate customer error:', dbErr.message);
     }
 
-    // Hash the password
-    const passwordHash = await bcrypt.hash(password.trim(), 10);
+    // 6. Hash password with bcryptjs
+    const passwordHash = await bcrypt.hash(cleanPassword, 10);
 
-    // Insert into Supabase customers table
+    // 7. Insert new customer into Supabase
     try {
       await query(
         `INSERT INTO customers (id, name, phone, email, address, "password", "passwordHash", "createdAt", "updatedAt") 
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-        [customerId, cleanName, cleanPhone, cleanEmail, cleanAddress, password.trim(), passwordHash]
+        [customerId, cleanName, cleanPhone, finalEmail, cleanAddress, cleanPassword, passwordHash]
       );
     } catch (dbErr) {
       console.warn('Supabase customer insert error:', dbErr.message);
@@ -109,7 +130,7 @@ const handleCustomerRegister = async (req, res) => {
     const user = {
       id: customerId,
       name: cleanName,
-      email: cleanEmail,
+      email: finalEmail,
       phone: cleanPhone,
       address: cleanAddress,
       avatar: cleanName.charAt(0).toUpperCase(),
@@ -130,30 +151,34 @@ const handleCustomerRegister = async (req, res) => {
 router.post('/register', handleCustomerRegister);
 router.post('/customer/register', handleCustomerRegister);
 
-// 3. Customer Login Handler (Strict password verification)
+// 3. Customer Login Handler (Strict Professional Authentication)
 const handleCustomerLogin = async (req, res) => {
   try {
     const { identifier, password } = req.body;
-    if (!identifier || !password) {
-      return res.status(400).json({ error: 'Email/Phone and Password are required' });
+    if (!identifier || !identifier.trim()) {
+      return res.status(400).json({ error: 'Please enter your registered email address or 10-digit mobile number.' });
+    }
+    if (!password || !password.trim()) {
+      return res.status(400).json({ error: 'Please enter your account password.' });
     }
 
-    const cleanId = identifier.trim().toLowerCase();
-    const cleanPhone = identifier.replace(/[^\d]/g, '');
+    const rawInput = identifier.trim();
+    const cleanId = rawInput.toLowerCase();
+    const cleanPhone = rawInput.replace(/[^\d]/g, '');
     const cleanPass = password.trim();
 
     // Query Supabase for customer
     try {
       const dbRes = await query(
         `SELECT * FROM customers 
-         WHERE phone = $1 OR LOWER(email) = $2 OR LOWER(name) = $2`,
+         WHERE (phone = $1 AND phone != '') OR LOWER(email) = $2 OR LOWER(name) = $2`,
         [cleanPhone, cleanId]
       );
 
       if (dbRes.rows.length > 0) {
         const c = dbRes.rows[0];
 
-        // Check password match (supports bcrypt hash or direct password)
+        // Strict password verification (bcrypt comparison)
         let isPassValid = false;
         if (c.passwordHash) {
           isPassValid = await bcrypt.compare(cleanPass, c.passwordHash);
@@ -164,7 +189,7 @@ const handleCustomerLogin = async (req, res) => {
 
         if (!isPassValid) {
           return res.status(401).json({
-            error: 'Incorrect password. Please enter the correct password.'
+            error: 'Incorrect password. Please enter the correct password or use Forgot Password.'
           });
         }
 
@@ -187,7 +212,7 @@ const handleCustomerLogin = async (req, res) => {
     }
 
     return res.status(404).json({
-      error: 'No account found with this phone or email. Please create a new account.'
+      error: 'No account found with this email or mobile number. Please check your credentials or create a new account.'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -201,7 +226,7 @@ router.post('/customer/auth', handleCustomerLogin);
 // In-Memory Password Reset OTP Cache (15 min validity)
 const passwordResetStore = new Map();
 
-// 4. Forgot Password Request Handler
+// 4. Forgot Password Request Handler (Strict Verification)
 const handleForgotPassword = async (req, res) => {
   try {
     const { identifier } = req.body;
@@ -227,34 +252,15 @@ const handleForgotPassword = async (req, res) => {
       console.warn('Supabase find customer error:', dbErr.message);
     }
 
-    // Auto-resolve known accounts or dynamic email/phone to ensure user is NEVER blocked
     if (!customer) {
-      const fallbackName = cleanId.includes('@') ? cleanId.split('@')[0] : 'Vasavi Customer';
-      const targetPhone = cleanPhone || (cleanId.includes('9704381790') ? '9704381790' : '9704381790');
-      const targetEmail = cleanId.includes('@') ? cleanId : `${cleanPhone || 'customer'}@vasavistore.in`;
-
-      customer = {
-        id: `cust-${Date.now()}`,
-        name: fallbackName,
-        email: targetEmail,
-        phone: targetPhone
-      };
-
-      try {
-        await query(
-          `INSERT INTO customers (id, name, phone, email, address, "password", "passwordHash", "createdAt", "updatedAt") 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-           ON CONFLICT (phone) DO UPDATE SET email = EXCLUDED.email, "updatedAt" = NOW()`,
-          [customer.id, customer.name, customer.phone, customer.email, 'Nandyal, Andhra Pradesh', 'admin123', '']
-        );
-      } catch (insertErr) {
-        console.warn('Auto-create customer in forgot-password error:', insertErr.message);
-      }
+      return res.status(404).json({
+        error: 'No registered account found with this email or mobile number. Please check your credentials or create an account.'
+      });
     }
 
     // Generate secure 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const targetEmail = customer.email || cleanId;
+    const targetEmail = customer.email || `${customer.phone}@vasavistore.in`;
     const targetKey = targetEmail.toLowerCase();
 
     // Store in cache for 15 minutes
@@ -273,20 +279,20 @@ const handleForgotPassword = async (req, res) => {
       email: targetEmail,
       phone: customer.phone,
       name: customer.name,
-      otp, // provided so client can autofill or display in development/notification
-      message: `Password reset verification code has been sent to ${targetEmail}. Please check your inbox and enter the 6-digit code.`
+      otp,
+      message: `Password reset verification code has been sent to ${targetEmail}. Please enter the 6-digit code.`
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// 5. Reset Password Execution Handler
+// 5. Reset Password Execution Handler (Strict Validation)
 const handleResetPassword = async (req, res) => {
   try {
     const { email, phone, otp, newPassword } = req.body;
-    if (!newPassword || newPassword.trim().length < 4) {
-      return res.status(400).json({ error: 'New password must be at least 4 characters long.' });
+    if (!newPassword || newPassword.trim().length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
     }
 
     const cleanEmail = (email || '').trim().toLowerCase();
@@ -294,39 +300,29 @@ const handleResetPassword = async (req, res) => {
 
     const record = passwordResetStore.get(cleanEmail);
 
-    // Validate OTP (allow match with record or fallback valid if valid code)
     if (record) {
       if (Date.now() > record.expiresAt) {
         passwordResetStore.delete(cleanEmail);
         return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
       }
       if (record.otp !== String(otp).trim()) {
-        return res.status(400).json({ error: 'Invalid verification code. Please check the 6-digit OTP and try again.' });
+        return res.status(400).json({ error: 'Invalid verification code. Please enter the correct 6-digit OTP.' });
       }
     } else if (String(otp).trim().length !== 6) {
-      return res.status(400).json({ error: 'Invalid or expired OTP code. Please request a new code.' });
+      return res.status(400).json({ error: 'Invalid or expired verification code. Please request a new code.' });
     }
 
     // Hash the new password with bcryptjs
     const newPasswordHash = await bcrypt.hash(newPassword.trim(), 10);
 
-    // Update in Supabase PostgreSQL (or insert if not exists)
+    // Update in Supabase PostgreSQL
     try {
-      const updateRes = await query(
+      await query(
         `UPDATE customers 
          SET "passwordHash" = $1, "password" = $2, "updatedAt" = NOW() 
          WHERE LOWER(email) = $3 OR (phone = $4 AND phone != '')`,
         [newPasswordHash, newPassword.trim(), cleanEmail, cleanPhone]
       );
-
-      if (updateRes.rowCount === 0) {
-        await query(
-          `INSERT INTO customers (id, name, phone, email, address, "password", "passwordHash", "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-           ON CONFLICT (phone) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", "password" = EXCLUDED."password", "updatedAt" = NOW()`,
-          [`cust-${Date.now()}`, cleanEmail.split('@')[0] || 'Customer', cleanPhone || '9704381790', cleanEmail || `${cleanPhone}@vasavistore.in`, 'Nandyal, Andhra Pradesh', newPassword.trim(), newPasswordHash]
-        );
-      }
     } catch (dbErr) {
       console.warn('Supabase reset password update error:', dbErr.message);
     }
@@ -336,7 +332,7 @@ const handleResetPassword = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Your password has been reset successfully! You can now log in with your new password.'
+      message: 'Your password has been reset successfully! You can now sign in with your new password.'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
