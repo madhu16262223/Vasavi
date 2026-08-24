@@ -26,11 +26,11 @@ const MainAppContent = () => {
   }, [setActiveTab]);
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-[#171717] flex flex-col justify-between selection:bg-[#c99632] selection:text-white">
-      <div>
+    <div className={`min-h-screen bg-[#faf8f5] text-[#171717] flex flex-col justify-between selection:bg-[#c99632] selection:text-white ${activeTab === 'admin' ? 'h-screen overflow-hidden' : ''}`}>
+      <div className={activeTab === 'admin' ? 'h-full flex-1 flex flex-col overflow-hidden' : ''}>
         {activeTab !== 'admin' && <Header />}
 
-        <main>
+        <main className={activeTab === 'admin' ? 'h-full flex-1 overflow-hidden' : ''}>
           {activeTab === 'home' && (
             <>
               <HeroSection />

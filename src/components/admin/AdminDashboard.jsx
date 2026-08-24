@@ -224,7 +224,7 @@ export const AdminDashboard = () => {
   };
 
   return (
-    <div className="h-screen w-full bg-[#faf8f5] text-[#171717] flex font-sans relative overflow-hidden">
+    <div className="fixed inset-0 w-full h-full bg-[#faf8f5] text-[#171717] flex font-sans overflow-hidden z-30">
       
       {/* MOBILE BACKDROP OVERLAY */}
       {sidebarOpen && (
@@ -234,9 +234,9 @@ export const AdminDashboard = () => {
         />
       )}
 
-      {/* LEFT SIDEBAR (Fixed Drawer on Mobile, Strictly Stationary Pinned Sidebar on Desktop) */}
+      {/* LEFT SIDEBAR (Permanently Fixed and Pinned on the Left) */}
       <aside
-        className={`w-64 h-full bg-white border-r border-[#c99632]/25 flex flex-col justify-between transition-transform duration-300 z-40 fixed lg:static inset-y-0 left-0 shrink-0 ${
+        className={`w-64 h-full bg-white border-r border-[#c99632]/25 flex flex-col justify-between transition-transform duration-300 z-50 fixed lg:relative inset-y-0 left-0 shrink-0 select-none shadow-sm ${
           sidebarOpen ? 'translate-x-0 shadow-2xl lg:shadow-none' : '-translate-x-full lg:translate-x-0'
         }`}
       >
