@@ -56,13 +56,21 @@ export const UserAuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
+  // Password Complexity Live Checkers
+  const pwdHasUpper = /[A-Z]/.test(password);
+  const pwdHasLower = /[a-z]/.test(password);
+  const pwdHasNumber = /[0-9]/.test(password);
+  const pwdHasSpecial = /[^A-Za-z0-9]/.test(password);
+  const pwdHasLength = password.length >= 6;
+  const isPasswordComplex = pwdHasUpper && pwdHasLower && pwdHasNumber && pwdHasSpecial && pwdHasLength;
+
   // Validation Checks
   const isNameValid = name.trim().length >= 3;
-  const cleanPhoneInput = phone.replace(/[^\d]/g, '');
+  const cleanPhoneInput = cleanIndianPhone(phone);
   const isPhoneValid = PHONE_REGEX.test(cleanPhoneInput);
   const isEmailValid = !email.trim() || EMAIL_REGEX.test(email.trim());
-  const isPasswordValid = password.trim().length >= 6;
-  const isLoginIdentifierValid = EMAIL_REGEX.test(email.trim()) || PHONE_REGEX.test(email.replace(/[^\d]/g, ''));
+  const isPasswordValid = isPasswordComplex;
+  const isLoginIdentifierValid = EMAIL_REGEX.test(email.trim()) || PHONE_REGEX.test(cleanIndianPhone(email));
 
   // 1. Handle Professional Sign In Submit
   const handleLoginSubmit = async (e) => {
@@ -79,12 +87,12 @@ export const UserAuthModal = () => {
       return;
     }
 
-    const cleanP = rawId.replace(/[^\d]/g, '');
+    const cleanP = cleanIndianPhone(rawId);
     if (!EMAIL_REGEX.test(rawId) && !PHONE_REGEX.test(cleanP)) {
       setError(
         language === 'te'
-          ? 'దయచేసి సరైన ఈమెయిల్ అడ్రస్ లేదా 6-9 తో ప్రారంభమయ్యే 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.'
-          : 'Please enter a valid email address (e.g. name@gmail.com) or a 10-digit mobile number starting with 6-9.'
+          ? 'దయచేసి సరైన ఈమెయిల్ అడ్రస్ లేదా 6-9 తో ప్రారంభమయ్యే 10 అంకెల మొబైల్ నంబర్ (+91) నమోదు చేయండి.'
+          : 'Please enter a valid email address (e.g. name@gmail.com) or a 10-digit Indian mobile number (+91).'
       );
       return;
     }
@@ -122,7 +130,7 @@ export const UserAuthModal = () => {
     setSuccessMsg('');
 
     const cleanN = name.trim();
-    const cleanP = phone.replace(/[^\d]/g, '').trim();
+    const cleanP = cleanIndianPhone(phone);
     const cleanE = email.trim();
     const cleanPass = password.trim();
 
@@ -134,8 +142,8 @@ export const UserAuthModal = () => {
     if (!PHONE_REGEX.test(cleanP)) {
       setError(
         language === 'te'
-          ? 'దయచేసి 6, 7, 8, లేదా 9 తో ప్రారంభమయ్యే సరైన 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.'
-          : 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9 (e.g., 9876543210).'
+          ? 'దయచేసి 6, 7, 8, లేదా 9 తో ప్రారంభమయ్యే సరైన 10 అంకెల భారతీయ మొబైల్ నంబర్ (+91) నమోదు చేయండి.'
+          : 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9 (e.g., 9876543210).'
       );
       return;
     }
@@ -145,8 +153,12 @@ export const UserAuthModal = () => {
       return;
     }
 
-    if (!cleanPass || cleanPass.length < 6) {
-      setError(language === 'te' ? 'పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి.' : 'Password must be at least 6 characters long for account security.');
+    if (!cleanPass || cleanPass.length < 6 || !isPasswordComplex) {
+      setError(
+        language === 'te'
+          ? 'పాస్‌వర్డ్‌లో పెద్ద అక్షరం (A-Z), చిన్న అక్షరం (a-z), అంకె (0-9), మరియు స్పెషల్ క్యారెక్టర్ (!@#$) అన్నీ కలిపి ఉండాలి.'
+          : 'Password must combine uppercase (A-Z), lowercase (a-z), numbers (0-9), and special characters (!@#$).'
+      );
       return;
     }
 
@@ -181,7 +193,7 @@ export const UserAuthModal = () => {
       return;
     }
 
-    const cleanP = rawId.replace(/[^\d]/g, '');
+    const cleanP = cleanIndianPhone(rawId);
     if (!EMAIL_REGEX.test(rawId) && !PHONE_REGEX.test(cleanP)) {
       setError(language === 'te' ? 'దయచేసి సరైన ఈమెయిల్ లేదా 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter a valid email or 10-digit mobile number.');
       return;
@@ -224,8 +236,17 @@ export const UserAuthModal = () => {
       return;
     }
 
-    if (!cleanPass || cleanPass.length < 6) {
-      setError(language === 'te' ? 'కొత్త పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి.' : 'New password must be at least 6 characters long.');
+    const resetHasUpper = /[A-Z]/.test(cleanPass);
+    const resetHasLower = /[a-z]/.test(cleanPass);
+    const resetHasNumber = /[0-9]/.test(cleanPass);
+    const resetHasSpecial = /[^A-Za-z0-9]/.test(cleanPass);
+
+    if (!cleanPass || cleanPass.length < 6 || !resetHasUpper || !resetHasLower || !resetHasNumber || !resetHasSpecial) {
+      setError(
+        language === 'te'
+          ? 'కొత్త పాస్‌వర్డ్‌లో పెద్ద అక్షరం (A-Z), చిన్న అక్షరం (a-z), అంకె (0-9), మరియు స్పెషల్ క్యారెక్టర్ (!@#$) ఉండాలి.'
+          : 'New password must combine uppercase (A-Z), lowercase (a-z), numbers (0-9), and special characters (!@#$).'
+      );
       return;
     }
 
@@ -320,16 +341,19 @@ export const UserAuthModal = () => {
                 </span>
                 <h3 className="text-xl font-black font-serif-luxury text-[#171717]">{currentUser.name || 'Valued Customer'}</h3>
                 {currentUser.email && <p className="text-xs text-[#666666] font-medium">{currentUser.email}</p>}
-                {currentUser.phone && <p className="text-xs text-[#888888] font-mono mt-0.5">📞 {currentUser.phone}</p>}
+                {currentUser.phone && <p className="text-xs text-[#888888] font-mono mt-0.5">📞 +91 {currentUser.phone}</p>}
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => {
                     closeAuthModal();
-                    window.location.hash = '#track';
+                    if (useStore) {
+                      window.location.hash = '#track';
+                    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="flex-1 py-3 rounded-xl bg-[#faf8f5] border border-[#c99632]/40 text-xs font-bold text-[#171717] hover:bg-[#fff3c4]/50 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-[#faf8f5] border border-[#c99632]/40 text-xs font-bold text-[#171717] hover:bg-[#fff3c4]/50 transition-colors shadow-2xs"
                 >
                   📦 {language === 'te' ? 'నా ఆర్డర్లు' : 'My Orders'}
                 </button>
@@ -339,7 +363,7 @@ export const UserAuthModal = () => {
                     logoutCustomer();
                     setSuccessMsg(language === 'te' ? 'లాగౌట్ అయ్యారు.' : 'Signed out cleanly.');
                   }}
-                  className="flex-1 py-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors shadow-2xs"
                 >
                   🚪 {language === 'te' ? 'లాగౌట్' : 'Sign Out'}
                 </button>
@@ -455,7 +479,7 @@ export const UserAuthModal = () => {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder={language === 'te' ? 'మీ ఈమెయిల్ లేదా 10 అంకెల మొబైల్' : 'yourname@gmail.com or 9876543210'}
+                        placeholder={language === 'te' ? 'మీ ఈమెయిల్ లేదా 10 అంకెల మొబైల్ (+91)' : 'yourname@gmail.com or 9876543210'}
                         className={`w-full bg-white border rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-[#171717] placeholder-slate-400 focus:outline-none transition-all ${
                           email.trim() && !isLoginIdentifierValid
                             ? 'border-rose-400 focus:border-rose-500 bg-rose-50/20'
@@ -550,27 +574,28 @@ export const UserAuthModal = () => {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-bold text-[#171717]">
-                        {language === 'te' ? 'మొబైల్ నంబర్ (10 అంకెలు) *' : 'Mobile Number (10 Digits) *'}
+                        {language === 'te' ? 'మొబైల్ నంబర్ (భారతీయ +91) *' : 'Indian Mobile Number (+91) *'}
                       </label>
                       {phone.trim() && (
                         <span className={`text-[10px] font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-rose-500'}`}>
-                          {isPhoneValid ? '✓ 10 Digits' : 'Starts with 6-9'}
+                          {isPhoneValid ? '✓ Valid +91' : '10 digits (6-9)'}
                         </span>
                       )}
                     </div>
-                    <div className="relative">
+                    <div className="relative flex rounded-xl border border-[#c99632]/30 bg-white overflow-hidden focus-within:border-[#c99632] transition-all">
+                      <span className="bg-[#faf8f5] px-3 py-2.5 text-xs font-bold text-[#171717] border-r border-[#c99632]/30 flex items-center gap-1 shrink-0 select-none">
+                        <span>🇮🇳</span>
+                        <span>+91</span>
+                      </span>
                       <input
                         type="tel"
                         required
                         maxLength={10}
                         value={phone}
                         onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ''))}
-                        placeholder={language === 'te' ? '9876543210' : '9876543210'}
-                        className={`w-full bg-white border rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium font-mono text-[#171717] focus:outline-none transition-all ${
-                          phone.trim() && !isPhoneValid ? 'border-rose-400 bg-rose-50/20' : 'border-[#c99632]/30 focus:border-[#c99632]'
-                        }`}
+                        placeholder="9876543210"
+                        className="w-full py-2.5 px-3 text-xs font-medium font-mono text-[#171717] focus:outline-none"
                       />
-                      <Phone className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     </div>
                   </div>
 
@@ -602,11 +627,11 @@ export const UserAuthModal = () => {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-bold text-[#171717]">
-                        {language === 'te' ? 'పాస్‌వర్డ్ సృష్టించండి (కనీసం 6 అక్షరాలు) *' : 'Create Password (Min 6 Characters) *'}
+                        {language === 'te' ? 'పాస్‌వర్డ్ సృష్టించండి *' : 'Create Secure Password *'}
                       </label>
                       {password.trim() && (
-                        <span className={`text-[10px] font-bold ${isPasswordValid ? 'text-emerald-600' : 'text-rose-500'}`}>
-                          {isPasswordValid ? '✓ Good' : 'Min 6 chars'}
+                        <span className={`text-[10px] font-bold ${isPasswordComplex ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {isPasswordComplex ? '✓ Strong' : 'Incomplete'}
                         </span>
                       )}
                     </div>
@@ -616,9 +641,9 @@ export const UserAuthModal = () => {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="Vasavi@2026"
                         className={`w-full bg-white border rounded-xl py-2.5 pl-10 pr-10 text-xs font-medium text-[#171717] focus:outline-none transition-all ${
-                          password.trim() && !isPasswordValid ? 'border-rose-400 bg-rose-50/20' : 'border-[#c99632]/30 focus:border-[#c99632]'
+                          password.trim() && !isPasswordComplex ? 'border-amber-400 bg-amber-50/10' : 'border-[#c99632]/30 focus:border-[#c99632]'
                         }`}
                       />
                       <Lock className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -629,6 +654,30 @@ export const UserAuthModal = () => {
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
+                    </div>
+
+                    {/* Live Password Character Combination Badges */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-2">
+                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasUpper ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                        <span>{pwdHasUpper ? '✓' : '○'}</span>
+                        <span>{language === 'te' ? 'పెద్ద అక్షరం (A-Z)' : 'Uppercase (A-Z)'}</span>
+                      </div>
+                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasLower ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                        <span>{pwdHasLower ? '✓' : '○'}</span>
+                        <span>{language === 'te' ? 'చిన్న అక్షరం (a-z)' : 'Lowercase (a-z)'}</span>
+                      </div>
+                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasNumber ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                        <span>{pwdHasNumber ? '✓' : '○'}</span>
+                        <span>{language === 'te' ? 'అంకె (0-9)' : 'Number (0-9)'}</span>
+                      </div>
+                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasSpecial ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                        <span>{pwdHasSpecial ? '✓' : '○'}</span>
+                        <span>{language === 'te' ? 'స్పెషల్ (@#$%)' : 'Special (@#$%)'}</span>
+                      </div>
+                      <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${pwdHasLength ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                        <span>{pwdHasLength ? '✓' : '○'}</span>
+                        <span>{language === 'te' ? 'కనీసం 6+ అక్షరాలు' : 'Min 6+ chars'}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -656,8 +705,8 @@ export const UserAuthModal = () => {
                         </h4>
                         <p className="text-[11px] text-[#666666] leading-relaxed">
                           {language === 'te'
-                            ? 'మీ రిజిస్టర్డ్ ఈమెయిల్ లేదా 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి. మేము 6-అంకెల వెరిఫికేషన్ కోడ్ పంపుతాము.'
-                            : 'Enter your registered email address or 10-digit mobile number. We will verify your account.'}
+                            ? 'మీ రిజిస్టర్డ్ ఈమెయిల్ లేదా 10 అంకెల మొబైల్ నంబర్ (+91) నమోదు చేయండి. మేము 6-అంకెల వెరిఫికేషన్ కోడ్ పంపుతాము.'
+                            : 'Enter your registered email address or 10-digit mobile number (+91). We will verify your account.'}
                         </p>
                       </div>
 
@@ -726,7 +775,7 @@ export const UserAuthModal = () => {
 
                       <div>
                         <label className="block text-xs font-bold text-[#171717] mb-1">
-                          {language === 'te' ? 'కొత్త పాస్‌వర్డ్ (కనీసం 6 అక్షరాలు) *' : 'New Password (Min 6 Characters) *'}
+                          {language === 'te' ? 'కొత్త పాస్‌వర్డ్ (కనీసం 6 అక్షరాలు, A-Z, a-z, 0-9, @#$) *' : 'New Password (A-Z, a-z, 0-9, @#$) *'}
                         </label>
                         <div className="relative">
                           <input
@@ -734,7 +783,7 @@ export const UserAuthModal = () => {
                             required
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="••••••••"
+                            placeholder="Vasavi@2026"
                             className="w-full bg-white border border-[#c99632]/30 rounded-xl py-2.5 pl-10 pr-10 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
                           />
                           <Lock className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -758,7 +807,7 @@ export const UserAuthModal = () => {
                             required
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="••••••••"
+                            placeholder="Vasavi@2026"
                             className="w-full bg-white border border-[#c99632]/30 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
                           />
                           <Lock className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />

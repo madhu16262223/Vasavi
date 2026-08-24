@@ -64,6 +64,27 @@ router.post('/login', async (req, res) => {
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
+const cleanIndianPhone = (phoneInput) => {
+  if (!phoneInput) return '';
+  let digits = String(phoneInput).replace(/[^\d]/g, '');
+  if (digits.startsWith('91') && digits.length === 12) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith('0') && digits.length === 11) {
+    digits = digits.slice(1);
+  }
+  return digits;
+};
+
+const isComplexPassword = (pwd) => {
+  if (!pwd || pwd.length < 6) return false;
+  const hasUpper = /[A-Z]/.test(pwd);
+  const hasLower = /[a-z]/.test(pwd);
+  const hasNumber = /[0-9]/.test(pwd);
+  const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+  return hasUpper && hasLower && hasNumber && hasSpecial;
+};
+
 // 2. Customer Registration Handler (Strict Professional Validation)
 const handleCustomerRegister = async (req, res) => {
   try {
@@ -75,10 +96,10 @@ const handleCustomerRegister = async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid full name (at least 3 characters).' });
     }
 
-    // 2. Validate Phone Number (10-digit Indian Mobile)
-    const cleanPhone = (phone || '').replace(/[^\d]/g, '').trim();
+    // 2. Validate Indian Phone Number (+91)
+    const cleanPhone = cleanIndianPhone(phone);
     if (!PHONE_REGEX.test(cleanPhone)) {
-      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (e.g., 9876543210).' });
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6-9.' });
     }
 
     // 3. Validate Email Address
@@ -89,10 +110,12 @@ const handleCustomerRegister = async (req, res) => {
 
     const finalEmail = cleanEmail || `${cleanPhone}@vasavistore.in`;
 
-    // 4. Validate Password
+    // 4. Validate Complex Password (Uppercase, Lowercase, Number, Special Character)
     const cleanPassword = (password || '').trim();
-    if (!cleanPassword || cleanPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long for security.' });
+    if (!cleanPassword || cleanPassword.length < 6 || !isComplexPassword(cleanPassword)) {
+      return res.status(400).json({
+        error: 'Password must contain at least 6 characters with uppercase, lowercase, numbers, and special characters (e.g., Vasavi@2026).'
+      });
     }
 
     const cleanAddress = (address || '').trim() || 'Nandyal, Andhra Pradesh';

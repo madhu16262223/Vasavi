@@ -142,52 +142,73 @@ export const StoreProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const safeLocalStorageSet = (key, value) => {
+    try {
+      const stringVal = typeof value === 'string' ? value : JSON.stringify(value);
+      localStorage.setItem(key, stringVal);
+    } catch (err) {
+      console.warn(`[Vasavi] Storage quota issue for ${key}:`, err.message);
+      try {
+        localStorage.removeItem('vasavi_products');
+        localStorage.removeItem('vasavi_categories');
+        const stringVal = typeof value === 'string' ? value : JSON.stringify(value);
+        localStorage.setItem(key, stringVal);
+      } catch (e) {}
+    }
+  };
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
 
   useEffect(() => {
-    localStorage.setItem('vasavi_wishlist', JSON.stringify(wishlist));
+    safeLocalStorageSet('vasavi_wishlist', wishlist);
   }, [wishlist]);
 
-  // Local Storage Sync
+  // Local Storage Sync (Safe from QuotaExceededError)
   useEffect(() => {
-    localStorage.setItem('vasavi_products', JSON.stringify(products));
+    safeLocalStorageSet('vasavi_products', products);
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem('vasavi_categories', JSON.stringify(categories));
+    safeLocalStorageSet('vasavi_categories', categories);
   }, [categories]);
 
   useEffect(() => {
-    localStorage.setItem('vasavi_orders', JSON.stringify(orders));
+    safeLocalStorageSet('vasavi_orders', orders);
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem('vasavi_cart', JSON.stringify(cart));
+    // Sanitize cart to prevent base64 data URL overflow
+    const sanitizedCart = cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      size: item.size || 'Standard',
+      selectedColor: item.selectedColor || '',
+      image: (typeof item.image === 'string' && !item.image.startsWith('data:')) ? item.image : ''
+    }));
+    safeLocalStorageSet('vasavi_cart', sanitizedCart);
   }, [cart]);
 
   useEffect(() => {
-    localStorage.setItem('vasavi_reviews', JSON.stringify(reviews));
+    safeLocalStorageSet('vasavi_reviews', reviews);
   }, [reviews]);
 
   useEffect(() => {
-    localStorage.setItem('vasavi_store_settings', JSON.stringify(storeSettings));
+    safeLocalStorageSet('vasavi_store_settings', storeSettings);
   }, [storeSettings]);
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('vasavi_customer_user', JSON.stringify(currentUser));
+      safeLocalStorageSet('vasavi_customer_user', currentUser);
     } else {
       localStorage.removeItem('vasavi_customer_user');
     }
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('vasavi_wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
-
-  useEffect(() => {
-    localStorage.setItem('vasavi_registered_users', JSON.stringify(registeredUsers));
+    safeLocalStorageSet('vasavi_registered_users', registeredUsers);
   }, [registeredUsers]);
 
   // Live Cloud Database Hydration (Syncs Admin edits across all customers & devices in Real-Time)
@@ -794,6 +815,27 @@ export const StoreProvider = ({ children }) => {
   const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const PHONE_REGEX = /^[6-9]\d{9}$/;
 
+  const cleanIndianPhone = (phoneInput) => {
+    if (!phoneInput) return '';
+    let digits = String(phoneInput).replace(/[^\d]/g, '');
+    if (digits.startsWith('91') && digits.length === 12) {
+      digits = digits.slice(2);
+    }
+    if (digits.startsWith('0') && digits.length === 11) {
+      digits = digits.slice(1);
+    }
+    return digits;
+  };
+
+  const isComplexPassword = (pwd) => {
+    if (!pwd || pwd.length < 6) return false;
+    const hasUpper = /[A-Z]/.test(pwd);
+    const hasLower = /[a-z]/.test(pwd);
+    const hasNumber = /[0-9]/.test(pwd);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+    return hasUpper && hasLower && hasNumber && hasSpecial;
+  };
+
   const loginCustomer = async (emailInput, passInput) => {
     const rawInput = (emailInput || '').trim();
     const cleanPass = (passInput || '').trim();
@@ -807,7 +849,7 @@ export const StoreProvider = ({ children }) => {
     }
 
     const cleanEmail = rawInput.toLowerCase();
-    const cleanPhone = rawInput.replace(/[^\d]/g, '');
+    const cleanPhone = cleanIndianPhone(rawInput);
 
     // Validate format
     const isEmail = EMAIL_REGEX.test(cleanEmail);
@@ -816,7 +858,7 @@ export const StoreProvider = ({ children }) => {
     if (!isEmail && !isPhone) {
       return {
         success: false,
-        message: 'Please enter a valid email address (e.g. name@gmail.com) or a 10-digit mobile number starting with 6-9.'
+        message: 'Please enter a valid email address (e.g. name@gmail.com) or a 10-digit Indian mobile number (+91).'
       };
     }
 
@@ -840,7 +882,6 @@ export const StoreProvider = ({ children }) => {
       }
 
       if (data?.error) {
-        // Return exact backend validation / authentication error
         return { success: false, message: data.error };
       }
     } catch (e) {
@@ -850,7 +891,7 @@ export const StoreProvider = ({ children }) => {
     // 2. Local fallback check with strict password verification
     const user = registeredUsers.find(
       (u) => (u.email && u.email.toLowerCase() === cleanEmail) || 
-             (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone)
+             (cleanPhone && u.phone && cleanIndianPhone(u.phone) === cleanPhone)
     );
 
     if (user) {
@@ -869,7 +910,7 @@ export const StoreProvider = ({ children }) => {
 
   const signupCustomer = async ({ name, email, phone, password, address }) => {
     const cleanName = sanitizeInput(name);
-    const cleanPhone = (phone || '').replace(/[^\d]/g, '').trim();
+    const cleanPhone = cleanIndianPhone(phone);
     const cleanEmail = (email || '').toLowerCase().trim();
     const cleanAddress = address ? sanitizeInput(address) : 'Nandyal, Andhra Pradesh';
     const cleanPass = (password || '').trim();
@@ -881,7 +922,7 @@ export const StoreProvider = ({ children }) => {
 
     // 2. Strict Phone Validation (10-digit Indian Mobile)
     if (!PHONE_REGEX.test(cleanPhone)) {
-      return { success: false, message: 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' };
+      return { success: false, message: 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.' };
     }
 
     // 3. Strict Email Validation
@@ -889,16 +930,19 @@ export const StoreProvider = ({ children }) => {
       return { success: false, message: 'Please enter a valid email address (e.g. name@gmail.com).' };
     }
 
-    // 4. Strict Password Validation
-    if (!cleanPass || cleanPass.length < 6) {
-      return { success: false, message: 'Password must be at least 6 characters long for your account security.' };
+    // 4. Strict Password Validation with Character Combination Rules
+    if (!cleanPass || cleanPass.length < 6 || !isComplexPassword(cleanPass)) {
+      return {
+        success: false,
+        message: 'Password must be at least 6 characters and contain uppercase letters (A-Z), lowercase letters (a-z), numbers (0-9), and special characters (!@#$).'
+      };
     }
 
     const finalEmail = cleanEmail || `${cleanPhone}@vasavistore.in`;
 
     // 5. Check Local Duplicates
     const localExists = registeredUsers.some(
-      (u) => (cleanPhone && u.phone && u.phone.replace(/[^\d]/g, '') === cleanPhone) ||
+      (u) => (cleanPhone && u.phone && cleanIndianPhone(u.phone) === cleanPhone) ||
              (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail)
     );
 
