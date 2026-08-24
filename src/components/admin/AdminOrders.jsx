@@ -1,27 +1,8 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { generateInvoicePDF } from '../../utils/invoiceGenerator';
+import { formatFullDateTime, cleanIndianPhone } from '../../utils/phoneUtils';
 import { Package, Phone, Clock, CheckCircle2, Truck, AlertCircle, Filter, Eye, ChevronDown, FileText, Search, CreditCard, Trash2, MessageCircle, Banknote, CheckCircle, ShieldCheck } from 'lucide-react';
-
-const formatFullDateTime = (dateInput) => {
-  if (!dateInput) return '';
-  const date = new Date(dateInput);
-  if (isNaN(date.getTime())) return dateInput;
-  
-  const day = date.getDate().toString().padStart(2, '0');
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = monthNames[date.getMonth()];
-  const year = date.getFullYear();
-  
-  let hours = date.getHours();
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const hoursStr = hours.toString().padStart(2, '0');
-
-  return `${day} ${month} ${year}, ${hoursStr}:${minutes} ${ampm}`;
-};
 
 export const AdminOrders = () => {
   const { orders, updateOrderStatus, deleteOrder } = useStore();

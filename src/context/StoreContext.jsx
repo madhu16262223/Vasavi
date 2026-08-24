@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_ORDERS, STORE_INFO } from '../data/mockData';
 import { getTranslation } from '../utils/translations';
+import { cleanIndianPhone, EMAIL_REGEX, PHONE_REGEX } from '../utils/phoneUtils';
 
 const StoreContext = createContext();
 
@@ -865,21 +866,6 @@ export const StoreProvider = ({ children }) => {
   const sanitizeInput = (text) => {
     if (!text || typeof text !== 'string') return '';
     return text.replace(/[<>]/g, '').trim();
-  };
-
-  const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const PHONE_REGEX = /^[6-9]\d{9}$/;
-
-  const cleanIndianPhone = (phoneInput) => {
-    if (!phoneInput) return '';
-    let digits = String(phoneInput).replace(/[^\d]/g, '');
-    if (digits.startsWith('91') && digits.length === 12) {
-      digits = digits.slice(2);
-    }
-    if (digits.startsWith('0') && digits.length === 11) {
-      digits = digits.slice(1);
-    }
-    return digits;
   };
 
   const isComplexPassword = (pwd) => {

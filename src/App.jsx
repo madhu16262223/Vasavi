@@ -1,5 +1,6 @@
 import React from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { CategoryGrid } from './components/CategoryGrid';
@@ -62,8 +63,10 @@ const MainAppContent = () => {
 
 export default function App() {
   return (
-    <StoreProvider>
-      <MainAppContent />
-    </StoreProvider>
+    <ErrorBoundary>
+      <StoreProvider>
+        <MainAppContent />
+      </StoreProvider>
+    </ErrorBoundary>
   );
 }

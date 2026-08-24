@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { generateInvoicePDF } from '../utils/invoiceGenerator';
 import { getTranslatedProductName } from '../utils/translations';
+import { cleanIndianPhone } from '../utils/phoneUtils';
 import { Package, Search, Clock, CheckCircle2, Truck, AlertCircle, PhoneCall, FileText, User, ShoppingBag, ArrowRight, ExternalLink } from 'lucide-react';
 
 export const OrderTracker = () => {
@@ -9,18 +10,6 @@ export const OrderTracker = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchedOrder, setSearchedOrder] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
-
-  const cleanIndianPhone = (phoneInput) => {
-    if (!phoneInput) return '';
-    let digits = String(phoneInput).replace(/[^\d]/g, '');
-    if (digits.startsWith('91') && digits.length === 12) {
-      digits = digits.slice(2);
-    }
-    if (digits.startsWith('0') && digits.length === 11) {
-      digits = digits.slice(1);
-    }
-    return digits;
-  };
 
   // Filter orders placed by the currently logged in customer
   const cleanUserPhone = currentUser?.phone ? cleanIndianPhone(currentUser.phone) : '';
