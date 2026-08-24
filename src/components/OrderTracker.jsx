@@ -225,7 +225,12 @@ export const OrderTracker = () => {
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
+              <label htmlFor="tracker-search-input" className="sr-only">
+                {language === 'te' ? 'ఆర్డర్ నంబర్ లేదా మొబైల్ నంబర్' : 'Order ID or Mobile Number'}
+              </label>
               <input
+                id="tracker-search-input"
+                name="searchQuery"
                 type="text"
                 required
                 value={searchQuery}

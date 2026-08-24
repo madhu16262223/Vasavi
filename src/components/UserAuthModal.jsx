@@ -464,7 +464,7 @@ export const UserAuthModal = () => {
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-[#171717]">
+                      <label htmlFor="login-identifier" className="block text-xs font-bold text-[#171717]">
                         {language === 'te' ? 'రిజిస్టర్డ్ ఈమెయిల్ లేదా మొబైల్ *' : 'Registered Email Address or Mobile *'}
                       </label>
                       {email.trim() && isLoginIdentifierValid && (
@@ -475,6 +475,9 @@ export const UserAuthModal = () => {
                     </div>
                     <div className="relative">
                       <input
+                        id="login-identifier"
+                        name="identifier"
+                        autoComplete="username"
                         type="text"
                         required
                         value={email}
@@ -492,7 +495,7 @@ export const UserAuthModal = () => {
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-[#171717]">
+                      <label htmlFor="login-password" className="block text-xs font-bold text-[#171717]">
                         {language === 'te' ? 'పాస్‌వర్డ్ *' : 'Password *'}
                       </label>
                       <button
@@ -512,6 +515,9 @@ export const UserAuthModal = () => {
                     </div>
                     <div className="relative">
                       <input
+                        id="login-password"
+                        name="password"
+                        autoComplete="current-password"
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={password}
@@ -524,6 +530,7 @@ export const UserAuthModal = () => {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#171717]"
+                        aria-label="Toggle password visibility"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -547,7 +554,7 @@ export const UserAuthModal = () => {
                 <form onSubmit={handleSignupSubmit} className="space-y-3.5">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-[#171717]">
+                      <label htmlFor="signup-name" className="block text-xs font-bold text-[#171717]">
                         {language === 'te' ? 'పూర్తి పేరు *' : 'Full Name *'}
                       </label>
                       {name.trim() && (
@@ -558,6 +565,9 @@ export const UserAuthModal = () => {
                     </div>
                     <div className="relative">
                       <input
+                        id="signup-name"
+                        name="name"
+                        autoComplete="name"
                         type="text"
                         required
                         value={name}
@@ -573,7 +583,7 @@ export const UserAuthModal = () => {
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-[#171717]">
+                      <label htmlFor="signup-phone" className="block text-xs font-bold text-[#171717]">
                         {language === 'te' ? 'మొబైల్ నంబర్ (భారతీయ +91) *' : 'Indian Mobile Number (+91) *'}
                       </label>
                       {phone.trim() && (
@@ -588,6 +598,9 @@ export const UserAuthModal = () => {
                         <span>+91</span>
                       </span>
                       <input
+                        id="signup-phone"
+                        name="phone"
+                        autoComplete="tel"
                         type="tel"
                         required
                         maxLength={10}
@@ -601,7 +614,7 @@ export const UserAuthModal = () => {
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-[#171717]">
+                      <label htmlFor="signup-email" className="block text-xs font-bold text-[#171717]">
                         {language === 'te' ? 'ఈమెయిల్ అడ్రస్ (ఐచ్ఛికం / Optional)' : 'Email Address (Optional)'}
                       </label>
                       {email.trim() && (
@@ -612,6 +625,9 @@ export const UserAuthModal = () => {
                     </div>
                     <div className="relative">
                       <input
+                        id="signup-email"
+                        name="email"
+                        autoComplete="email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -626,7 +642,7 @@ export const UserAuthModal = () => {
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-[#171717]">
+                      <label htmlFor="signup-password" className="block text-xs font-bold text-[#171717]">
                         {language === 'te' ? 'పాస్‌వర్డ్ సృష్టించండి *' : 'Create Secure Password *'}
                       </label>
                       {password.trim() && (
@@ -637,6 +653,9 @@ export const UserAuthModal = () => {
                     </div>
                     <div className="relative">
                       <input
+                        id="signup-password"
+                        name="password"
+                        autoComplete="new-password"
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={password}
@@ -651,6 +670,7 @@ export const UserAuthModal = () => {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#171717]"
+                        aria-label="Toggle password visibility"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -711,11 +731,14 @@ export const UserAuthModal = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#171717] mb-1">
+                        <label htmlFor="forgot-identifier" className="block text-xs font-bold text-[#171717] mb-1">
                           {language === 'te' ? 'రిజిస్టర్డ్ ఈమెయిల్ లేదా మొబైల్ *' : 'Registered Email Address or Phone *'}
                         </label>
                         <div className="relative">
                           <input
+                            id="forgot-identifier"
+                            name="identifier"
+                            autoComplete="username"
                             type="text"
                             required
                             value={forgotIdentifier}
@@ -756,11 +779,14 @@ export const UserAuthModal = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#171717] mb-1">
+                        <label htmlFor="reset-otp" className="block text-xs font-bold text-[#171717] mb-1">
                           {language === 'te' ? '6-అంకెల వెరిఫికేషన్ కోడ్ (OTP) *' : '6-Digit Verification Code (OTP) *'}
                         </label>
                         <div className="relative">
                           <input
+                            id="reset-otp"
+                            name="otp"
+                            autoComplete="one-time-code"
                             type="text"
                             required
                             maxLength={6}
@@ -774,11 +800,14 @@ export const UserAuthModal = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#171717] mb-1">
+                        <label htmlFor="reset-new-password" className="block text-xs font-bold text-[#171717] mb-1">
                           {language === 'te' ? 'కొత్త పాస్‌వర్డ్ (కనీసం 6 అక్షరాలు, A-Z, a-z, 0-9, @#$) *' : 'New Password (A-Z, a-z, 0-9, @#$) *'}
                         </label>
                         <div className="relative">
                           <input
+                            id="reset-new-password"
+                            name="newPassword"
+                            autoComplete="new-password"
                             type={showNewPassword ? 'text' : 'password'}
                             required
                             value={newPassword}
@@ -791,6 +820,7 @@ export const UserAuthModal = () => {
                             type="button"
                             onClick={() => setShowNewPassword(!showNewPassword)}
                             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#171717]"
+                            aria-label="Toggle new password visibility"
                           >
                             {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
@@ -798,11 +828,14 @@ export const UserAuthModal = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#171717] mb-1">
+                        <label htmlFor="reset-confirm-password" className="block text-xs font-bold text-[#171717] mb-1">
                           {language === 'te' ? 'కొత్త పాస్‌వర్డ్‌ను నిర్ధారించండి *' : 'Confirm New Password *'}
                         </label>
                         <div className="relative">
                           <input
+                            id="reset-confirm-password"
+                            name="confirmPassword"
+                            autoComplete="new-password"
                             type={showNewPassword ? 'text' : 'password'}
                             required
                             value={confirmPassword}

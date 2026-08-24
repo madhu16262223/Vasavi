@@ -236,10 +236,13 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                  <label htmlFor="checkout-customer-name" className="block text-xs font-bold text-[#171717] mb-1">
                     {language === 'te' ? 'పూర్తి పేరు *' : 'Full Name *'}
                   </label>
                   <input
+                    id="checkout-customer-name"
+                    name="customerName"
+                    autoComplete="name"
                     type="text"
                     required
                     placeholder="e.g. Madhavi Latha"
@@ -250,10 +253,13 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                  <label htmlFor="checkout-customer-phone" className="block text-xs font-bold text-[#171717] mb-1">
                     {language === 'te' ? 'మొబైల్ నంబర్ *' : 'Phone Number *'}
                   </label>
                   <input
+                    id="checkout-customer-phone"
+                    name="customerPhone"
+                    autoComplete="tel"
                     type="tel"
                     required
                     placeholder="e.g. 9876543210"
@@ -265,10 +271,13 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#171717] mb-1">
+                <label htmlFor="checkout-customer-address" className="block text-xs font-bold text-[#171717] mb-1">
                   {language === 'te' ? 'డెలివరీ చిరునామా & ల్యాండ్‌మార్క్ *' : 'Delivery Address & Landmark *'}
                 </label>
                 <textarea
+                  id="checkout-customer-address"
+                  name="customerAddress"
+                  autoComplete="street-address"
                   required
                   rows={2}
                   placeholder="e.g. Door No. 12/45, Sanjeeva Nagar, Near Temple, Nandyal"
@@ -280,10 +289,13 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                  <label htmlFor="checkout-customer-city" className="block text-xs font-bold text-[#171717] mb-1">
                     {language === 'te' ? 'పట్టణం / ఊరు' : 'Town / City'}
                   </label>
                   <input
+                    id="checkout-customer-city"
+                    name="city"
+                    autoComplete="address-level2"
                     type="text"
                     value={customerCity}
                     onChange={(e) => setCustomerCity(e.target.value)}
@@ -291,10 +303,13 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#171717] mb-1">
+                  <label htmlFor="checkout-customer-pincode" className="block text-xs font-bold text-[#171717] mb-1">
                     {language === 'te' ? 'పిన్‌కోడ్' : 'Pincode'}
                   </label>
                   <input
+                    id="checkout-customer-pincode"
+                    name="pincode"
+                    autoComplete="postal-code"
                     type="text"
                     value={pincode}
                     onChange={(e) => setPincode(e.target.value)}
@@ -306,9 +321,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               {/* Coupon Code Box */}
               <div className="p-3.5 rounded-2xl bg-[#fffcf7] border border-[#c99632]/40 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-[#171717]">
-                  <span className="flex items-center gap-1.5 text-[#c99632]">
+                  <label htmlFor="checkout-coupon-code" className="flex items-center gap-1.5 text-[#c99632] cursor-pointer">
                     🎟️ {language === 'te' ? 'కూపన్ లేదా ఆఫర్ కోడ్ ఉందా?' : 'Have a Coupon or Offer Code?'}
-                  </span>
+                  </label>
                   {appliedCoupon && (
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
                       {appliedCoupon} APPLIED
@@ -318,6 +333,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
                 <div className="flex gap-2">
                   <input
+                    id="checkout-coupon-code"
+                    name="couponCode"
                     type="text"
                     placeholder="Enter Code (e.g. WELCOME50, VASAVI10)"
                     value={couponCode}

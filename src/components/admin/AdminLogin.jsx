@@ -48,9 +48,12 @@ export const AdminLogin = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-[#171717] mb-1.5">Admin Email</label>
+            <label htmlFor="admin-email-input" className="block text-xs font-bold text-[#171717] mb-1.5">Admin Email</label>
             <div className="relative">
               <input
+                id="admin-email-input"
+                name="adminEmail"
+                autoComplete="email"
                 type="email"
                 required
                 value={email}
@@ -63,9 +66,12 @@ export const AdminLogin = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#171717] mb-1.5">Password</label>
+            <label htmlFor="admin-password-input" className="block text-xs font-bold text-[#171717] mb-1.5">Password</label>
             <div className="relative">
               <input
+                id="admin-password-input"
+                name="adminPassword"
+                autoComplete="current-password"
                 type="password"
                 required
                 value={password}

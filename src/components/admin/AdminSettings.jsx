@@ -50,11 +50,13 @@ export const AdminSettings = () => {
       <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
         
         <div>
-          <label className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5">
+          <label htmlFor="admin-whatsapp-number" className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5 cursor-pointer">
             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
             <span>Store WhatsApp Order Number (Country Code + 10 Digits) *</span>
           </label>
           <input
+            id="admin-whatsapp-number"
+            name="whatsappNumber"
             type="text"
             required
             value={whatsappNumber}
@@ -66,11 +68,13 @@ export const AdminSettings = () => {
         </div>
 
         <div>
-          <label className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5">
+          <label htmlFor="admin-display-phone" className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5 cursor-pointer">
             <Phone className="w-3.5 h-3.5 text-blue-600" />
             <span>Display Contact Phone Number *</span>
           </label>
           <input
+            id="admin-display-phone"
+            name="displayPhone"
             type="text"
             required
             value={displayPhone}
@@ -81,11 +85,13 @@ export const AdminSettings = () => {
         </div>
 
         <div>
-          <label className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5">
+          <label htmlFor="admin-delivery-fee" className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5 cursor-pointer">
             <Truck className="w-3.5 h-3.5 text-[#e88a9a]" />
             <span>Delivery Fee (₹)</span>
           </label>
           <input
+            id="admin-delivery-fee"
+            name="deliveryFee"
             type="number"
             value={deliveryFee}
             onChange={(e) => setDeliveryFee(e.target.value)}
@@ -96,11 +102,13 @@ export const AdminSettings = () => {
         </div>
 
         <div>
-          <label className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5">
+          <label htmlFor="admin-announcement-banner" className="block text-[#171717] font-bold mb-1 flex items-center gap-1.5 cursor-pointer">
             <Megaphone className="w-3.5 h-3.5 text-amber-600" />
             <span>Top Header Announcement Banner Text</span>
           </label>
           <textarea
+            id="admin-announcement-banner"
+            name="announcementBanner"
             rows={2}
             value={announcementBanner}
             onChange={(e) => setAnnouncementBanner(e.target.value)}

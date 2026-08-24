@@ -167,7 +167,12 @@ export const Header = () => {
             {/* Search Bar (Desktop) with Voice Search & Live Interactive Suggestions */}
             <div ref={searchContainerRef} className="hidden md:block relative flex-1 max-w-[240px] lg:max-w-xs xl:max-w-sm mx-3 lg:mx-6 shrink">
               <form onSubmit={handleSearchSubmit} className="relative w-full">
+                <label htmlFor="header-search-desktop" className="sr-only">
+                  {language === 'te' ? 'స్టోర్‌లో వస్తువులను వెతకండి' : 'Search store products'}
+                </label>
                 <input
+                  id="header-search-desktop"
+                  name="searchQuery"
                   type="text"
                   placeholder={language === 'te' ? 'లిప్‌స్టిక్, గాజులు, నెక్లెస్ సెర్చ్ చేయండి...' : 'Search lipsticks, bangles, jewellery...'}
                   value={searchQuery}
@@ -407,7 +412,12 @@ export const Header = () => {
           {/* Mobile Dedicated Search Bar with Voice Button */}
           <div ref={mobileSearchContainerRef} className="md:hidden pb-3 relative">
             <form onSubmit={handleSearchSubmit} className="relative w-full">
+              <label htmlFor="header-search-mobile" className="sr-only">
+                {language === 'te' ? 'స్టోర్‌లో వస్తువులను వెతకండి' : 'Search store products'}
+              </label>
               <input
+                id="header-search-mobile"
+                name="searchQuery"
                 type="text"
                 placeholder={language === 'te' ? 'లిప్‌స్టిక్, గాజులు, నెక్లెస్ సెర్చ్ చేయండి...' : 'Search products, jewellery, bangles...'}
                 value={searchQuery}

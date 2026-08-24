@@ -101,7 +101,11 @@ export const ShopCatalog = () => {
                 {language === 'te' ? 'క్రమబద్ధీకరణ:' : 'Sort By:'}
               </span>
               <div className="relative">
+                <label htmlFor="shop-sort-select" className="sr-only">Sort Products</label>
                 <select
+                  id="shop-sort-select"
+                  name="sortBy"
+                  aria-label="Sort products"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="bg-white border border-[#c99632]/40 rounded-xl py-2 px-3 pr-8 text-xs font-bold text-[#171717] focus:outline-none focus:border-[#c99632] shadow-xs cursor-pointer"
@@ -121,27 +125,30 @@ export const ShopCatalog = () => {
         <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           <button
             onClick={() => setActiveCategory('all')}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
               activeCategory === 'all'
-                ? 'bg-[#c99632] text-white shadow-md'
-                : 'bg-white text-[#444444] border border-[#c99632]/30 hover:bg-[#fffcf7]'
+                ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-xs gold-glow'
+                : 'bg-white border border-[#c99632]/30 text-[#666666]'
             }`}
           >
             {t('catalog_filter_all')} ({products.length})
           </button>
           {categories.map((c) => {
+            const catCount = products.filter(
+              (p) => p.categoryId === c.id || p.categoryName === c.name
+            ).length;
             const isSel = activeCategory === c.slug;
             return (
               <button
                 key={c.id}
                 onClick={() => setActiveCategory(c.slug)}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
                   isSel
-                    ? 'bg-[#c99632] text-white shadow-md'
-                    : 'bg-white text-[#444444] border border-[#c99632]/30 hover:bg-[#fffcf7]'
+                    ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-xs gold-glow'
+                    : 'bg-white border border-[#c99632]/30 text-[#666666]'
                 }`}
               >
-                {getTranslatedCatName(c)}
+                {getTranslatedCatName(c)} ({catCount})
               </button>
             );
           })}
@@ -150,13 +157,15 @@ export const ShopCatalog = () => {
         {/* Catalog Main Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          {/* Filter Sidebar (Desktop Sticky + Mobile Collapsible) */}
-          <div className={`lg:col-span-1 space-y-6 ${showMobileFilters ? 'block' : 'hidden lg:block'}`}>
-            <div className="bg-white border border-[#c99632]/30 rounded-2xl p-5 space-y-6 shadow-md lg:sticky lg:top-24">
-              <div className="flex items-center justify-between border-b border-[#c99632]/20 pb-3">
-                <h3 className="text-sm font-bold text-[#171717] uppercase tracking-wider flex items-center gap-2">
+          {/* DESKTOP SIDEBAR FILTERS */}
+          <div className={`lg:block ${showMobileFilters ? 'block' : 'hidden'} lg:col-span-1`}>
+            <div className="bg-white border border-[#c99632]/30 rounded-3xl p-5 shadow-lg space-y-6 sticky top-24">
+              
+              {/* Filter Top Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-[#c99632]/20">
+                <h3 className="font-serif-luxury text-sm font-bold text-[#171717] flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-[#c99632]" />
-                  <span>{language === 'te' ? 'ఫిల్టర్లు' : 'Filter Products'}</span>
+                  <span>{t('catalog_filters')}</span>
                 </h3>
                 <button
                   onClick={resetFilters}
@@ -168,9 +177,9 @@ export const ShopCatalog = () => {
 
               {/* Categories Filter */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[#171717] block uppercase tracking-wider text-[11px]">
+                <span className="text-xs font-bold text-[#171717] block uppercase tracking-wider text-[11px]">
                   {t('cat_explore')}
-                </label>
+                </span>
                 <div className="space-y-1">
                   <button
                     onClick={() => setActiveCategory('all')}
@@ -211,10 +220,15 @@ export const ShopCatalog = () => {
               {/* Max Price Filter */}
               <div className="space-y-2 pt-2 border-t border-[#c99632]/20">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-[#171717] uppercase tracking-wider text-[11px]">{t('catalog_filter_price')}</span>
+                  <label htmlFor="shop-price-range" className="font-bold text-[#171717] uppercase tracking-wider text-[11px] cursor-pointer">
+                    {t('catalog_filter_price')}
+                  </label>
                   <span className="font-bold text-[#c99632]">₹{priceRange}</span>
                 </div>
                 <input
+                  id="shop-price-range"
+                  name="priceRange"
+                  aria-label="Price range filter"
                   type="range"
                   min="200"
                   max="5000"
@@ -231,8 +245,10 @@ export const ShopCatalog = () => {
 
               {/* Stock Only Checkbox */}
               <div className="pt-2 border-t border-[#c99632]/20">
-                <label className="flex items-center gap-2.5 cursor-pointer text-xs text-[#171717] font-semibold">
+                <label htmlFor="shop-instock-only" className="flex items-center gap-2.5 cursor-pointer text-xs text-[#171717] font-semibold">
                   <input
+                    id="shop-instock-only"
+                    name="inStockOnly"
                     type="checkbox"
                     checked={inStockOnly}
                     onChange={(e) => setInStockOnly(e.target.checked)}
