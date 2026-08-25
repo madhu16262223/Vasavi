@@ -234,7 +234,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
     sql += ` GROUP BY o.id ORDER BY o."createdAt" DESC`;
 
     const dbRes = await query(sql, params);
-    const orders = dbRes.rows.map((o) => ({
+    const dbOrders = dbRes.rows.map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,
       customerName: o.customerName,
@@ -251,7 +251,13 @@ router.get('/', authenticateAdmin, async (req, res) => {
       items: o.items || []
     }));
 
-    return res.json(orders);
+    // Merge with persistent file storage so NO order is EVER missed
+    const storedOrders = getStoredOrders();
+    const dbIds = new Set(dbOrders.map(o => o.id || o.orderNumber));
+    const unsyncedStored = storedOrders.filter(o => !dbIds.has(o.id) && !dbIds.has(o.orderNumber));
+    const combinedOrders = [...dbOrders, ...unsyncedStored];
+
+    return res.json(combinedOrders);
   } catch (err) {
     console.warn('[Orders Admin API Fallback]:', err.message);
     const fallback = getStoredOrders();
