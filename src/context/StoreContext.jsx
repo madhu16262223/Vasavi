@@ -314,34 +314,39 @@ export const StoreProvider = ({ children }) => {
   // Live Cloud Database Hydration (Syncs Admin edits across all customers & devices in Real-Time)
   const fetchCloudData = React.useCallback(async () => {
     try {
-      const [catRes, prodRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/categories?t=${Date.now()}`),
-        fetch(`${API_BASE_URL}/api/products?t=${Date.now()}`)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const [catRes, prodRes] = await Promise.allSettled([
+        fetch(`${API_BASE_URL}/api/categories?t=${Date.now()}`, { signal: controller.signal }),
+        fetch(`${API_BASE_URL}/api/products?t=${Date.now()}`, { signal: controller.signal })
       ]);
 
-      if (catRes.ok) {
-        const cloudCats = await catRes.json();
+      clearTimeout(timeoutId);
+
+      if (catRes.status === 'fulfilled' && catRes.value.ok) {
+        const cloudCats = await catRes.value.json().catch(() => null);
         if (Array.isArray(cloudCats) && cloudCats.length > 0) {
           setCategories(cloudCats);
         }
       }
 
-      if (prodRes.ok) {
-        const cloudProds = await prodRes.json();
+      if (prodRes.status === 'fulfilled' && prodRes.value.ok) {
+        const cloudProds = await prodRes.value.json().catch(() => null);
         if (Array.isArray(cloudProds) && cloudProds.length > 0) {
           setProducts(cloudProds);
         }
       }
     } catch (err) {
-      console.warn('[Vasavi] Cloud API sync offline, using local cache:', err);
+      // Graceful offline fallback
     }
   }, []);
 
   useEffect(() => {
     fetchCloudData();
 
-    // Auto-refresh every 20 seconds so all customer devices stay synchronized in real-time
-    const interval = setInterval(fetchCloudData, 20000);
+    // Auto-refresh every 30 seconds so all customer devices stay synchronized in real-time
+    const interval = setInterval(fetchCloudData, 30000);
 
     // Refresh whenever user switches back to the browser tab
     window.addEventListener('focus', fetchCloudData);
@@ -351,7 +356,6 @@ export const StoreProvider = ({ children }) => {
       window.removeEventListener('focus', fetchCloudData);
     };
   }, [fetchCloudData]);
-
 
   // Live Order & Customer Fetching from Cloud for Admin Dashboard
   const [coupons, setCoupons] = useState([
@@ -363,11 +367,18 @@ export const StoreProvider = ({ children }) => {
 
   const fetchOrdersFromCloud = React.useCallback(async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const res = await fetch(`${API_BASE_URL}/api/orders?t=${Date.now()}`, {
-        headers: ADMIN_API_HEADER
+        headers: ADMIN_API_HEADER,
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
+
       if (res.ok) {
-        const cloudOrders = await res.json();
+        const cloudOrders = await res.json().catch(() => null);
         if (Array.isArray(cloudOrders)) {
           setOrders((prevLocalOrders) => {
             if (!cloudOrders || cloudOrders.length === 0) return prevLocalOrders || [];
@@ -379,17 +390,24 @@ export const StoreProvider = ({ children }) => {
         }
       }
     } catch (err) {
-      console.warn('[Vasavi] Could not fetch orders from cloud:', err);
+      // Graceful offline fallback
     }
   }, []);
 
   const fetchCustomersFromCloud = React.useCallback(async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const res = await fetch(`${API_BASE_URL}/api/auth/customers?t=${Date.now()}`, {
-        headers: ADMIN_API_HEADER
+        headers: ADMIN_API_HEADER,
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
+
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         if (Array.isArray(data) && data.length > 0) {
           setRegisteredUsers(data);
         }
@@ -399,9 +417,17 @@ export const StoreProvider = ({ children }) => {
 
   const fetchCoupons = React.useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/coupons?t=${Date.now()}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(`${API_BASE_URL}/api/coupons?t=${Date.now()}`, {
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         if (Array.isArray(data) && data.length > 0) {
           setCoupons(data);
         }
@@ -411,9 +437,17 @@ export const StoreProvider = ({ children }) => {
 
   const fetchReviews = React.useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/reviews?t=${Date.now()}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(`${API_BASE_URL}/api/reviews?t=${Date.now()}`, {
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         if (Array.isArray(data)) {
           setReviewsList(data);
         }
@@ -431,7 +465,7 @@ export const StoreProvider = ({ children }) => {
         fetchOrdersFromCloud();
         fetchCustomersFromCloud();
         fetchReviews();
-      }, 20000);
+      }, 25000);
       return () => clearInterval(orderInterval);
     }
   }, [isAdminLoggedIn, fetchOrdersFromCloud, fetchCustomersFromCloud, fetchCoupons, fetchReviews]);
