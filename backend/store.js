@@ -200,3 +200,40 @@ export function bulkSaveStoredCategories(newCats) {
   writeJsonFile(CATEGORIES_FILE, categories);
   return categories;
 }
+
+// ─── ORDERS ──────────────────────────────────────────────────────────
+export function getStoredOrders() {
+  return readJsonFile(ORDERS_FILE, []);
+}
+
+export function saveStoredOrder(order) {
+  const orders = getStoredOrders();
+  const existingIdx = orders.findIndex(o => o.id === order.id || (order.orderNumber && o.orderNumber === order.orderNumber));
+  if (existingIdx >= 0) {
+    orders[existingIdx] = { ...orders[existingIdx], ...order, updatedAt: new Date().toISOString() };
+  } else {
+    orders.unshift(order);
+  }
+  writeJsonFile(ORDERS_FILE, orders);
+  return order;
+}
+
+export function updateStoredOrderStatus(orderId, status, paymentStatus) {
+  const orders = getStoredOrders();
+  const idx = orders.findIndex(o => o.id === orderId || o.orderNumber === orderId);
+  if (idx >= 0) {
+    if (status) orders[idx].status = status;
+    if (paymentStatus) orders[idx].paymentStatus = paymentStatus;
+    orders[idx].updatedAt = new Date().toISOString();
+    writeJsonFile(ORDERS_FILE, orders);
+    return orders[idx];
+  }
+  return null;
+}
+
+export function deleteStoredOrder(orderId) {
+  const orders = getStoredOrders().filter(o => o.id !== orderId && o.orderNumber !== orderId);
+  writeJsonFile(ORDERS_FILE, orders);
+  return true;
+}
+

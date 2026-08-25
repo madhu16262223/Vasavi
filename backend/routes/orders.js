@@ -11,56 +11,78 @@ router.post('/', async (req, res) => {
     id,
     orderNumber,
     customerName,
+    name,
     customerPhone,
+    phone,
     customerAddress,
     address,
     notes,
     items,
     totalAmount,
+    discountAmount,
+    couponCode,
     paymentMethod,
     paymentStatus,
     status
   } = req.body;
 
-  if (!customerName || !customerPhone || !items || items.length === 0) {
+  const finalCustomerName = (customerName || name || 'Customer').trim();
+  const finalCustomerPhone = (customerPhone || phone || '9999999999').trim();
+  const finalAddress = (customerAddress || address || 'Nandyal, Andhra Pradesh').trim();
+  const finalItems = (items && Array.isArray(items) && items.length > 0) ? items : [];
+
+  if (!finalCustomerName || !finalCustomerPhone || finalItems.length === 0) {
     return res.status(400).json({ error: 'Customer details and items are required' });
   }
 
   const finalId = id || `ord-${Date.now()}`;
   const finalOrderNumber = orderNumber || `VSV-${Math.floor(10000 + Math.random() * 90000)}`;
-  const finalAddress = customerAddress || address || 'Nandyal, Andhra Pradesh';
   const finalTotal = parseFloat(totalAmount) || 0;
 
   const formattedOrder = {
     id: finalId,
     orderNumber: finalOrderNumber,
-    customerName: customerName.trim(),
-    customerPhone: customerPhone.trim(),
-    customerAddress: finalAddress.trim(),
-    address: finalAddress.trim(),
+    customerName: finalCustomerName,
+    customerPhone: finalCustomerPhone,
+    customerAddress: finalAddress,
+    address: finalAddress,
     notes: notes ? notes.trim() : '',
     totalAmount: finalTotal,
+    discountAmount: parseFloat(discountAmount) || 0,
+    couponCode: couponCode || null,
     status: status || 'PENDING',
     paymentMethod: paymentMethod || 'WHATSAPP_UPI',
     paymentStatus: paymentStatus || 'PENDING',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    items: (items || []).map((item) => ({
-      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      productId: item.productId || `prod-${Date.now()}`,
+    items: finalItems.map((item) => ({
+      id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      productId: item.productId || item.id || `prod-${Date.now()}`,
       productName: item.productName || item.name || 'Vasavi Fancy Store Item',
       quantity: parseInt(item.quantity, 10) || 1,
       price: parseFloat(item.price) || 0,
-      subtotal: parseFloat(item.subtotal || item.price * (item.quantity || 1))
+      subtotal: parseFloat(item.subtotal || item.price * (item.quantity || 1)),
+      image: item.image || item.imageUrl || '/bangles.jpg'
     }))
   };
 
   // Always save to persistent store
-  saveStoredOrder(formattedOrder);
+  try {
+    saveStoredOrder(formattedOrder);
+  } catch (storeErr) {
+    console.warn('[Stored Order Save Note]:', storeErr.message);
+  }
 
   // Direct PostgreSQL Save to Supabase
   try {
-    // 1. Ensure customer exists
+    // 1. Ensure category exists for foreign keys
+    await query(
+      `INSERT INTO categories (id, name, slug, "imageUrl", "createdAt")
+       VALUES ('cat-1', 'Cosmetics & Jewellery', 'cosmetics-jewellery', 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80', NOW())
+       ON CONFLICT (id) DO NOTHING`
+    ).catch(() => {});
+
+    // 2. Ensure customer exists
     const custRes = await query('SELECT id FROM customers WHERE phone = $1', [formattedOrder.customerPhone]);
     let custId = custRes.rows[0]?.id;
     if (!custId) {
@@ -71,7 +93,7 @@ router.post('/', async (req, res) => {
       ).catch(() => {});
     }
 
-    // 2. Insert into orders table
+    // 3. Insert into orders table
     await query(
       `INSERT INTO orders (id, "orderNumber", "customerId", "customerName", "customerPhone", address, notes, "totalAmount", status, "createdAt", "updatedAt", "paymentMethod", "paymentStatus")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::"OrderStatus", NOW(), NOW(), $10, $11)
@@ -93,9 +115,8 @@ router.post('/', async (req, res) => {
       ]
     );
 
-    // 3. Insert order items
+    // 4. Insert order items
     for (const item of formattedOrder.items) {
-      // Ensure product exists in Supabase
       await query(
         `INSERT INTO products (id, name, price, stock, "imageUrl", "isActive", "categoryId", "createdAt", "updatedAt")
          VALUES ($1, $2, $3, 10, 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80', true, 'cat-1', NOW(), NOW())

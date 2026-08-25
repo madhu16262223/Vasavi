@@ -343,7 +343,13 @@ export const StoreProvider = ({ children }) => {
       if (res.ok) {
         const cloudOrders = await res.json();
         if (Array.isArray(cloudOrders)) {
-          setOrders(cloudOrders);
+          setOrders((prevLocalOrders) => {
+            if (!cloudOrders || cloudOrders.length === 0) return prevLocalOrders || [];
+            // Merge cloud orders and local unsynced orders by id/orderNumber
+            const cloudIds = new Set(cloudOrders.map((o) => o.id || o.orderNumber));
+            const unsynced = (prevLocalOrders || []).filter((o) => !cloudIds.has(o.id) && !cloudIds.has(o.orderNumber));
+            return [...unsynced, ...cloudOrders];
+          });
         }
       }
     } catch (err) {
@@ -392,14 +398,14 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     fetchCoupons();
     fetchReviews();
+    fetchOrdersFromCloud();
     if (isAdminLoggedIn) {
-      fetchOrdersFromCloud();
       fetchCustomersFromCloud();
       const orderInterval = setInterval(() => {
         fetchOrdersFromCloud();
         fetchCustomersFromCloud();
         fetchReviews();
-      }, 30000);
+      }, 20000);
       return () => clearInterval(orderInterval);
     }
   }, [isAdminLoggedIn, fetchOrdersFromCloud, fetchCustomersFromCloud, fetchCoupons, fetchReviews]);
@@ -485,52 +491,64 @@ export const StoreProvider = ({ children }) => {
     return cart.reduce((total, item) => total + (item.quantity || 0), 0);
   };
 
-    // Order Placement (WhatsApp Direct or Cash on Delivery)
-    const placeOrder = (customerInfo) => {
-      if (cart.length === 0) return null;
+    // Order Placement (WhatsApp Direct, Online UPI, or Cash on Delivery)
+    const placeOrder = async (customerInfo) => {
+      const custName = (customerInfo.customerName || customerInfo.name || 'Valued Customer').trim();
+      const custPhone = (customerInfo.customerPhone || customerInfo.phone || '9999999999').trim();
+      const custAddr = (customerInfo.customerAddress || customerInfo.address || `${customerInfo.address || 'Nandyal'}, ${customerInfo.city || 'AP'}`).trim();
+      
+      const finalItems = (customerInfo.items && Array.isArray(customerInfo.items) && customerInfo.items.length > 0)
+        ? customerInfo.items
+        : (cart || []).map((item) => ({
+            productId: item.product?.id || item.id || `item-${Date.now()}`,
+            productName: item.product?.name || item.name || 'Vasavi Fancy Store Item',
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.product?.price || item.price) || 0,
+            subtotal: (Number(item.product?.price || item.price) || 0) * (Number(item.quantity) || 1),
+            image: item.product?.image || item.product?.imageUrl || item.image || '/bangles.jpg'
+          }));
 
-      const orderNum = `VSV-${Math.floor(10000 + Math.random() * 90000)}`;
-      const itemsTotal = getCartTotal();
-      const deliveryFee = storeSettings.deliveryFee || 0;
-      const totalAmount = itemsTotal + deliveryFee;
+      if (finalItems.length === 0) return null;
 
-      const orderItems = cart.map((item) => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        quantity: item.quantity,
-        price: item.product.price,
-        subtotal: item.product.price * item.quantity
-      }));
+      const orderNum = customerInfo.orderNumber || `VSV-${Math.floor(10000 + Math.random() * 90000)}`;
+      const deliveryFee = Number(storeSettings.deliveryFee) || 0;
+      const finalTotal = customerInfo.totalAmount !== undefined
+        ? Number(customerInfo.totalAmount)
+        : (getCartTotal() + deliveryFee);
 
-      const isPaidOnline = customerInfo.paymentMethod === 'ONLINE_UPI';
+      const isPaidOnline = customerInfo.paymentMethod === 'ONLINE_UPI' || customerInfo.paymentStatus === 'PAID';
 
       const newOrder = {
-        id: `ord-${Date.now()}`,
+        id: customerInfo.id || `ord-${Date.now()}`,
         orderNumber: orderNum,
-        customerName: customerInfo.name,
-        customerPhone: customerInfo.phone,
-        customerAddress: `${customerInfo.address}, ${customerInfo.city || 'Nandyal'}`,
+        customerName: custName,
+        customerPhone: custPhone,
+        customerAddress: custAddr,
+        address: custAddr,
         notes: customerInfo.notes || '',
         deliveryFee,
-        totalAmount,
-        paymentMethod: customerInfo.paymentMethod || 'ONLINE_UPI',
-        paymentStatus: isPaidOnline ? 'PAID' : 'UNPAID',
-        status: isPaidOnline ? 'PROCESSING' : 'PENDING',
+        totalAmount: finalTotal,
+        discountAmount: Number(customerInfo.discountAmount) || 0,
+        couponCode: customerInfo.couponCode || null,
+        paymentMethod: customerInfo.paymentMethod || 'WHATSAPP',
+        paymentStatus: customerInfo.paymentStatus || (isPaidOnline ? 'PAID' : 'PENDING'),
+        status: customerInfo.status || (isPaidOnline ? 'PROCESSING' : 'PENDING'),
         createdAt: new Date().toISOString(),
-        items: orderItems
+        updatedAt: new Date().toISOString(),
+        items: finalItems
       };
 
       // Update Orders State immediately for Admin Dashboard
-      setOrders((prev) => [newOrder, ...prev]);
+      setOrders((prev) => [newOrder, ...(prev || [])]);
 
       // Update Product Stock
       setProducts((prevProducts) =>
         prevProducts.map((prod) => {
-          const cartItem = cart.find((item) => item.product.id === prod.id);
-          if (cartItem) {
+          const matchedItem = finalItems.find((item) => (item.productId === prod.id || item.id === prod.id));
+          if (matchedItem) {
             return {
               ...prod,
-              stock: Math.max(0, prod.stock - cartItem.quantity)
+              stock: Math.max(0, prod.stock - matchedItem.quantity)
             };
           }
           return prod;
@@ -543,14 +561,19 @@ export const StoreProvider = ({ children }) => {
       clearCart();
       setIsCartOpen(false);
 
-      // Sync order with Express API backend asynchronously
+      // Sync order with Express API backend & Supabase PostgreSQL
       try {
-        fetch(`${API_BASE_URL}/api/orders`, {
+        await fetch(`${API_BASE_URL}/api/orders`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...ADMIN_API_HEADER
+          },
           body: JSON.stringify(newOrder)
-        }).catch(() => {});
-      } catch (err) {}
+        });
+      } catch (err) {
+        console.warn('[Vasavi] Cloud order sync fallback:', err);
+      }
 
       return newOrder;
     };
