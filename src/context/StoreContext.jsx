@@ -217,12 +217,34 @@ export const StoreProvider = ({ children }) => {
   const [authModalMode, setAuthModalMode] = useState('login');
 
   useEffect(() => {
-    safeLocalStorageSet('vasavi_wishlist', wishlist);
+    const sanitizedWishlist = (wishlist || []).map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image: (typeof p.image === 'string' && !p.image.startsWith('data:')) ? p.image : '',
+      imageUrl: (typeof p.imageUrl === 'string' && !p.imageUrl.startsWith('data:')) ? p.imageUrl : '',
+      categoryId: p.categoryId
+    }));
+    safeLocalStorageSet('vasavi_wishlist', sanitizedWishlist);
   }, [wishlist]);
 
-  // Local Storage Sync (Safe from QuotaExceededError)
+  // Local Storage Sync (Safe from QuotaExceededError - Storing lightweight items)
   useEffect(() => {
-    safeLocalStorageSet('vasavi_products', products);
+    const sanitizedProds = (products || []).slice(0, 40).map(p => ({
+      id: p.id,
+      name: p.name,
+      name_te: p.name_te,
+      price: p.price,
+      originalPrice: p.originalPrice,
+      stock: p.stock,
+      categoryId: p.categoryId,
+      brand: p.brand,
+      shade: p.shade,
+      isTrending: p.isTrending,
+      isBestSeller: p.isBestSeller,
+      imageUrl: (typeof p.imageUrl === 'string' && !p.imageUrl.startsWith('data:')) ? p.imageUrl : ''
+    }));
+    safeLocalStorageSet('vasavi_products', sanitizedProds);
   }, [products]);
 
   useEffect(() => {
@@ -230,7 +252,29 @@ export const StoreProvider = ({ children }) => {
   }, [categories]);
 
   useEffect(() => {
-    safeLocalStorageSet('vasavi_orders', orders);
+    // Keep most recent 25 orders in browser storage (older orders are securely in Supabase Postgres)
+    const sanitizedOrders = (orders || []).slice(0, 25).map(o => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      customerName: o.customerName,
+      customerPhone: o.customerPhone,
+      customerAddress: o.customerAddress || o.address,
+      totalAmount: o.totalAmount,
+      discountAmount: o.discountAmount,
+      couponCode: o.couponCode,
+      status: o.status,
+      paymentMethod: o.paymentMethod,
+      paymentStatus: o.paymentStatus,
+      createdAt: o.createdAt,
+      items: (o.items || []).map(i => ({
+        productId: i.productId || i.id,
+        productName: i.productName || i.name,
+        quantity: i.quantity,
+        price: i.price,
+        subtotal: i.subtotal
+      }))
+    }));
+    safeLocalStorageSet('vasavi_orders', sanitizedOrders);
   }, [orders]);
 
   useEffect(() => {

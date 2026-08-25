@@ -52,10 +52,10 @@ app.use(helmet({
   contentSecurityPolicy: false // Allows rich imagery and external CDNs safely
 }));
 
-// 3. General API Rate Limiting (Anti-DDoS & Scraping Protection)
+// 3. General API Rate Limiting (Anti-DDoS & High Traffic Protection)
 const apiLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 300, // 300 requests per 5 minutes per IP
+  max: 1200, // 1200 requests per 5 minutes per IP (supports multiple concurrent mobile users on shared carrier IPs)
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests from this IP. Please try again in 5 minutes.' }
