@@ -305,23 +305,34 @@ export const ProductDetailModal = () => {
                     </div>
                   </div>
 
-                  <input
-                    type="text"
-                    required
-                    placeholder="Your Name *"
-                    value={reviewName}
-                    onChange={(e) => setReviewName(e.target.value)}
-                    className="w-full bg-[#fffcf7] border border-[#c99632]/30 rounded-xl p-2 font-medium text-xs text-[#171717] focus:outline-none focus:border-[#c99632]"
-                  />
+                  <div>
+                    <label htmlFor="product-review-name" className="sr-only">Your Name</label>
+                    <input
+                      id="product-review-name"
+                      name="reviewName"
+                      autoComplete="name"
+                      type="text"
+                      required
+                      placeholder="Your Name *"
+                      value={reviewName}
+                      onChange={(e) => setReviewName(e.target.value)}
+                      className="w-full bg-[#fffcf7] border border-[#c99632]/30 rounded-xl p-2 font-medium text-xs text-[#171717] focus:outline-none focus:border-[#c99632]"
+                    />
+                  </div>
 
-                  <textarea
-                    rows={2}
-                    required
-                    placeholder="Share your experience with this product..."
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    className="w-full bg-[#fffcf7] border border-[#c99632]/30 rounded-xl p-2 font-medium text-xs text-[#171717] focus:outline-none focus:border-[#c99632] resize-none"
-                  />
+                  <div>
+                    <label htmlFor="product-review-comment" className="sr-only">Your Review Comment</label>
+                    <textarea
+                      id="product-review-comment"
+                      name="reviewComment"
+                      rows={2}
+                      required
+                      placeholder="Share your experience with this product..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      className="w-full bg-[#fffcf7] border border-[#c99632]/30 rounded-xl p-2 font-medium text-xs text-[#171717] focus:outline-none focus:border-[#c99632] resize-none"
+                    />
+                  </div>
 
                   <button
                     type="submit"

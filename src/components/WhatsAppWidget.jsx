@@ -104,7 +104,11 @@ export const WhatsAppWidget = () => {
               }}
               className="flex gap-1.5 pt-1"
             >
+              <label htmlFor="whatsapp-custom-message" className="sr-only">Type your message on WhatsApp</label>
               <input
+                id="whatsapp-custom-message"
+                name="customMessage"
+                autoComplete="off"
                 type="text"
                 placeholder="Type your message..."
                 value={customMsg}

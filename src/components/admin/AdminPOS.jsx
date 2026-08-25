@@ -130,7 +130,10 @@ export const AdminPOS = () => {
           {/* Quick Search */}
           <div className="bg-white p-3 rounded-2xl border border-[#c99632]/20 flex gap-2">
             <div className="relative flex-1">
+              <label htmlFor="pos-search-term" className="sr-only">Search product name or barcode</label>
               <input
+                id="pos-search-term"
+                name="posSearchTerm"
                 type="text"
                 placeholder="Search product name or barcode..."
                 value={searchTerm}
@@ -250,8 +253,10 @@ export const AdminPOS = () => {
             <div className="space-y-2.5 pt-2 border-t border-[#c99632]/20 text-xs">
               
               <div>
-                <label className="block text-[11px] font-bold text-[#171717] mb-1">Customer Name / Note:</label>
+                <label htmlFor="pos-customer-name" className="block text-[11px] font-bold text-[#171717] mb-1">Customer Name / Note:</label>
                 <input
+                  id="pos-customer-name"
+                  name="posCustomerName"
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
@@ -281,8 +286,10 @@ export const AdminPOS = () => {
                   <span className="font-bold text-[#171717]">₹{subtotal}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Discount (₹):</span>
+                  <label htmlFor="pos-discount-amount">Discount (₹):</label>
                   <input
+                    id="pos-discount-amount"
+                    name="posDiscountAmount"
                     type="number"
                     min="0"
                     value={discountAmount}
@@ -295,8 +302,10 @@ export const AdminPOS = () => {
                   <span>₹{netTotal}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1 text-[11px]">
-                  <span>Cash Received (₹):</span>
+                  <label htmlFor="pos-tendered-amount">Cash Received (₹):</label>
                   <input
+                    id="pos-tendered-amount"
+                    name="posTenderedAmount"
                     type="number"
                     placeholder={String(netTotal)}
                     value={tenderedAmount}

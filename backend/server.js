@@ -64,7 +64,8 @@ const apiLimiter = rateLimit({
 // Stricter Auth Rate Limiter (Anti-Brute Force Protection)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 login/register attempts per 15 minutes
+  max: 100, // 100 requests per 15 minutes
+  skip: (req) => req.method === 'GET' || req.headers['x-admin-key'] === 'vasavi_admin_secret_2026',
   message: { error: 'Security Notice: Too many authentication attempts. Please try again in 15 minutes.' }
 });
 

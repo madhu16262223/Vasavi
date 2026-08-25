@@ -111,7 +111,10 @@ export const AdminProducts = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#c99632]/25 shadow-xs">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
           <div className="relative flex-1 max-w-md">
+            <label htmlFor="admin-products-search" className="sr-only">Search products</label>
             <input
+              id="admin-products-search"
+              name="adminProductsSearch"
               type="text"
               placeholder="Search products..."
               value={searchTerm}
@@ -121,7 +124,10 @@ export const AdminProducts = () => {
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
 
+          <label htmlFor="admin-products-category-select" className="sr-only">Filter by category</label>
           <select
+            id="admin-products-category-select"
+            name="adminProductsCategory"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="bg-[#faf8f5] border border-[#c99632]/30 rounded-xl py-2 px-3 text-xs font-bold text-[#171717] focus:outline-none"
@@ -317,8 +323,10 @@ export const AdminProducts = () => {
               {/* Row 1: Product Title & Brand */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block font-bold mb-1 text-[#171717]">Product Title *</label>
+                  <label htmlFor="prod-form-name" className="block font-bold mb-1 text-[#171717]">Product Title *</label>
                   <input
+                    id="prod-form-name"
+                    name="productName"
                     type="text"
                     required
                     value={formData.name}
@@ -328,8 +336,10 @@ export const AdminProducts = () => {
                   />
                 </div>
                 <div>
-                  <label className="block font-bold mb-1 text-[#171717]">Brand Name</label>
+                  <label htmlFor="prod-form-brand" className="block font-bold mb-1 text-[#171717]">Brand Name</label>
                   <input
+                    id="prod-form-brand"
+                    name="brand"
                     type="text"
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
@@ -342,8 +352,10 @@ export const AdminProducts = () => {
               {/* Row 2: Category, Shade/Variant, Stock */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold mb-1 text-[#171717]">Category *</label>
+                  <label htmlFor="prod-form-category" className="block font-bold mb-1 text-[#171717]">Category *</label>
                   <select
+                    id="prod-form-category"
+                    name="categoryId"
                     value={formData.categoryId}
                     onChange={(e) => {
                       const cat = categories.find(c => c.id === e.target.value);
@@ -358,8 +370,10 @@ export const AdminProducts = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1 text-[#171717]">Shade / Variant / Size</label>
+                  <label htmlFor="prod-form-shade" className="block font-bold mb-1 text-[#171717]">Shade / Variant / Size</label>
                   <input
+                    id="prod-form-shade"
+                    name="shade"
                     type="text"
                     value={formData.shade}
                     onChange={(e) => setFormData({ ...formData, shade: e.target.value })}
@@ -369,8 +383,10 @@ export const AdminProducts = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1 text-[#171717]">Stock Quantity *</label>
+                  <label htmlFor="prod-form-stock" className="block font-bold mb-1 text-[#171717]">Stock Quantity *</label>
                   <input
+                    id="prod-form-stock"
+                    name="stock"
                     type="number"
                     required
                     min="0"
@@ -384,8 +400,10 @@ export const AdminProducts = () => {
               {/* Row 3: Pricing & Instant Discount Calculator */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-2xl bg-[#faf8f5] border border-[#c99632]/20">
                 <div>
-                  <label className="block font-bold mb-1 text-[#171717]">Selling Price (₹) *</label>
+                  <label htmlFor="prod-form-price" className="block font-bold mb-1 text-[#171717]">Selling Price (₹) *</label>
                   <input
+                    id="prod-form-price"
+                    name="price"
                     type="number"
                     required
                     min="1"
@@ -397,8 +415,10 @@ export const AdminProducts = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1 text-[#171717]">Original MRP Price (₹)</label>
+                  <label htmlFor="prod-form-original-price" className="block font-bold mb-1 text-[#171717]">Original MRP Price (₹)</label>
                   <input
+                    id="prod-form-original-price"
+                    name="originalPrice"
                     type="number"
                     value={formData.originalPrice}
                     onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
@@ -432,9 +452,11 @@ export const AdminProducts = () => {
                       <span className="font-bold text-[#c99632] block text-[11px]">OPTION A: Upload Photo from Phone / PC</span>
                       <p className="text-[10px] text-[#666666]">Select any photo directly from your mobile gallery or computer files.</p>
                     </div>
-                    <label className="cursor-pointer py-2 px-3 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-xs hover:brightness-110 flex items-center justify-center gap-1.5 gold-glow transition-all">
+                    <label htmlFor="prod-file-upload" className="cursor-pointer py-2 px-3 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-xs hover:brightness-110 flex items-center justify-center gap-1.5 gold-glow transition-all">
                       <span>📁 Choose Image File</span>
                       <input
+                        id="prod-file-upload"
+                        name="productImageFile"
                         type="file"
                         accept="image/*"
                         onChange={(e) => {
@@ -455,10 +477,12 @@ export const AdminProducts = () => {
                   {/* Method B: Web URL Input */}
                   <div className="p-3 bg-white rounded-xl border border-[#c99632]/30 space-y-1.5 flex flex-col justify-between">
                     <div>
-                      <span className="font-bold text-[#c99632] block text-[11px]">OPTION B: Paste Web Image Link (Google/Unsplash)</span>
+                      <label htmlFor="prod-form-image-url" className="font-bold text-[#c99632] block text-[11px]">OPTION B: Paste Web Image Link (Google/Unsplash)</label>
                       <p className="text-[10px] text-[#666666]">Paste direct image URL from Google Images or photo link.</p>
                     </div>
                     <input
+                      id="prod-form-image-url"
+                      name="imageUrl"
                       type="text"
                       value={formData.image}
                       onChange={(e) => setFormData({ ...formData, image: e.target.value })}
@@ -511,8 +535,10 @@ export const AdminProducts = () => {
 
               {/* Row 5: Product Description */}
               <div>
-                <label className="block font-bold mb-1 text-[#171717]">Full Product Description</label>
+                <label htmlFor="prod-form-description" className="block font-bold mb-1 text-[#171717]">Full Product Description</label>
                 <textarea
+                  id="prod-form-description"
+                  name="description"
                   rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -523,8 +549,10 @@ export const AdminProducts = () => {
 
               {/* Row 6: Badges & Tags */}
               <div className="p-3 rounded-2xl bg-[#faf8f5] border border-[#c99632]/20 flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label htmlFor="prod-form-is-trending" className="flex items-center gap-2 cursor-pointer">
                   <input
+                    id="prod-form-is-trending"
+                    name="isTrending"
                     type="checkbox"
                     checked={formData.isTrending}
                     onChange={(e) => setFormData({ ...formData, isTrending: e.target.checked })}
@@ -533,8 +561,10 @@ export const AdminProducts = () => {
                   <span className="font-bold text-[#171717]">🔥 Mark Trending Badge</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label htmlFor="prod-form-is-bestseller" className="flex items-center gap-2 cursor-pointer">
                   <input
+                    id="prod-form-is-bestseller"
+                    name="isBestSeller"
                     type="checkbox"
                     checked={formData.isBestSeller}
                     onChange={(e) => setFormData({ ...formData, isBestSeller: e.target.checked })}

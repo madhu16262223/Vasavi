@@ -440,8 +440,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                     <input
+                      id="pay-method-whatsapp"
                       type="radio"
                       name="payMethod"
+                      aria-label="Order via WhatsApp"
                       checked={paymentMethod === 'WHATSAPP'}
                       onChange={() => setPaymentMethod('WHATSAPP')}
                       className="w-4 h-4 accent-emerald-600"
@@ -473,8 +475,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                     <input
+                      id="pay-method-cod"
                       type="radio"
                       name="payMethod"
+                      aria-label="Cash on Delivery"
                       checked={paymentMethod === 'COD'}
                       onChange={() => setPaymentMethod('COD')}
                       className="w-4 h-4 accent-[#c99632]"

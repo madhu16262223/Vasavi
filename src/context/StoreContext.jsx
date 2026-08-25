@@ -353,7 +353,9 @@ export const StoreProvider = ({ children }) => {
 
   const fetchCustomersFromCloud = React.useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/customers?t=${Date.now()}`);
+      const res = await fetch(`${API_BASE_URL}/api/auth/customers?t=${Date.now()}`, {
+        headers: ADMIN_API_HEADER
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -397,7 +399,7 @@ export const StoreProvider = ({ children }) => {
         fetchOrdersFromCloud();
         fetchCustomersFromCloud();
         fetchReviews();
-      }, 10000);
+      }, 30000);
       return () => clearInterval(orderInterval);
     }
   }, [isAdminLoggedIn, fetchOrdersFromCloud, fetchCustomersFromCloud, fetchCoupons, fetchReviews]);
