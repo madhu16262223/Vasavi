@@ -69,28 +69,24 @@ const authLimiter = rateLimit({
   message: { error: 'Security Notice: Too many authentication attempts. Please try again in 15 minutes.' }
 });
 
-// 4. CORS Whitelisting
-const allowedOrigins = [
-  'https://vasavistore.in',
-  'https://www.vasavistore.in',
-  'https://vasavi-api.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:5000'
-];
+// 4. Bulletproof Universal CORS Configuration
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  res.header('Access-Control-Allow-Origin', origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-key, Accept, Origin, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl) or if in whitelist
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Fallback to safe permissive response
-    }
-  },
+  origin: true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'Accept', 'Origin', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10mb' }));

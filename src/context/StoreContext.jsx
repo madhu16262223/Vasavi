@@ -352,24 +352,6 @@ export const StoreProvider = ({ children }) => {
     };
   }, [fetchCloudData]);
 
-  // Auto-sync all products & categories to Cloud Database whenever Admin makes changes
-  useEffect(() => {
-    if (isAdminLoggedIn && products.length > 0) {
-      // Sync categories to cloud
-      fetch(`${API_BASE_URL}/api/categories/bulk-sync`, {
-        method: 'POST',
-        headers: ADMIN_API_HEADER,
-        body: JSON.stringify({ categories })
-      }).catch((err) => console.warn('[Vasavi] Auto-sync categories warning:', err));
-
-      // Sync products to cloud
-      fetch(`${API_BASE_URL}/api/products/bulk-sync`, {
-        method: 'POST',
-        headers: ADMIN_API_HEADER,
-        body: JSON.stringify({ products })
-      }).catch((err) => console.warn('[Vasavi] Auto-sync products warning:', err));
-    }
-  }, [isAdminLoggedIn, products, categories]);
 
   // Live Order & Customer Fetching from Cloud for Admin Dashboard
   const [coupons, setCoupons] = useState([
