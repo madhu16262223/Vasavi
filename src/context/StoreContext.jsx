@@ -1328,6 +1328,8 @@ export const StoreProvider = ({ children }) => {
         t: (key, fallback) => getTranslation(language, key, fallback),
         loginAdmin,
         logoutAdmin,
+        fetchOrdersFromCloud,
+        refreshOrders: fetchOrdersFromCloud,
         refreshCloudData: fetchCloudData,
         storeInfo: { ...STORE_INFO, ...storeSettings }
       }}

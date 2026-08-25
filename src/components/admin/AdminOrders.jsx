@@ -1,14 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { generateInvoicePDF } from '../../utils/invoiceGenerator';
 import { formatFullDateTime, cleanIndianPhone } from '../../utils/phoneUtils';
-import { Package, Phone, Clock, CheckCircle2, Truck, AlertCircle, Filter, Eye, ChevronDown, FileText, Search, CreditCard, Trash2, MessageCircle, Banknote, CheckCircle, ShieldCheck } from 'lucide-react';
+import { Package, Phone, Clock, CheckCircle2, Truck, AlertCircle, Filter, Eye, ChevronDown, FileText, Search, CreditCard, Trash2, MessageCircle, Banknote, CheckCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 
 export const AdminOrders = () => {
-  const { orders, updateOrderStatus, deleteOrder } = useStore();
+  const { orders = [], updateOrderStatus, deleteOrder, fetchOrdersFromCloud } = useStore();
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    if (fetchOrdersFromCloud) {
+      fetchOrdersFromCloud();
+    }
+  }, [fetchOrdersFromCloud]);
+
+  const handleManualSync = async () => {
+    if (!fetchOrdersFromCloud) return;
+    setIsSyncing(true);
+    await fetchOrdersFromCloud();
+    setTimeout(() => setIsSyncing(false), 500);
+  };
 
   const statuses = ['ALL', 'PENDING', 'CONFIRMED', 'PROCESSING', 'READY', 'COMPLETED', 'CANCELLED'];
 
@@ -103,19 +117,32 @@ export const AdminOrders = () => {
           })}
         </div>
 
-        {/* Search */}
-        <div className="relative w-full lg:w-64">
-          <label htmlFor="admin-orders-search" className="sr-only">Search Orders</label>
-          <input
-            id="admin-orders-search"
-            name="searchQuery"
-            type="text"
-            placeholder="Search order ID, phone, customer..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl py-2 pl-9 pr-4 text-xs font-medium text-[#171717] placeholder-slate-400 focus:outline-none focus:border-[#c99632]"
-          />
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        {/* Search & Manual Sync Button */}
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          <div className="relative flex-1 lg:w-64">
+            <label htmlFor="admin-orders-search" className="sr-only">Search Orders</label>
+            <input
+              id="admin-orders-search"
+              name="searchQuery"
+              type="text"
+              placeholder="Search order ID, phone, customer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl py-2 pl-9 pr-4 text-xs font-medium text-[#171717] placeholder-slate-400 focus:outline-none focus:border-[#c99632]"
+            />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            className="px-3.5 py-2 rounded-xl bg-[#faf8f5] hover:bg-[#fff3c4] border border-[#c99632]/40 text-[#c99632] font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-all shrink-0 active:scale-95 disabled:opacity-50"
+            title="Sync latest live orders from cloud database"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Orders'}</span>
+          </button>
         </div>
 
       </div>
