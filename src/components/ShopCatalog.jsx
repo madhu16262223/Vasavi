@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from './ProductCard';
 import { SlidersHorizontal, Sparkles, RefreshCw } from 'lucide-react';
+import { groupProductsWithVariants } from '../utils/variantUtils';
 
 export const ShopCatalog = () => {
   const { products, categories, activeCategory, setActiveCategory, searchQuery, setSearchQuery, t, language } = useStore();
@@ -10,6 +11,11 @@ export const ShopCatalog = () => {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('popular');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Group similar size/weight items (Flipkart / Amazon style)
+  const catalogProducts = useMemo(() => {
+    return groupProductsWithVariants(products || []);
+  }, [products]);
 
   const activeCatObj = categories.find(c => c.slug === activeCategory || c.id === activeCategory);
 
@@ -25,7 +31,7 @@ export const ShopCatalog = () => {
     return cat.name;
   };
 
-  const filteredProducts = (products || []).filter((p) => {
+  const filteredProducts = catalogProducts.filter((p) => {
     if (!p) return false;
     const pName = typeof p.name === 'string' ? p.name.toLowerCase() : '';
     const pCat = typeof p.category === 'string' ? p.category.toLowerCase() : (typeof p.category?.name === 'string' ? p.category.name.toLowerCase() : '');

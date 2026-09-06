@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { getTranslatedProductName, getTranslatedProductDesc } from '../utils/translations';
+import { getEffectiveProductDetails } from '../utils/variantUtils';
 import { X, ShoppingBag, Star, Zap, Check, ShieldCheck, Truck, MessageCircle, Heart, Sparkles, Award } from 'lucide-react';
 
 export const ProductDetailModal = () => {
@@ -8,14 +9,20 @@ export const ProductDetailModal = () => {
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'reviews'
+  const [modalVariant, setModalVariant] = useState(null);
 
-  // Review Form State
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewName, setReviewName] = useState(currentUser?.name || '');
-  const [reviewComment, setReviewComment] = useState('');
-  const [reviewSuccess, setReviewSuccess] = useState(false);
+  useEffect(() => {
+    if (selectedProduct) {
+      setModalVariant(Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0 ? selectedProduct.variants[0] : null);
+      setQuantity(1);
+    }
+  }, [selectedProduct]);
 
   if (!selectedProduct) return null;
+
+  const hasVariants = Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 1;
+  const currentVariant = modalVariant || (Array.isArray(selectedProduct.variants) ? selectedProduct.variants[0] : null);
+  const { price, originalPrice, stock, discountPct } = getEffectiveProductDetails(selectedProduct, currentVariant);
 
   const inWishlist = isInWishlist(selectedProduct.id);
   const productReviews = reviewsList.filter((r) => r.productId === selectedProduct.id);
@@ -23,10 +30,8 @@ export const ProductDetailModal = () => {
     ? (productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1)
     : (selectedProduct.rating || 5.0);
 
-  const isOutOfStock = selectedProduct.stock <= 0;
-  const discountPercent = selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price
-    ? Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)
-    : 0;
+  const isOutOfStock = stock <= 0;
+  const discountPercent = discountPct || 0;
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
@@ -51,14 +56,15 @@ export const ProductDetailModal = () => {
   };
 
   const handleInstantBuyNow = () => {
-    addToCart(selectedProduct, quantity);
+    addToCart(selectedProduct, quantity, currentVariant);
     setSelectedProduct(null);
     setIsCartOpen(true);
   };
 
   const handleWhatsAppInquiry = () => {
     let msg = `Hello Vasavi Fancy Store 👋\n`;
-    msg += `I am interested in buying *${selectedProduct.name}* (Price: ₹${selectedProduct.price}).\n`;
+    const varText = currentVariant ? ` (Size/Option: ${currentVariant.name})` : '';
+    msg += `I am interested in buying *${selectedProduct.name}${varText}* (Price: ₹${price}).\n`;
     msg += `Is this item currently available in stock? Thank you!`;
     const waNumber = storeInfo?.whatsappNumber || '918309917665';
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -193,18 +199,55 @@ export const ProductDetailModal = () => {
                   </div>
                 </div>
 
+                {/* Flipkart / Amazon Style Variant Picker */}
+                {hasVariants && (
+                  <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-[#c99632]/40 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#171717]">
+                        {language === 'te' ? 'సైజు / బరువు / పరిమాణం ఎంచుకోండి:' : 'Select Size / Weight / Quantity:'}
+                      </span>
+                      <span className="font-extrabold text-[#c99632]">{currentVariant?.name}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-0.5">
+                      {selectedProduct.variants.map((v) => {
+                        const isSelected = (currentVariant?.id || currentVariant?.name) === (v.id || v.name);
+                        return (
+                          <button
+                            key={v.id || v.name}
+                            type="button"
+                            onClick={() => setModalVariant(v)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white border-[#c99632] shadow-sm scale-105'
+                                : 'bg-white text-[#444444] border-amber-200/70 hover:border-[#c99632] hover:bg-amber-50/40'
+                            }`}
+                          >
+                            <span>{v.name}</span>
+                            <span className={isSelected ? 'text-amber-100 text-[10px]' : 'text-gray-400 text-[10px]'}>₹{v.price}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Price Display */}
                 <div className="flex items-baseline gap-3 p-3 rounded-2xl bg-white border border-[#c99632]/20">
-                  <span className="text-2xl font-black text-[#c99632]">₹{selectedProduct.price}</span>
-                  {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
+                  <span className="text-2xl font-black text-[#c99632]">₹{price}</span>
+                  {originalPrice && originalPrice > price && (
                     <span className="text-xs text-slate-400 line-through">
-                      M.R.P: ₹{selectedProduct.originalPrice}
+                      M.R.P: ₹{originalPrice}
+                    </span>
+                  )}
+                  {discountPercent > 0 && (
+                    <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                      {discountPercent}% {t('card_off')}
                     </span>
                   )}
                   <span className={`ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full ${
                     isOutOfStock ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
                   }`}>
-                    {isOutOfStock ? (language === 'te' ? 'స్టాక్ అయిపోయింది' : 'Out of Stock') : (language === 'te' ? `స్టాక్ ఉంది: ${selectedProduct.stock}` : `In Stock: ${selectedProduct.stock} units`)}
+                    {isOutOfStock ? (language === 'te' ? 'స్టాక్ అయిపోయింది' : 'Out of Stock') : (language === 'te' ? `స్టాక్ ఉంది: ${stock}` : `In Stock: ${stock} units`)}
                   </span>
                 </div>
 
@@ -226,7 +269,7 @@ export const ProductDetailModal = () => {
                     </button>
                     <span className="px-4 py-1.5 text-xs font-black text-[#171717]">{quantity}</span>
                     <button
-                      disabled={quantity >= (selectedProduct.stock || 99)}
+                      disabled={quantity >= (stock || 99)}
                       onClick={() => setQuantity(quantity + 1)}
                       className="px-3 py-1.5 text-sm font-bold text-[#171717] hover:bg-[#e8c7b5]/30 disabled:opacity-40"
                     >
@@ -241,7 +284,7 @@ export const ProductDetailModal = () => {
                     <button
                       disabled={isOutOfStock}
                       onClick={() => {
-                        addToCart(selectedProduct, quantity);
+                        addToCart(selectedProduct, quantity, currentVariant);
                         setIsAdded(true);
                         setTimeout(() => setIsAdded(false), 2000);
                       }}

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { getTranslatedProductName } from '../utils/translations';
+import { getEffectiveProductDetails } from '../utils/variantUtils';
 import { ShoppingBag, Star, Eye, Sparkles, Zap, Check, Heart } from 'lucide-react';
 
 export const ProductCard = ({ product }) => {
   const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist, categories = [], t, language } = useStore();
 
   const [isAdded, setIsAdded] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState(() => (Array.isArray(product?.variants) && product.variants.length > 0 ? product.variants[0] : null));
 
   if (!product) return null;
 
-  const isOutOfStock = (product.stock ?? 0) <= 0;
+  const hasVariants = Array.isArray(product.variants) && product.variants.length > 1;
+  const currentVariant = selectedVariant || (Array.isArray(product.variants) ? product.variants[0] : null);
+  const { price, originalPrice, stock, discountPct } = getEffectiveProductDetails(product, currentVariant);
+  const isOutOfStock = stock <= 0;
   const inWishlist = isInWishlist(product.id);
 
   // Match category name dynamically and guarantee safe string
@@ -27,13 +32,9 @@ export const ProductCard = ({ product }) => {
     else if (nameLower.includes('rakhi')) categoryTitle = t('cat_rakhis');
   }
 
-  const discountPct = product.originalPrice && product.originalPrice > product.price
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : null;
-
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    const success = addToCart(product, 1);
+    const success = addToCart(product, 1, currentVariant);
     if (success) {
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
@@ -42,7 +43,7 @@ export const ProductCard = ({ product }) => {
 
   const handleBuyNow = (e) => {
     e.stopPropagation();
-    const success = addToCart(product, 1);
+    const success = addToCart(product, 1, currentVariant);
     if (success) {
       setIsCartOpen(true);
     }
@@ -141,17 +142,43 @@ export const ProductCard = ({ product }) => {
             </div>
           </div>
 
-          <h3 className="text-xs sm:text-sm font-bold text-[#171717] line-clamp-2 leading-snug group-hover:text-[#c99632] transition-colors mb-2">
+          <h3 className="text-xs sm:text-sm font-bold text-[#171717] line-clamp-2 leading-snug group-hover:text-[#c99632] transition-colors mb-1.5">
             {getTranslatedProductName(product, language)}
           </h3>
+
+          {/* Flipkart / Amazon Style Variant Selector Pills */}
+          {hasVariants && (
+            <div className="flex flex-wrap items-center gap-1.5 my-2" onClick={(e) => e.stopPropagation()}>
+              {product.variants.map((v) => {
+                const isSelected = (currentVariant?.id || currentVariant?.name) === (v.id || v.name);
+                return (
+                  <button
+                    key={v.id || v.name}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedVariant(v);
+                    }}
+                    className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white border-[#c99632] shadow-xs scale-105'
+                        : 'bg-[#fffcf7] text-[#555555] border-amber-200/80 hover:border-[#c99632] hover:bg-amber-50'
+                    }`}
+                  >
+                    {v.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Price & Stock */}
         <div className="pt-1.5 sm:pt-2 border-t border-[#c99632]/20">
           <div className="flex items-baseline gap-1.5 mb-2 sm:mb-3">
-            <span className="text-sm sm:text-lg font-bold text-[#171717]">₹{product.price}</span>
-            {product.originalPrice && product.originalPrice > product.price && (
-              <span className="text-[10px] sm:text-xs text-[#888888] line-through">₹{product.originalPrice}</span>
+            <span className="text-sm sm:text-lg font-bold text-[#171717]">₹{price}</span>
+            {originalPrice && originalPrice > price && (
+              <span className="text-[10px] sm:text-xs text-[#888888] line-through">₹{originalPrice}</span>
             )}
             <span className="ml-auto text-[9px] sm:text-[10px] font-medium hidden xs:inline">
               {isOutOfStock ? (

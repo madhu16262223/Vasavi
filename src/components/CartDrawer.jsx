@@ -65,7 +65,7 @@ export const CartDrawer = () => {
             ) : (
               cart.map((item) => {
                 const prod = item.product || {};
-                const prodId = prod.id || `prod-${Math.random()}`;
+                const prodId = item.id || prod.id || `prod-${Math.random()}`;
                 const prodPrice = typeof prod.price === 'number' ? prod.price : (parseFloat(prod.price) || 0);
                 const prodQty = item.quantity || 1;
 
@@ -82,6 +82,11 @@ export const CartDrawer = () => {
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="text-xs font-bold text-[#171717] truncate">{getTranslatedProductName(prod, language) || 'Vasavi Store Item'}</h4>
+                      {item.selectedVariant && (
+                        <span className="inline-block mt-0.5 px-2 py-0.5 bg-amber-50 border border-[#c99632]/40 text-[#c99632] rounded-md text-[10px] font-bold">
+                          {item.selectedVariant.name}
+                        </span>
+                      )}
                       <p className="text-xs text-[#c99632] font-bold mt-0.5">₹{prodPrice}</p>
                       
                       {/* Quantity adjustment */}

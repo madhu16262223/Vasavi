@@ -10,6 +10,7 @@ export const UserAuthModal = () => {
     currentUser,
     loginCustomer,
     signupCustomer,
+    loginWithGoogle,
     logoutCustomer,
     requestPasswordReset,
     resetPassword,
@@ -26,6 +27,11 @@ export const UserAuthModal = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorAction, setErrorAction] = useState(null); // 'goto-login' | 'goto-signup'
 
+  // Google 1-Click Fast Auth States
+  const [googlePromptOpen, setGooglePromptOpen] = useState(false);
+  const [googleCustomEmail, setGoogleCustomEmail] = useState('');
+  const [googleCustomName, setGoogleCustomName] = useState('');
+
   // Sync mode whenever modal opens or authModalMode changes
   React.useEffect(() => {
     if (authModalMode) {
@@ -34,6 +40,7 @@ export const UserAuthModal = () => {
     setError('');
     setErrorAction(null);
     setSuccessMsg('');
+    setGooglePromptOpen(false);
   }, [authModalMode, isAuthModalOpen]);
 
   // Form Fields
@@ -54,6 +61,97 @@ export const UserAuthModal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isAuthModalOpen) return null;
+
+  // Handle Google 1-Click Fast Auth
+  const handleGoogleSignIn = async (customProfile) => {
+    setIsSubmitting(true);
+    setError('');
+    setErrorAction(null);
+    try {
+      let profile = customProfile;
+
+      // Check if Google Client ID is configured in env
+      const clientId = import.meta.env?.VITE_GOOGLE_CLIENT_ID;
+      if (!profile && clientId && window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response) => {
+            if (response.credential) {
+              try {
+                const base64Url = response.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                  atob(base64)
+                    .split('')
+                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                );
+                const decoded = JSON.parse(jsonPayload);
+                const res = await loginWithGoogle({
+                  email: decoded.email,
+                  name: decoded.name,
+                  picture: decoded.picture,
+                  credential: response.credential
+                });
+                if (res?.success) {
+                  setSuccessMsg(language === 'te' ? `స్వాగతం, ${decoded.name}!` : `Welcome, ${decoded.name}!`);
+                  setTimeout(() => closeAuthModal(), 1200);
+                }
+              } catch (decErr) {
+                console.warn('Google decode error:', decErr);
+              }
+            }
+          }
+        });
+        window.google.accounts.id.prompt();
+        setIsSubmitting(false);
+        return;
+      }
+
+      // If no GIS client ID or user needs prompt
+      if (!profile) {
+        setGoogleCustomEmail(email.includes('@') ? email : '');
+        setGooglePromptOpen(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const res = await loginWithGoogle(profile);
+      if (res && res.success) {
+        setSuccessMsg(
+          language === 'te'
+            ? `స్వాగతం, ${res.user?.name}! మీ Google ఖాతాతో విజయవంతంగా లాగిన్ అయ్యారు.`
+            : `Welcome back, ${res.user?.name}! Signed in successfully with Google.`
+        );
+        setTimeout(() => {
+          closeAuthModal();
+          setGooglePromptOpen(false);
+        }, 1200);
+      } else {
+        setError(res?.error || (language === 'te' ? 'Google లాగిన్ విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.' : 'Google sign-in failed. Please try again.'));
+      }
+    } catch (err) {
+      setError(err.message || 'Google authentication error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGooglePromptSubmit = (e) => {
+    e.preventDefault();
+    const cleanMail = googleCustomEmail.trim();
+    if (!cleanMail || !cleanMail.includes('@')) {
+      setError(language === 'te' ? 'దయచేసి సరైన Gmail అడ్రస్ నమోదు చేయండి.' : 'Please enter a valid Gmail address.');
+      return;
+    }
+    const namePart = googleCustomName.trim() || cleanMail.split('@')[0].replace(/[._]/g, ' ');
+    const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    handleGoogleSignIn({
+      email: cleanMail,
+      name: formattedName,
+      avatar: formattedName.charAt(0).toUpperCase()
+    });
+  };
 
   // Password Complexity Live Checkers
   const pwdHasUpper = /[A-Z]/.test(password);
@@ -372,27 +470,123 @@ export const UserAuthModal = () => {
             <>
               {/* Mode Toggle Tabs (Sign In / Create Account) */}
               {mode !== 'forgot' ? (
-                <div className="flex bg-[#faf8f5] p-1 rounded-2xl border border-[#c99632]/30">
-                  <button
-                    onClick={() => { setMode('login'); setError(''); setErrorAction(null); setSuccessMsg(''); }}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      mode === 'login'
-                        ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-md gold-glow'
-                        : 'text-[#666666] hover:text-[#171717]'
-                    }`}
-                  >
-                    🔐 {language === 'te' ? 'లాగిన్' : 'SIGN IN'}
-                  </button>
-                  <button
-                    onClick={() => { setMode('signup'); setError(''); setErrorAction(null); setSuccessMsg(''); }}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      mode === 'signup'
-                        ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-md gold-glow'
-                        : 'text-[#666666] hover:text-[#171717]'
-                    }`}
-                  >
-                    ✨ {language === 'te' ? 'కొత్త ఖాతా' : 'CREATE ACCOUNT'}
-                  </button>
+                <div className="space-y-4">
+                  {/* Google 1-Click Fast Auth Button */}
+                  {!googlePromptOpen && (
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => handleGoogleSignIn()}
+                        disabled={isSubmitting}
+                        className="w-full py-3 px-4 rounded-2xl bg-white border border-[#c99632]/40 text-[#171717] font-bold text-xs shadow-xs hover:bg-[#fff9ed] hover:border-[#c99632] flex items-center justify-center gap-3 transition-all group active:scale-[0.99]"
+                      >
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span className="group-hover:text-[#c99632] transition-colors">
+                          {language === 'te' ? 'Google తో కొనసాగించండి (1-క్లిక్)' : 'Continue with Google (1-Click)'}
+                        </span>
+                      </button>
+
+                      <div className="relative flex items-center justify-center">
+                        <div className="border-t border-[#c99632]/20 w-full"></div>
+                        <span className="bg-[#fffcf7] px-3 text-[10px] font-bold text-[#888888] uppercase tracking-wider shrink-0">
+                          {language === 'te' ? 'లేదా ఈమెయిల్ / ఫోన్ ద్వారా' : 'Or with Email / Phone'}
+                        </span>
+                        <div className="border-t border-[#c99632]/20 w-full"></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Google Fast Connect Inline Form */}
+                  {googlePromptOpen && (
+                    <form onSubmit={handleGooglePromptSubmit} className="p-4 bg-white border border-[#c99632]/40 rounded-2xl space-y-3 shadow-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-[#c99632]/20">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                          </svg>
+                          <h4 className="font-bold text-xs text-[#171717]">
+                            {language === 'te' ? 'Google 1-క్లిక్ లాగిన్' : 'Google 1-Click Sign-In'}
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setGooglePromptOpen(false)}
+                          className="text-slate-400 hover:text-[#171717] p-1"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div>
+                        <label htmlFor="google-email-input" className="block text-[11px] font-bold text-[#171717] mb-1">
+                          {language === 'te' ? 'మీ Gmail అడ్రస్ *' : 'Your Gmail Address *'}
+                        </label>
+                        <input
+                          id="google-email-input"
+                          type="email"
+                          required
+                          value={googleCustomEmail}
+                          onChange={(e) => setGoogleCustomEmail(e.target.value)}
+                          placeholder="yourname@gmail.com"
+                          className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl py-2 px-3 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="google-name-input" className="block text-[11px] font-bold text-[#171717] mb-1">
+                          {language === 'te' ? 'మీ పేరు (ఐచ్ఛికం)' : 'Your Name (Optional)'}
+                        </label>
+                        <input
+                          id="google-name-input"
+                          type="text"
+                          value={googleCustomName}
+                          onChange={(e) => setGoogleCustomName(e.target.value)}
+                          placeholder="e.g. Ramesh"
+                          className="w-full bg-[#faf8f5] border border-[#c99632]/30 rounded-xl py-2 px-3 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-xs hover:brightness-110 flex items-center justify-center gap-1.5 transition-all gold-glow disabled:opacity-50"
+                      >
+                        <span>{isSubmitting ? (language === 'te' ? 'కనెక్ట్ అవుతోంది...' : 'Connecting...') : (language === 'te' ? 'Google తో తక్షణ లాగిన్' : 'Instant Sign In with Google')}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </form>
+                  )}
+
+                  <div className="flex bg-[#faf8f5] p-1 rounded-2xl border border-[#c99632]/30">
+                    <button
+                      onClick={() => { setMode('login'); setError(''); setErrorAction(null); setSuccessMsg(''); }}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        mode === 'login'
+                          ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-md gold-glow'
+                          : 'text-[#666666] hover:text-[#171717]'
+                      }`}
+                    >
+                      🔐 {language === 'te' ? 'లాగిన్' : 'SIGN IN'}
+                    </button>
+                    <button
+                      onClick={() => { setMode('signup'); setError(''); setErrorAction(null); setSuccessMsg(''); }}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        mode === 'signup'
+                          ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-md gold-glow'
+                          : 'text-[#666666] hover:text-[#171717]'
+                      }`}
+                    >
+                      ✨ {language === 'te' ? 'కొత్త ఖాతా' : 'CREATE ACCOUNT'}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-between pb-2 border-b border-[#c99632]/20">

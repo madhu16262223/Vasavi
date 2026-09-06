@@ -510,37 +510,76 @@ export const StoreProvider = ({ children }) => {
     setOfflineSales((prev) => prev.filter((s) => s.id !== id));
   };
 
-  // Cart Actions (Seamless Guest Checkout + Optional Login)
-  const addToCart = (product, quantity = 1) => {
+  // Cart Actions (Seamless Guest Checkout + Optional Login + Variant Support)
+  const addToCart = (product, quantity = 1, selectedVariant = null) => {
+    if (!product) return false;
+
+    // Use variant price and stock if selected
+    const effectivePrice = selectedVariant && typeof selectedVariant.price === 'number'
+      ? selectedVariant.price
+      : (typeof product.price === 'number' ? product.price : (parseFloat(product.price) || 0));
+
+    const effectiveOriginalPrice = selectedVariant && selectedVariant.originalPrice !== undefined
+      ? selectedVariant.originalPrice
+      : product.originalPrice;
+
+    const effectiveStock = selectedVariant && typeof selectedVariant.stock === 'number'
+      ? selectedVariant.stock
+      : (product.stock ?? 99);
+
+    const lineItemId = selectedVariant
+      ? `${product.id}_${selectedVariant.id || selectedVariant.name}`
+      : product.id;
+
+    const cartProduct = {
+      ...product,
+      price: effectivePrice,
+      originalPrice: effectiveOriginalPrice,
+      stock: effectiveStock
+    };
+
     setCart((prevCart) => {
-      const existingIndex = prevCart.findIndex((item) => item.product.id === product.id);
+      const existingIndex = prevCart.findIndex(
+        (item) => (item.id || item.product?.id) === lineItemId
+      );
+
       if (existingIndex > -1) {
         const updated = [...prevCart];
         const newQty = updated[existingIndex].quantity + quantity;
-        const availableStock = product.stock || 99;
-        updated[existingIndex].quantity = Math.min(newQty, availableStock);
+        updated[existingIndex].quantity = Math.min(newQty, effectiveStock || 99);
         return updated;
       } else {
-        return [...prevCart, { product, quantity: Math.min(quantity, product.stock || 99) }];
+        return [
+          ...prevCart,
+          {
+            id: lineItemId,
+            product: cartProduct,
+            quantity: Math.min(quantity, effectiveStock || 99),
+            selectedVariant: selectedVariant || null
+          }
+        ];
       }
     });
+
     setIsCartOpen(true);
     return true;
   };
 
-  const removeFromCart = (productId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.product.id !== productId));
+  const removeFromCart = (lineItemIdOrProdId) => {
+    setCart((prevCart) =>
+      prevCart.filter((item) => (item.id || item.product?.id) !== lineItemIdOrProdId)
+    );
   };
 
-  const updateCartQuantity = (productId, newQuantity) => {
+  const updateCartQuantity = (lineItemIdOrProdId, newQuantity) => {
     if (newQuantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(lineItemIdOrProdId);
       return;
     }
     setCart((prevCart) =>
       prevCart.map((item) => {
-        if (item.product.id === productId) {
-          const maxStock = item.product.stock || 99;
+        if ((item.id || item.product?.id) === lineItemIdOrProdId) {
+          const maxStock = item.product?.stock || 99;
           return { ...item, quantity: Math.min(newQuantity, maxStock) };
         }
         return item;
@@ -572,14 +611,18 @@ export const StoreProvider = ({ children }) => {
       
       const finalItems = (customerInfo.items && Array.isArray(customerInfo.items) && customerInfo.items.length > 0)
         ? customerInfo.items
-        : (cart || []).map((item) => ({
-            productId: item.product?.id || item.id || `item-${Date.now()}`,
-            productName: item.product?.name || item.name || 'Vasavi Fancy Store Item',
-            quantity: Number(item.quantity) || 1,
-            price: Number(item.product?.price || item.price) || 0,
-            subtotal: (Number(item.product?.price || item.price) || 0) * (Number(item.quantity) || 1),
-            image: item.product?.image || item.product?.imageUrl || item.image || '/bangles.jpg'
-          }));
+        : (cart || []).map((item) => {
+            const varSuffix = item.selectedVariant ? ` (${item.selectedVariant.name})` : '';
+            return {
+              productId: item.product?.id || item.id || `item-${Date.now()}`,
+              productName: `${item.product?.name || item.name || 'Vasavi Fancy Store Item'}${varSuffix}`,
+              variantName: item.selectedVariant?.name || null,
+              quantity: Number(item.quantity) || 1,
+              price: Number(item.product?.price || item.price) || 0,
+              subtotal: (Number(item.product?.price || item.price) || 0) * (Number(item.quantity) || 1),
+              image: item.product?.image || item.product?.imageUrl || item.image || '/bangles.jpg'
+            };
+          });
 
       if (finalItems.length === 0) return null;
 
@@ -663,6 +706,15 @@ export const StoreProvider = ({ children }) => {
       message += `• Name: ${customerInfo.name}\n`;
       message += `• Phone: ${customerInfo.phone}\n`;
       message += `• Address: ${customerInfo.address}\n\n`;
+
+      if (order.items && order.items.length > 0) {
+        message += `🛍️ *Items Ordered:*\n`;
+        order.items.forEach((it, idx) => {
+          message += `${idx + 1}. ${it.productName} (Qty: ${it.quantity}) — ₹${it.subtotal || it.price * it.quantity}\n`;
+        });
+        message += `\n`;
+      }
+
       message += `💰 *Total Amount:* ₹${order.totalAmount}\n\n`;
       message += `Please confirm my order and delivery. Thank you!`;
 
@@ -1270,6 +1322,68 @@ export const StoreProvider = ({ children }) => {
     return { success: true, message: 'Password reset successfully! You can now sign in with your new password.' };
   };
 
+  // Google Authentication Handler
+  const loginWithGoogle = async (googleData) => {
+    try {
+      const email = (googleData.email || '').toLowerCase().trim();
+      const name = (googleData.name || 'Google Customer').trim();
+      const avatar = googleData.picture || googleData.avatar || '👤';
+
+      const googleUser = {
+        id: `cust-google-${Date.now()}`,
+        name,
+        email,
+        phone: googleData.phone || '',
+        avatar,
+        address: 'Nandyal, Andhra Pradesh',
+        authProvider: 'google',
+        createdAt: new Date().toISOString()
+      };
+
+      // 1. Try syncing with backend
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            email,
+            avatar,
+            credential: googleData.credential || null
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.customer) {
+          googleUser.id = data.customer.id;
+          if (data.customer.phone) googleUser.phone = data.customer.phone;
+          if (data.customer.address) googleUser.address = data.customer.address;
+        }
+      } catch (err) {
+        console.warn('[Vasavi] Google auth backend note:', err.message);
+      }
+
+      // 2. Set current user state & persist locally
+      setCurrentUser(googleUser);
+      safeLocalStorageSet('vasavi_customer_user', googleUser);
+
+      // 3. Ensure registeredUsers list has this user
+      setRegisteredUsers((prev) => {
+        const idx = prev.findIndex((u) => u.email && u.email.toLowerCase() === email);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], ...googleUser };
+          return updated;
+        }
+        return [googleUser, ...prev];
+      });
+
+      return { success: true, user: googleUser };
+    } catch (e) {
+      console.error('[Vasavi] Google login error:', e);
+      return { success: false, error: e.message };
+    }
+  };
+
   const resetStoreToCleanState = () => {
     setProducts([]);
     setOrders([]);
@@ -1319,6 +1433,7 @@ export const StoreProvider = ({ children }) => {
         closeAuthModal,
         loginCustomer,
         signupCustomer,
+        loginWithGoogle,
         logoutCustomer,
         requestPasswordReset,
         resetPassword,

@@ -48,13 +48,16 @@ export const AdminProducts = () => {
       shade: '',
       brand: 'Vasavi Collection',
       isTrending: false,
-      isBestSeller: false
+      isBestSeller: false,
+      hasVariants: false,
+      variants: []
     });
     setIsAddModalOpen(true);
   };
 
   const handleOpenEdit = (product) => {
     setEditingProduct(product);
+    const existingVariants = Array.isArray(product.variants) ? product.variants : [];
     setFormData({
       name: product.name,
       categoryId: product.categoryId || '',
@@ -67,8 +70,42 @@ export const AdminProducts = () => {
       shade: product.shade || '',
       brand: product.brand || 'Vasavi Collection',
       isTrending: product.isTrending || false,
-      isBestSeller: product.isBestSeller || false
+      isBestSeller: product.isBestSeller || false,
+      hasVariants: existingVariants.length > 0,
+      variants: existingVariants
     });
+  };
+
+  const handleAddVariantRow = () => {
+    setFormData(prev => ({
+      ...prev,
+      hasVariants: true,
+      variants: [
+        ...(prev.variants || []),
+        {
+          id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          name: '',
+          price: prev.price || '',
+          originalPrice: prev.originalPrice || '',
+          stock: prev.stock || 15
+        }
+      ]
+    }));
+  };
+
+  const handleUpdateVariantRow = (index, field, value) => {
+    setFormData(prev => {
+      const updated = [...(prev.variants || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, variants: updated };
+    });
+  };
+
+  const handleRemoveVariantRow = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      variants: (prev.variants || []).filter((_, i) => i !== index)
+    }));
   };
 
   const handleSave = (e) => {
@@ -76,6 +113,19 @@ export const AdminProducts = () => {
     const catObj = categories.find((c) => c.id === formData.categoryId) || categories[0];
     const imageToSave = formData.image?.trim() || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
     
+    let cleanedVariants = undefined;
+    if (formData.hasVariants && Array.isArray(formData.variants) && formData.variants.length > 0) {
+      cleanedVariants = formData.variants
+        .filter(v => v.name && v.name.trim().length > 0)
+        .map(v => ({
+          id: v.id || `var-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          name: v.name.trim(),
+          price: parseFloat(v.price) || parseFloat(formData.price) || 0,
+          originalPrice: v.originalPrice ? parseFloat(v.originalPrice) : (formData.originalPrice ? parseFloat(formData.originalPrice) : null),
+          stock: parseInt(v.stock, 10) || parseInt(formData.stock, 10) || 10
+        }));
+    }
+
     const payload = {
       ...formData,
       image: imageToSave,
@@ -83,9 +133,10 @@ export const AdminProducts = () => {
       categoryId: catObj?.id || formData.categoryId || 'cat-1',
       categoryName: catObj?.name || formData.categoryName || 'Cosmetics',
       categorySlug: catObj?.slug || 'cosmetics',
-      price: parseFloat(formData.price) || 0,
-      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
-      stock: parseInt(formData.stock, 10) || 0
+      price: parseFloat(formData.price) || (cleanedVariants?.[0]?.price || 0),
+      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : (cleanedVariants?.[0]?.originalPrice || null),
+      stock: parseInt(formData.stock, 10) || 0,
+      variants: cleanedVariants && cleanedVariants.length > 0 ? cleanedVariants : undefined
     };
 
     if (editingProduct) {
@@ -190,6 +241,11 @@ export const AdminProducts = () => {
                 <div>
                   <span className="text-[9px] uppercase font-bold text-[#c99632] block truncate">{p.categoryName}</span>
                   <h4 className="text-[11px] font-bold text-[#171717] line-clamp-1 leading-tight" title={p.name}>{p.name}</h4>
+                  {Array.isArray(p.variants) && p.variants.length > 0 && (
+                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[8.5px] font-bold text-amber-800">
+                      🏷️ {p.variants.length} Sizes/Weights
+                    </span>
+                  )}
                   <div className="flex items-baseline justify-between mt-1">
                     <div className="flex items-baseline gap-1">
                       <span className="text-xs font-bold text-[#171717]">₹{p.price}</span>
@@ -250,7 +306,14 @@ export const AdminProducts = () => {
                       </div>
                     </td>
                     <td className="py-2.5 px-4">
-                      <h4 className="font-bold text-[#171717]">{p.name}</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-[#171717]">{p.name}</h4>
+                        {Array.isArray(p.variants) && p.variants.length > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-300 text-[9px] font-bold text-amber-800">
+                            🏷️ {p.variants.length} Sizes
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-[#666666]">{p.brand || 'Vasavi Collection'} {p.shade ? `• ${p.shade}` : ''}</p>
                     </td>
                     <td className="py-2.5 px-4">
@@ -437,6 +500,111 @@ export const AdminProducts = () => {
                     <span className="text-[11px] text-slate-400 mt-1">Regular Price (No discount badge)</span>
                   )}
                 </div>
+              </div>
+
+              {/* Row 3.5: Product Variants / Sizes / Weights (Flipkart / Amazon Style) */}
+              <div className="space-y-3 p-3.5 rounded-2xl bg-[#fffcf7] border border-[#c99632]/40 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="font-bold text-[#c99632] block text-xs">
+                      📦 Product Sizes, Weights & Options (వివిధ సైజులు, బరువులు & వేరియంట్లు)
+                    </span>
+                    <p className="text-[10px] text-[#666666]">
+                      Add sizes/weights (e.g. 14g, 25g, 50g or Small, Medium, Large) so users can choose size pills like Flipkart.
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#171717] bg-white px-3 py-1.5 rounded-xl border border-[#c99632]/30 w-fit">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasVariants}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData(prev => ({
+                          ...prev,
+                          hasVariants: checked,
+                          variants: checked && (!prev.variants || prev.variants.length === 0)
+                            ? [{ id: `var-${Date.now()}`, name: '25g', price: prev.price || '', originalPrice: prev.originalPrice || '', stock: prev.stock || 15 }]
+                            : prev.variants
+                        }));
+                      }}
+                      className="w-4 h-4 accent-[#c99632] rounded cursor-pointer"
+                    />
+                    <span>Enable Variants (సైజులు ఉన్నాయి)</span>
+                  </label>
+                </div>
+
+                {formData.hasVariants && (
+                  <div className="space-y-2.5 pt-2 border-t border-[#c99632]/20">
+                    <div className="space-y-2">
+                      {(formData.variants || []).map((v, idx) => (
+                        <div key={v.id || idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-xl border border-[#c99632]/30 shadow-2xs">
+                          <div className="col-span-4">
+                            <label className="text-[10px] font-bold text-gray-600 block mb-0.5">Size/Weight Label *</label>
+                            <input
+                              type="text"
+                              required
+                              value={v.name}
+                              onChange={(e) => handleUpdateVariantRow(idx, 'name', e.target.value)}
+                              placeholder="e.g. 14g / 25g / Small"
+                              className="w-full bg-[#faf8f5] border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold focus:border-[#c99632] focus:outline-none"
+                            />
+                          </div>
+                          <div className="col-span-3">
+                            <label className="text-[10px] font-bold text-gray-600 block mb-0.5">Price (₹) *</label>
+                            <input
+                              type="number"
+                              required
+                              min="1"
+                              value={v.price}
+                              onChange={(e) => handleUpdateVariantRow(idx, 'price', e.target.value)}
+                              placeholder="₹ Price"
+                              className="w-full bg-[#faf8f5] border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold text-[#c99632] focus:border-[#c99632] focus:outline-none"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[10px] font-bold text-gray-600 block mb-0.5">MRP (₹)</label>
+                            <input
+                              type="number"
+                              value={v.originalPrice || ''}
+                              onChange={(e) => handleUpdateVariantRow(idx, 'originalPrice', e.target.value)}
+                              placeholder="MRP"
+                              className="w-full bg-[#faf8f5] border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-400 focus:border-[#c99632] focus:outline-none"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[10px] font-bold text-gray-600 block mb-0.5">Stock</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={v.stock}
+                              onChange={(e) => handleUpdateVariantRow(idx, 'stock', e.target.value)}
+                              placeholder="Stock"
+                              className="w-full bg-[#faf8f5] border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold focus:border-[#c99632] focus:outline-none"
+                            />
+                          </div>
+                          <div className="col-span-1 flex justify-center pt-3">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariantRow(idx)}
+                              className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                              title="Remove this size"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddVariantRow}
+                      className="text-xs font-bold text-[#c99632] hover:text-[#a6751d] py-2 px-3.5 rounded-xl border border-dashed border-[#c99632]/60 hover:bg-amber-50 flex items-center gap-1.5 transition-all w-fit cursor-pointer"
+                    >
+                      <span>+ Add Another Size/Weight (+ మరొక వేరియంట్ జోడించండి)</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Row 4: Image URL & Direct Device Upload & Sample Presets */}

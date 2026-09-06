@@ -368,6 +368,67 @@ router.post('/customer/forgot-password', handleForgotPassword);
 router.post('/reset-password', handleResetPassword);
 router.post('/customer/reset-password', handleResetPassword);
 
+// 5. Google 1-Click Fast Customer Auth
+router.post('/google', async (req, res) => {
+  try {
+    const { name, email, avatar, credential } = req.body;
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const cleanName = (name || 'Google Customer').trim();
+
+    if (!cleanEmail) {
+      return res.status(400).json({ error: 'Email is required for Google Sign-In' });
+    }
+
+    let customer = null;
+
+    try {
+      // Check if customer already exists in Supabase PostgreSQL
+      const existing = await query('SELECT * FROM customers WHERE LOWER(email) = $1', [cleanEmail]);
+      if (existing.rows.length > 0) {
+        customer = existing.rows[0];
+      } else {
+        // Insert new customer record
+        const newId = `cust-${Date.now()}`;
+        const insertRes = await query(
+          'INSERT INTO customers (id, name, email, phone, address, "createdAt") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+          [newId, cleanName, cleanEmail, '', 'Nandyal, Andhra Pradesh', new Date().toISOString()]
+        );
+        customer = insertRes.rows[0];
+      }
+    } catch (dbErr) {
+      console.warn('Supabase customer google auth fallback:', dbErr.message);
+      customer = {
+        id: `cust-google-${Date.now()}`,
+        name: cleanName,
+        email: cleanEmail,
+        phone: '',
+        address: 'Nandyal, Andhra Pradesh'
+      };
+    }
+
+    const token = jwt.sign(
+      { customerId: customer.id, email: customer.email, name: customer.name },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    return res.json({
+      success: true,
+      token,
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        address: customer.address,
+        avatar: avatar || customer.name?.charAt(0)?.toUpperCase() || '👤'
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 6. Get all registered customers (Admin protected)
 router.get('/customers', async (req, res) => {
   try {

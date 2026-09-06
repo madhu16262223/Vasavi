@@ -89,6 +89,11 @@ export const INITIAL_PRODUCTS = [
     price: 499,
     originalPrice: 799,
     stock: 25,
+    variants: [
+      { id: "var-b24", name: "2.4 (Small)", price: 499, originalPrice: 799, stock: 10 },
+      { id: "var-b26", name: "2.6 (Medium)", price: 499, originalPrice: 799, stock: 25 },
+      { id: "var-b28", name: "2.8 (Large)", price: 549, originalPrice: 849, stock: 12 }
+    ],
     image: "/bangles.jpg",
     imageUrl: "/bangles.jpg",
     brand: "Vasavi Bridal Collection",
