@@ -114,6 +114,11 @@ export const INITIAL_PRODUCTS = [
     price: 299,
     originalPrice: 399,
     stock: 35,
+    variants: [
+      { id: "var-lip-1", name: "Ruby Red (20 Pioneer)", price: 299, originalPrice: 399, stock: 20 },
+      { id: "var-lip-2", name: "Velvet Nude (65 Seductress)", price: 299, originalPrice: 399, stock: 15 },
+      { id: "var-lip-3", name: "Combo (Both Shades Pack)", price: 549, originalPrice: 798, stock: 10 }
+    ],
     image: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=800&q=80",
     imageUrl: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=800&q=80",
     brand: "Maybelline New York",
@@ -135,6 +140,10 @@ export const INITIAL_PRODUCTS = [
     price: 850,
     originalPrice: 1200,
     stock: 18,
+    variants: [
+      { id: "var-chok-1", name: "Choker + Jhumkas Set", price: 850, originalPrice: 1200, stock: 12 },
+      { id: "var-chok-2", name: "Grand Bridal Combo (+ Tikka)", price: 1149, originalPrice: 1599, stock: 6 }
+    ],
     image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80",
     imageUrl: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80",
     brand: "Vasavi Royal Jewellery",
@@ -155,6 +164,11 @@ export const INITIAL_PRODUCTS = [
     price: 349,
     originalPrice: 499,
     stock: 20,
+    variants: [
+      { id: "var-comb-1", name: "Single Piece (1 Pc)", price: 349, originalPrice: 499, stock: 15 },
+      { id: "var-comb-2", name: "Pair (Set of 2)", price: 629, originalPrice: 899, stock: 10 },
+      { id: "var-comb-3", name: "Bridal Set (Pack of 4)", price: 1199, originalPrice: 1699, stock: 5 }
+    ],
     image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
     imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
     brand: "Vasavi Bridal Hair",
@@ -175,6 +189,10 @@ export const INITIAL_PRODUCTS = [
     price: 599,
     originalPrice: 899,
     stock: 15,
+    variants: [
+      { id: "var-pot-1", name: "Classic Medium Potli", price: 599, originalPrice: 899, stock: 10 },
+      { id: "var-pot-2", name: "Grand Large Bridal Potli", price: 799, originalPrice: 1199, stock: 5 }
+    ],
     image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
     imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
     brand: "Vasavi Boutique",

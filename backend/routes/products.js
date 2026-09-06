@@ -39,6 +39,7 @@ router.get('/', async (req, res) => {
       categoryId: p.categoryId,
       categoryName: p.categoryName || 'Cosmetics',
       categorySlug: p.categorySlug || 'cosmetics',
+      variants: p.variants ? (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants) : undefined,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt
     }));
@@ -90,12 +91,14 @@ router.post('/bulk-sync', authenticateAdmin, async (req, res) => {
 
     // Background sync to PostgreSQL
     (async () => {
-      // Ensure default category exists
+      // Ensure default category and variants column exist
       await query(
         `INSERT INTO categories (id, name, slug, "imageUrl", "createdAt")
          VALUES ('cat-1', 'Cosmetics & Jewellery', 'cosmetics-jewellery', 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80', NOW())
          ON CONFLICT (id) DO NOTHING`
       ).catch(() => {});
+
+      await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS variants JSONB').catch(() => {});
 
       for (const p of products) {
         const catId = p.categoryId || 'cat-1';
@@ -105,10 +108,11 @@ router.post('/bulk-sync', authenticateAdmin, async (req, res) => {
         const stock = p.stock !== undefined ? parseInt(p.stock, 10) : 10;
         const isTrend = !!p.isTrending;
         const isBest = !!p.isBestSeller;
+        const variantsJson = Array.isArray(p.variants) && p.variants.length > 0 ? JSON.stringify(p.variants) : null;
 
         await query(
-          `INSERT INTO products (id, name, description, price, "originalPrice", stock, "imageUrl", brand, shade, "isTrending", "isBestSeller", "isActive", "categoryId", "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, NOW(), NOW())
+          `INSERT INTO products (id, name, description, price, "originalPrice", stock, "imageUrl", brand, shade, "isTrending", "isBestSeller", "isActive", "categoryId", variants, "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, $13, NOW(), NOW())
            ON CONFLICT (id) DO UPDATE SET
              name = EXCLUDED.name,
              description = EXCLUDED.description,
@@ -122,6 +126,7 @@ router.post('/bulk-sync', authenticateAdmin, async (req, res) => {
              "isBestSeller" = EXCLUDED."isBestSeller",
              "isActive" = true,
              "categoryId" = EXCLUDED."categoryId",
+             variants = EXCLUDED.variants,
              "updatedAt" = NOW()`,
           [
             p.id,
@@ -135,7 +140,8 @@ router.post('/bulk-sync', authenticateAdmin, async (req, res) => {
             p.shade || null,
             isTrend,
             isBest,
-            catId
+            catId,
+            variantsJson
           ]
         ).catch(() => {});
       }
@@ -188,17 +194,20 @@ router.get('/:id', async (req, res) => {
 // Create product (Admin)
 router.post('/', authenticateAdmin, async (req, res) => {
   try {
-    const { id, name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller } = req.body;
+    const { id, name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, variants } = req.body;
     const finalId = id || `prod-${Date.now()}`;
     const imageSrc = imageUrl || image || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
     const catId = categoryId || 'cat-1';
     const numPrice = parseFloat(price) || 0;
     const numOrig = originalPrice ? parseFloat(originalPrice) : null;
     const numStock = stock !== undefined ? parseInt(stock, 10) : 10;
+    const variantsJson = Array.isArray(variants) && variants.length > 0 ? JSON.stringify(variants) : null;
+
+    await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS variants JSONB').catch(() => {});
 
     await query(
-      `INSERT INTO products (id, name, description, price, "originalPrice", stock, "imageUrl", brand, shade, "isTrending", "isBestSeller", "isActive", "categoryId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, NOW(), NOW())
+      `INSERT INTO products (id, name, description, price, "originalPrice", stock, "imageUrl", brand, shade, "isTrending", "isBestSeller", "isActive", "categoryId", variants, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, $13, NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          price = EXCLUDED.price,
@@ -206,8 +215,9 @@ router.post('/', authenticateAdmin, async (req, res) => {
          stock = EXCLUDED.stock,
          "imageUrl" = EXCLUDED."imageUrl",
          "categoryId" = EXCLUDED."categoryId",
+         variants = EXCLUDED.variants,
          "updatedAt" = NOW()`,
-      [finalId, name, description || '', numPrice, numOrig, numStock, imageSrc, brand || 'Vasavi Collection', shade || null, !!isTrending, !!isBestSeller, catId]
+      [finalId, name, description || '', numPrice, numOrig, numStock, imageSrc, brand || 'Vasavi Collection', shade || null, !!isTrending, !!isBestSeller, catId, variantsJson]
     );
 
     res.status(201).json({
@@ -218,7 +228,8 @@ router.post('/', authenticateAdmin, async (req, res) => {
       stock: numStock,
       image: imageSrc,
       imageUrl: imageSrc,
-      categoryId: catId
+      categoryId: catId,
+      variants: variants || []
     });
   } catch (err) {
     console.error('Create product error:', err);
@@ -229,8 +240,11 @@ router.post('/', authenticateAdmin, async (req, res) => {
 // Update product (Admin)
 router.put('/:id', authenticateAdmin, async (req, res) => {
   try {
-    const { name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, isActive } = req.body;
+    const { name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, isActive, variants } = req.body;
     const imageSrc = imageUrl || image;
+    const variantsJson = variants !== undefined ? (Array.isArray(variants) && variants.length > 0 ? JSON.stringify(variants) : null) : undefined;
+
+    await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS variants JSONB').catch(() => {});
 
     await query(
       `UPDATE products SET
@@ -246,8 +260,9 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
          "isTrending" = COALESCE($10, "isTrending"),
          "isBestSeller" = COALESCE($11, "isBestSeller"),
          "isActive" = COALESCE($12, "isActive"),
+         variants = CASE WHEN $13::text IS NOT NULL THEN $13::jsonb ELSE variants END,
          "updatedAt" = NOW()
-       WHERE id = $13`,
+       WHERE id = $14`,
       [
         name,
         categoryId,
@@ -261,12 +276,14 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
         isTrending !== undefined ? !!isTrending : null,
         isBestSeller !== undefined ? !!isBestSeller : null,
         isActive !== undefined ? !!isActive : null,
+        variantsJson !== undefined ? variantsJson : null,
         req.params.id
       ]
     );
 
     res.json({ success: true, message: 'Product updated successfully' });
   } catch (err) {
+    console.error('Update product error:', err);
     res.status(500).json({ error: err.message });
   }
 });

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_ORDERS, STORE_INFO } from '../data/mockData';
 import { getTranslation } from '../utils/translations';
 import { cleanIndianPhone, EMAIL_REGEX, PHONE_REGEX } from '../utils/phoneUtils';
+import { generateSmartVariantsForProduct } from '../utils/variantUtils';
 
 const StoreContext = createContext();
 
@@ -17,7 +18,7 @@ const ADMIN_API_HEADER = {
 // ─── DATA VERSION GUARD ───────────────────────────────────────────────────────
 // Increment this number any time you want to force-clear old localStorage data.
 // When the version changes, ALL store data is automatically wiped on first load.
-const DATA_VERSION = 'vasavi_v12_mobile_healing';
+const DATA_VERSION = 'vasavi_v13_all_variants';
 
 const runAutoReset = () => {
   try {
@@ -33,7 +34,7 @@ const runAutoReset = () => {
       });
       // Stamp the new version
       try { localStorage.setItem('vasavi_data_version', DATA_VERSION); } catch (e) {}
-      console.info('[Vasavi] Cloud Sync initialized: fresh v12 mobile healing version active.');
+      console.info('[Vasavi] Cloud Sync initialized: fresh v13 all-variants version active.');
     }
   } catch (err) {
     console.warn('[Vasavi] Auto reset caught:', err);
@@ -63,13 +64,20 @@ export const StoreProvider = ({ children }) => {
     }
   });
 
-  // Products State
+  // Products State (Guarantees every product has selectable variants)
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_products');
-      if (!saved) return INITIAL_PRODUCTS;
-      const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PRODUCTS;
+      const source = saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      const list = Array.isArray(source) && source.length > 0 ? source : INITIAL_PRODUCTS;
+      return list.map((p) => {
+        if (Array.isArray(p.variants) && p.variants.length > 0) return p;
+        return {
+          ...p,
+          hasVariants: true,
+          variants: generateSmartVariantsForProduct(p)
+        };
+      });
     } catch (e) {
       return INITIAL_PRODUCTS;
     }
@@ -255,6 +263,8 @@ export const StoreProvider = ({ children }) => {
       shade: p.shade,
       isTrending: p.isTrending,
       isBestSeller: p.isBestSeller,
+      hasVariants: !!(p.variants && p.variants.length > 0),
+      variants: Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : undefined,
       imageUrl: (typeof p.imageUrl === 'string' && !p.imageUrl.startsWith('data:')) ? p.imageUrl : ''
     }));
     safeLocalStorageSet('vasavi_products', sanitizedProds);
@@ -347,7 +357,15 @@ export const StoreProvider = ({ children }) => {
       if (prodRes.status === 'fulfilled' && prodRes.value.ok) {
         const cloudProds = await prodRes.value.json().catch(() => null);
         if (Array.isArray(cloudProds) && cloudProds.length > 0) {
-          setProducts(cloudProds);
+          const enriched = cloudProds.map((p) => {
+            if (Array.isArray(p.variants) && p.variants.length > 0) return p;
+            return {
+              ...p,
+              hasVariants: true,
+              variants: generateSmartVariantsForProduct(p)
+            };
+          });
+          setProducts(enriched);
         }
       }
     } catch (err) {
@@ -1397,6 +1415,36 @@ export const StoreProvider = ({ children }) => {
     localStorage.removeItem('vasavi_reviews');
   };
 
+  // 1-Click Bulk Generator: Automatically adds Flipkart/Amazon style variants to ALL products
+  const autoGenerateVariantsForAllProducts = async () => {
+    const updated = products.map((p) => {
+      const vars = (Array.isArray(p.variants) && p.variants.length > 0)
+        ? p.variants
+        : generateSmartVariantsForProduct(p);
+      return {
+        ...p,
+        hasVariants: true,
+        variants: vars
+      };
+    });
+
+    setProducts(updated);
+    safeLocalStorageSet('vasavi_products', updated);
+
+    // Sync to Cloud
+    try {
+      await fetch(`${API_BASE_URL}/api/products/bulk-sync`, {
+        method: 'POST',
+        headers: ADMIN_API_HEADER,
+        body: JSON.stringify({ products: updated })
+      });
+    } catch (e) {
+      console.warn('[Vasavi] Cloud bulk-sync note:', e.message);
+    }
+
+    return { success: true, count: updated.length };
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -1449,6 +1497,7 @@ export const StoreProvider = ({ children }) => {
         addProduct,
         updateProduct,
         deleteProduct,
+        autoGenerateVariantsForAllProducts,
         addCategory,
         updateCategory,
         deleteCategory,

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { Plus, Edit2, Trash2, Search, Sparkles, Check, X, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Sparkles, Check, X, AlertCircle, Zap, Layers } from 'lucide-react';
+import { VARIANT_PRESET_TEMPLATES } from '../../utils/variantUtils';
 
 export const AdminProducts = () => {
-  const { products, categories, addProduct, updateProduct, deleteProduct } = useStore();
+  const { products, categories, addProduct, updateProduct, deleteProduct, autoGenerateVariantsForAllProducts } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
@@ -11,6 +12,24 @@ export const AdminProducts = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [deletingProductId, setDeletingProductId] = useState(null);
+
+  // Bulk Variant Generation State
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [bulkSuccessMsg, setBulkSuccessMsg] = useState('');
+
+  const handleAutoGenerateAllVariants = async () => {
+    setIsBulkGenerating(true);
+    setBulkSuccessMsg('');
+    try {
+      const res = await autoGenerateVariantsForAllProducts();
+      setBulkSuccessMsg(`✓ Success! All ${res?.count || products.length} store products now have selectable variants (Sizes, Weights & Combos)!`);
+      setTimeout(() => setBulkSuccessMsg(''), 6000);
+    } catch (e) {
+      console.error('Bulk generate variants error:', e);
+    } finally {
+      setIsBulkGenerating(false);
+    }
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -210,14 +229,40 @@ export const AdminProducts = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-sm hover:brightness-110 flex items-center justify-center gap-1.5 transition-all gold-glow shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Product</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <button
+            type="button"
+            onClick={handleAutoGenerateAllVariants}
+            disabled={isBulkGenerating}
+            className="px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 font-bold text-xs hover:bg-amber-100 flex items-center justify-center gap-1.5 transition-all shadow-2xs disabled:opacity-50"
+            title="Auto-generates realistic sizes, weights, and quantity variants for all products in catalog"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-600" />
+            <span>{isBulkGenerating ? 'Generating Variants...' : '⚡ Generate Variants for All Products'}</span>
+          </button>
+
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white font-bold text-xs shadow-sm hover:brightness-110 flex items-center justify-center gap-1.5 transition-all gold-glow shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Product</span>
+          </button>
+        </div>
       </div>
+
+      {/* Bulk Generation Success Alert */}
+      {bulkSuccessMsg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{bulkSuccessMsg}</span>
+          </div>
+          <button onClick={() => setBulkSuccessMsg('')} className="text-emerald-600 hover:text-emerald-800 p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* COMPACT GRID VIEW */}
       {viewMode === 'grid' && (
@@ -535,6 +580,33 @@ export const AdminProducts = () => {
 
                 {formData.hasVariants && (
                   <div className="space-y-2.5 pt-2 border-t border-[#c99632]/20">
+                    {/* Quick 1-Click Variant Presets */}
+                    <div className="p-2.5 bg-[#faf8f5] rounded-xl border border-[#c99632]/25 space-y-1.5">
+                      <span className="text-[10px] font-bold text-[#666666] block">
+                        ⚡ Quick 1-Click Presets (త్వరిత టెంప్లేట్‌ను ఎంచుకోండి):
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {VARIANT_PRESET_TEMPLATES.map((tmpl) => (
+                          <button
+                            key={tmpl.id}
+                            type="button"
+                            onClick={() => {
+                              const baseP = parseFloat(formData.price) || 299;
+                              const baseOrig = formData.originalPrice ? parseFloat(formData.originalPrice) : null;
+                              setFormData(prev => ({
+                                ...prev,
+                                hasVariants: true,
+                                variants: tmpl.getVariants(baseP, baseOrig)
+                              }));
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-white border border-[#c99632]/40 text-[#171717] hover:bg-[#fff3c4] hover:text-[#c99632] text-[10px] font-bold shadow-2xs transition-all flex items-center gap-1"
+                          >
+                            {tmpl.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       {(formData.variants || []).map((v, idx) => (
                         <div key={v.id || idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-xl border border-[#c99632]/30 shadow-2xs">
