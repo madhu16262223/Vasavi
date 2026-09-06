@@ -7,12 +7,16 @@ export const ProductCard = ({ product }) => {
   const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist, categories = [], t, language } = useStore();
 
   const [isAdded, setIsAdded] = useState(false);
-  const isOutOfStock = product.stock <= 0;
+
+  if (!product) return null;
+
+  const isOutOfStock = (product.stock ?? 0) <= 0;
   const inWishlist = isInWishlist(product.id);
 
-  // Match category name dynamically
-  const catObj = categories.find(c => c.id === product.categoryId || c.slug === product.categoryId);
-  let categoryTitle = product.categoryName || catObj?.name || product.category || 'Vasavi';
+  // Match category name dynamically and guarantee safe string
+  const catObj = (categories || []).find(c => c && (c.id === product.categoryId || c.slug === product.categoryId));
+  const rawCat = product.categoryName || catObj?.name || (typeof product.category === 'string' ? product.category : product.category?.name) || 'Vasavi';
+  let categoryTitle = typeof rawCat === 'string' ? rawCat : 'Vasavi';
   if (language === 'te') {
     const nameLower = categoryTitle.toLowerCase();
     if (nameLower.includes('cosmetic')) categoryTitle = t('cat_cosmetics');

@@ -98,6 +98,13 @@ export const TRANSLATIONS = {
     wishlist_title: "Your Wishlist",
     wishlist_empty_title: "Your Wishlist is Empty",
     wishlist_empty_desc: "Click the heart icon on any product in our store to save items here!",
+
+    // Order Tracker
+    tracker_badge: "REAL-TIME ORDER STATUS",
+    tracker_title: "Track Your Order",
+    tracker_subtitle: "Enter your phone number or Order ID (e.g. VSV-12345) to see live delivery status",
+    tracker_placeholder: "Enter 10-digit phone number or Order ID...",
+    tracker_btn: "Find Order",
     wishlist_move_cart: "Move to Bag",
     wishlist_share_wa: "Share Wishlist on WhatsApp",
 
@@ -254,6 +261,13 @@ export const TRANSLATIONS = {
     wishlist_empty_desc: "మీకు నచ్చిన ప్రొడక్టుపై గుండె (హార్ట్) గుర్తును నొక్కి ఇక్కడ భద్రపరుచుకోండి!",
     wishlist_move_cart: "కార్ట్‌కి మార్చండి",
     wishlist_share_wa: "వాట్సాప్‌లో విష్‌లిస్ట్ షేర్ చేయండి",
+
+    // Order Tracker
+    tracker_badge: "లైవ్ ఆర్డర్ స్టేటస్",
+    tracker_title: "మీ ఆర్డర్ ట్రాక్ చేయండి",
+    tracker_subtitle: "లైవ్ డెలివరీ స్టేటస్ చూడటానికి మీ మొబైల్ నంబర్ లేదా ఆర్డర్ నంబర్ ఎంటర్ చేయండి",
+    tracker_placeholder: "10 అంకెల ఫోన్ నంబర్ లేదా ఆర్డర్ ID ని నమోదు చేయండి...",
+    tracker_btn: "ఆర్డర్ వివరాలు కనుగొనండి",
 
     // Checkout Modal
     checkout_title: "ఆర్డర్ వివరాలు & చెల్లింపు",

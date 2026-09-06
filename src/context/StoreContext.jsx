@@ -17,7 +17,7 @@ const ADMIN_API_HEADER = {
 // ─── DATA VERSION GUARD ───────────────────────────────────────────────────────
 // Increment this number any time you want to force-clear old localStorage data.
 // When the version changes, ALL store data is automatically wiped on first load.
-const DATA_VERSION = 'vasavi_v10_permanent_clean';
+const DATA_VERSION = 'vasavi_v12_mobile_healing';
 
 const runAutoReset = () => {
   try {
@@ -33,7 +33,7 @@ const runAutoReset = () => {
       });
       // Stamp the new version
       try { localStorage.setItem('vasavi_data_version', DATA_VERSION); } catch (e) {}
-      console.info('[Vasavi] Cloud Sync initialized: fresh v10 data version active.');
+      console.info('[Vasavi] Cloud Sync initialized: fresh v12 mobile healing version active.');
     }
   } catch (err) {
     console.warn('[Vasavi] Auto reset caught:', err);
@@ -47,21 +47,19 @@ runAutoReset();
 export const StoreProvider = ({ children }) => {
   // Store Settings State
   const [storeSettings, setStoreSettings] = useState(() => {
+    const fallback = {
+      whatsappNumber: STORE_INFO.whatsappNumber,
+      displayPhone: STORE_INFO.displayPhone,
+      deliveryFee: 0,
+      announcementBanner: "Order directly on WhatsApp — Instant Confirmation & Delivery in Nandyal!"
+    };
     try {
       const saved = localStorage.getItem('vasavi_store_settings');
-      return saved ? JSON.parse(saved) : {
-        whatsappNumber: STORE_INFO.whatsappNumber,
-        displayPhone: STORE_INFO.displayPhone,
-        deliveryFee: 0,
-        announcementBanner: "Order directly on WhatsApp — Instant Confirmation & Delivery in Nandyal!"
-      };
+      if (!saved) return fallback;
+      const parsed = JSON.parse(saved);
+      return (parsed && typeof parsed === 'object') ? parsed : fallback;
     } catch (e) {
-      return {
-        whatsappNumber: STORE_INFO.whatsappNumber,
-        displayPhone: STORE_INFO.displayPhone,
-        deliveryFee: 0,
-        announcementBanner: "Order directly on WhatsApp — Instant Confirmation & Delivery in Nandyal!"
-      };
+      return fallback;
     }
   });
 
@@ -70,7 +68,8 @@ export const StoreProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('vasavi_products');
       if (!saved) return INITIAL_PRODUCTS;
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PRODUCTS;
     } catch (e) {
       return INITIAL_PRODUCTS;
     }
@@ -80,7 +79,9 @@ export const StoreProvider = ({ children }) => {
   const [categories, setCategories] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_categories');
-      return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+      if (!saved) return INITIAL_CATEGORIES;
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_CATEGORIES;
     } catch (e) {
       return INITIAL_CATEGORIES;
     }
@@ -90,7 +91,9 @@ export const StoreProvider = ({ children }) => {
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_orders');
-      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+      if (!saved) return INITIAL_ORDERS;
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : INITIAL_ORDERS;
     } catch (e) {
       return INITIAL_ORDERS;
     }
@@ -100,7 +103,9 @@ export const StoreProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_cart');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }
@@ -110,7 +115,9 @@ export const StoreProvider = ({ children }) => {
   const [reviews, setReviews] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_reviews');
-      return saved ? JSON.parse(saved) : {};
+      if (!saved) return {};
+      const parsed = JSON.parse(saved);
+      return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
     } catch (e) {
       return {};
     }
@@ -120,7 +127,9 @@ export const StoreProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_wishlist');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }
@@ -177,7 +186,9 @@ export const StoreProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_customer_user');
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : null;
     } catch (e) {
       return null;
     }
@@ -186,7 +197,9 @@ export const StoreProvider = ({ children }) => {
   const [registeredUsers, setRegisteredUsers] = useState(() => {
     try {
       const saved = localStorage.getItem('vasavi_registered_users');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }

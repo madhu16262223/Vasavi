@@ -165,7 +165,7 @@ export const ProductDetailModal = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-black uppercase tracking-wider bg-[#fff3c4] text-[#8a6200] px-2 py-0.5 rounded-md border border-[#c99632]/40">
-                      {selectedProduct.categoryName || categories.find(c => c.id === selectedProduct.categoryId || c.slug === selectedProduct.categoryId)?.name || selectedProduct.category || 'Luxury Item'}
+                      {selectedProduct.categoryName || (categories || []).find(c => c && (c.id === selectedProduct.categoryId || c.slug === selectedProduct.categoryId))?.name || (typeof selectedProduct.category === 'string' ? selectedProduct.category : selectedProduct.category?.name) || 'Luxury Item'}
                     </span>
                     {selectedProduct.brand && (
                       <span className="text-[10px] font-bold text-[#888888] uppercase tracking-wider">

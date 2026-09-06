@@ -25,36 +25,48 @@ export const ShopCatalog = () => {
     return cat.name;
   };
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = (products || []).filter((p) => {
+    if (!p) return false;
+    const pName = typeof p.name === 'string' ? p.name.toLowerCase() : '';
+    const pCat = typeof p.category === 'string' ? p.category.toLowerCase() : (typeof p.category?.name === 'string' ? p.category.name.toLowerCase() : '');
+    const pCatName = typeof p.categoryName === 'string' ? p.categoryName.toLowerCase() : '';
+    const pBrand = typeof p.brand === 'string' ? p.brand.toLowerCase() : '';
+    const pShade = typeof p.shade === 'string' ? p.shade.toLowerCase() : '';
+    const pDesc = typeof p.description === 'string' ? p.description.toLowerCase() : '';
+    const q = (searchQuery || '').toLowerCase().trim();
+
     // activeCategory can be 'all', a slug (e.g. 'jewellery'), or a categoryId (e.g. 'cat-2')
     const matchesCategory =
       activeCategory === 'all' ||
       p.categoryId === activeCategory ||
       (activeCatObj && p.categoryId === activeCatObj.id) ||
       p.slug === activeCategory ||
-      (p.category && p.category.toLowerCase().replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-')) ||
-      (p.categoryName && p.categoryName.toLowerCase().replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-'));
+      (pCat && pCat.replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-')) ||
+      (pCatName && pCatName.replace(/\s+/g, '-') === activeCategory.toLowerCase().replace(/\s+/g, '-'));
 
     const matchesSearch =
-      !searchQuery ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-      (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
-      (p.categoryName && p.categoryName.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
-      (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
-      (p.shade && p.shade.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
-      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+      !q ||
+      pName.includes(q) ||
+      pCat.includes(q) ||
+      pCatName.includes(q) ||
+      pBrand.includes(q) ||
+      pShade.includes(q) ||
+      pDesc.includes(q);
 
-    const matchesPrice = p.price <= priceRange;
-    const matchesStock = !inStockOnly || p.stock > 0;
+    const pPrice = typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0);
+    const matchesPrice = pPrice <= priceRange;
+    const matchesStock = !inStockOnly || (p.stock || 0) > 0;
 
     return matchesCategory && matchesSearch && matchesPrice && matchesStock;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortBy === 'price-low') return a.price - b.price;
-    if (sortBy === 'price-high') return b.price - a.price;
+    const aPrice = typeof a.price === 'number' ? a.price : (parseFloat(a.price) || 0);
+    const bPrice = typeof b.price === 'number' ? b.price : (parseFloat(b.price) || 0);
+    if (sortBy === 'price-low') return aPrice - bPrice;
+    if (sortBy === 'price-high') return bPrice - aPrice;
     if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-    if (sortBy === 'newest') return b.id.localeCompare(a.id);
+    if (sortBy === 'newest') return String(b.id || '').localeCompare(String(a.id || ''));
     return (b.reviewsCount || 0) - (a.reviewsCount || 0);
   });
 

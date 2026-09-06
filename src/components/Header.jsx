@@ -75,13 +75,20 @@ export const Header = () => {
 
   // Compute live search suggestions
   const matchingProducts = searchQuery.trim()
-    ? products.filter(p => {
+    ? (products || []).filter(p => {
+        if (!p) return false;
         const q = searchQuery.toLowerCase().trim();
+        const pName = typeof p.name === 'string' ? p.name.toLowerCase() : '';
+        const pCat = typeof p.category === 'string' ? p.category.toLowerCase() : (typeof p.category?.name === 'string' ? p.category.name.toLowerCase() : '');
+        const pCatName = typeof p.categoryName === 'string' ? p.categoryName.toLowerCase() : '';
+        const pBrand = typeof p.brand === 'string' ? p.brand.toLowerCase() : '';
+        const pShade = typeof p.shade === 'string' ? p.shade.toLowerCase() : '';
         return (
-          (p.name && p.name.toLowerCase().includes(q)) ||
-          (p.category && p.category.toLowerCase().includes(q)) ||
-          (p.brand && p.brand.toLowerCase().includes(q)) ||
-          (p.shade && p.shade.toLowerCase().includes(q))
+          pName.includes(q) ||
+          pCat.includes(q) ||
+          pCatName.includes(q) ||
+          pBrand.includes(q) ||
+          pShade.includes(q)
         );
       }).slice(0, 6)
     : [];
@@ -240,7 +247,7 @@ export const Header = () => {
                               {p.name}
                             </p>
                             <p className="text-[10px] text-[#777777] truncate">
-                              {p.category} {p.shade ? `• ${p.shade}` : ''}
+                              {p.categoryName || (typeof p.category === 'string' ? p.category : p.category?.name) || ''} {p.shade ? `• ${p.shade}` : ''}
                             </p>
                           </div>
                           <div className="text-right shrink-0">
@@ -480,7 +487,9 @@ export const Header = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-[#171717] truncate">{p.name}</p>
-                          <p className="text-[10px] text-[#777777] truncate">{p.category}</p>
+                          <p className="text-[10px] text-[#777777] truncate">
+                            {p.categoryName || (typeof p.category === 'string' ? p.category : p.category?.name) || ''}
+                          </p>
                         </div>
                         <span className="text-xs font-black text-[#171717] shrink-0">₹{p.price}</span>
                       </div>
