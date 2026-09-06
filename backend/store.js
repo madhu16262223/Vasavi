@@ -89,41 +89,6 @@ function writeJsonFile(file, data) {
   }
 }
 
-// ─── ORDERS ──────────────────────────────────────────────────────────
-export function getStoredOrders() {
-  return readJsonFile(ORDERS_FILE, []);
-}
-
-export function saveStoredOrder(order) {
-  const orders = getStoredOrders();
-  const existingIdx = orders.findIndex(o => o.id === order.id || o.orderNumber === order.orderNumber);
-  if (existingIdx >= 0) {
-    orders[existingIdx] = { ...orders[existingIdx], ...order };
-  } else {
-    orders.unshift(order);
-  }
-  writeJsonFile(ORDERS_FILE, orders);
-  return order;
-}
-
-export function updateStoredOrderStatus(orderId, status, paymentStatus) {
-  const orders = getStoredOrders();
-  const existing = orders.find(o => o.id === orderId || o.orderNumber === orderId);
-  if (existing) {
-    existing.status = status;
-    if (paymentStatus) existing.paymentStatus = paymentStatus;
-    existing.updatedAt = new Date().toISOString();
-    writeJsonFile(ORDERS_FILE, orders);
-    return existing;
-  }
-  return null;
-}
-
-export function deleteStoredOrder(orderId) {
-  const orders = getStoredOrders().filter(o => o.id !== orderId && o.orderNumber !== orderId);
-  writeJsonFile(ORDERS_FILE, orders);
-  return true;
-}
 
 // ─── PRODUCTS ────────────────────────────────────────────────────────
 export function getStoredProducts() {

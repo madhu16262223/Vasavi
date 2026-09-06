@@ -89,6 +89,21 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'Accept', 'Origin', 'X-Requested-With']
 }));
 
+// ─── HEALTH & KEEP-ALIVE (UPTIMEROBOT & RENDER) ────────────────────────
+// Zero overhead, 0 database calls, excluded from rate-limiting to prevent server overload
+app.all(['/health', '/api/health', '/ping', '/'], (req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return res.status(200).json({
+      status: 'ok',
+      service: 'vasavi-api',
+      uptime: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
+    });
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
@@ -101,18 +116,6 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/coupons', couponsRouter);
-
-app.get('/', (req, res) => {
-  res.status(200).send('OK');
-});
-
-app.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
-
-app.get('/api/health', (req, res) => {
-  res.status(200).send('OK');
-});
 
 app.listen(PORT, () => {
   console.log(`🌸 Vasavi Fancy Store Backend API running on http://localhost:${PORT}`);
