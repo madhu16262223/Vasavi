@@ -1378,6 +1378,7 @@ export const StoreProvider = ({ children }) => {
       };
 
       // 1. Try syncing with backend
+      let isNewAccount = false;
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
           method: 'POST',
@@ -1394,14 +1395,33 @@ export const StoreProvider = ({ children }) => {
           googleUser.id = data.customer.id;
           if (data.customer.phone) googleUser.phone = data.customer.phone;
           if (data.customer.address) googleUser.address = data.customer.address;
+          if (data.isNew !== undefined) isNewAccount = data.isNew;
         }
       } catch (err) {
         console.warn('[Vasavi] Google auth backend note:', err.message);
+        const exists = registeredUsers.some((u) => u.email && u.email.toLowerCase() === email);
+        isNewAccount = !exists;
       }
 
       // 2. Set current user state & persist locally
       setCurrentUser(googleUser);
       safeLocalStorageSet('vasavi_customer_user', googleUser);
+
+      // Save to saved Google accounts for instant selection next time
+      try {
+        const savedRaw = localStorage.getItem('vasavi_saved_google_accounts');
+        const savedList = savedRaw ? JSON.parse(savedRaw) : [];
+        const existingIdx = savedList.findIndex((a) => a.email.toLowerCase() === email);
+        const updatedEntry = { email, name, avatar };
+        if (existingIdx >= 0) {
+          savedList[existingIdx] = updatedEntry;
+        } else {
+          savedList.unshift(updatedEntry);
+        }
+        safeLocalStorageSet('vasavi_saved_google_accounts', savedList.slice(0, 5));
+      } catch (e) {
+        // non-blocking
+      }
 
       // 3. Ensure registeredUsers list has this user
       setRegisteredUsers((prev) => {
@@ -1414,7 +1434,7 @@ export const StoreProvider = ({ children }) => {
         return [googleUser, ...prev];
       });
 
-      return { success: true, user: googleUser };
+      return { success: true, user: googleUser, isNew: isNewAccount };
     } catch (e) {
       console.error('[Vasavi] Google login error:', e);
       return { success: false, error: e.message };

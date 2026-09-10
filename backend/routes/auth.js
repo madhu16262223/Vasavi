@@ -380,20 +380,29 @@ router.post('/google', async (req, res) => {
     }
 
     let customer = null;
+    let isNew = false;
 
     try {
       // Check if customer already exists in Supabase PostgreSQL
       const existing = await query('SELECT * FROM customers WHERE LOWER(email) = $1', [cleanEmail]);
       if (existing.rows.length > 0) {
         customer = existing.rows[0];
+        isNew = false;
       } else {
         // Insert new customer record
+        isNew = true;
         const newId = `cust-${Date.now()}`;
         const insertRes = await query(
           'INSERT INTO customers (id, name, email, phone, address, "createdAt") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
           [newId, cleanName, cleanEmail, '', 'Nandyal, Andhra Pradesh', new Date().toISOString()]
         );
-        customer = insertRes.rows[0];
+        customer = insertRes.rows[0] || {
+          id: newId,
+          name: cleanName,
+          email: cleanEmail,
+          phone: '',
+          address: 'Nandyal, Andhra Pradesh'
+        };
       }
     } catch (dbErr) {
       console.warn('Supabase customer google auth fallback:', dbErr.message);
@@ -404,6 +413,7 @@ router.post('/google', async (req, res) => {
         phone: '',
         address: 'Nandyal, Andhra Pradesh'
       };
+      isNew = true;
     }
 
     const token = jwt.sign(
@@ -415,6 +425,7 @@ router.post('/google', async (req, res) => {
     return res.json({
       success: true,
       token,
+      isNew,
       customer: {
         id: customer.id,
         name: customer.name,
