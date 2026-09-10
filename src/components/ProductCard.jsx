@@ -8,12 +8,12 @@ export const ProductCard = ({ product }) => {
   const { addToCart, setSelectedProduct, setIsCartOpen, toggleWishlist, isInWishlist, categories = [], t, language } = useStore();
 
   const [isAdded, setIsAdded] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(() => (Array.isArray(product?.variants) && product.variants.length > 0 ? product.variants[0] : null));
+  const hasVariants = product?.hasVariants !== false && Array.isArray(product?.variants) && product.variants.length > 1;
+  const [selectedVariant, setSelectedVariant] = useState(() => (hasVariants ? product.variants[0] : null));
 
   if (!product) return null;
 
-  const hasVariants = Array.isArray(product.variants) && product.variants.length > 1;
-  const currentVariant = selectedVariant || (Array.isArray(product.variants) ? product.variants[0] : null);
+  const currentVariant = hasVariants ? (selectedVariant || product.variants[0]) : null;
   const { price, originalPrice, stock, discountPct } = getEffectiveProductDetails(product, currentVariant);
   const isOutOfStock = stock <= 0;
   const inWishlist = isInWishlist(product.id);

@@ -429,6 +429,78 @@ router.post('/google', async (req, res) => {
   }
 });
 
+// 5.5 Phone Number Fast Authentication (Login & Auto-Signup)
+router.post('/phone', async (req, res) => {
+  try {
+    const { phone, name, otp, password } = req.body;
+    const cleanPhone = cleanIndianPhone(phone);
+    if (!PHONE_REGEX.test(cleanPhone)) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (+91)' });
+    }
+
+    let customer = null;
+    try {
+      const dbRes = await query('SELECT * FROM customers WHERE phone = $1', [cleanPhone]);
+      if (dbRes.rows.length > 0) {
+        customer = dbRes.rows[0];
+        // If password provided and customer has passwordHash, check match
+        if (password && customer.passwordHash) {
+          const isMatch = await bcrypt.compare(password.trim(), customer.passwordHash);
+          if (!isMatch && customer.password !== password.trim()) {
+            return res.status(401).json({ error: 'Incorrect password for this mobile number' });
+          }
+        }
+      } else {
+        // Auto-register new customer with Phone Number
+        const newId = `cust-${Date.now()}`;
+        const finalName = (name || `Customer ${cleanPhone.slice(-4)}`).trim();
+        const finalEmail = `${cleanPhone}@vasavistore.in`;
+        const insertRes = await query(
+          'INSERT INTO customers (id, name, email, phone, address, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *',
+          [newId, finalName, finalEmail, cleanPhone, 'Nandyal, Andhra Pradesh']
+        );
+        customer = insertRes.rows[0] || {
+          id: newId,
+          name: finalName,
+          email: finalEmail,
+          phone: cleanPhone,
+          address: 'Nandyal, Andhra Pradesh'
+        };
+      }
+    } catch (dbErr) {
+      console.warn('Supabase phone auth fallback:', dbErr.message);
+      customer = {
+        id: `cust-${Date.now()}`,
+        name: (name || `Customer ${cleanPhone.slice(-4)}`).trim(),
+        email: `${cleanPhone}@vasavistore.in`,
+        phone: cleanPhone,
+        address: 'Nandyal, Andhra Pradesh'
+      };
+    }
+
+    const token = jwt.sign(
+      { customerId: customer.id, phone: customer.phone, name: customer.name },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    return res.json({
+      success: true,
+      token,
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email || `${customer.phone}@vasavistore.in`,
+        address: customer.address || 'Nandyal, Andhra Pradesh',
+        avatar: customer.name ? customer.name.charAt(0).toUpperCase() : '👤'
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 6. Get all registered customers (Admin protected)
 router.get('/customers', async (req, res) => {
   try {

@@ -60,6 +60,12 @@ export function groupProductsWithVariants(products = []) {
   for (const product of products) {
     if (!product) continue;
 
+    // 0. If product explicitly has variants disabled by admin
+    if (product.hasVariants === false) {
+      result.push({ ...product, hasVariants: false, variants: [] });
+      continue;
+    }
+
     // 1. If product ALREADY has explicit variants configured by admin
     if (Array.isArray(product.variants) && product.variants.length > 0) {
       result.push(product);

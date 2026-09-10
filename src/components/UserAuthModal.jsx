@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { cleanIndianPhone, EMAIL_REGEX, PHONE_REGEX } from '../utils/phoneUtils';
-import { X, Mail, Lock, User, Phone, Eye, EyeOff, CheckCircle2, ArrowRight, UserCheck, KeyRound, ArrowLeft, MessageCircle, AlertCircle, Check } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, Eye, EyeOff, CheckCircle2, ArrowRight, UserCheck, KeyRound, ArrowLeft, MessageCircle, AlertCircle, Check, Smartphone, Sparkles } from 'lucide-react';
 
 export const UserAuthModal = () => {
   const {
@@ -11,6 +11,7 @@ export const UserAuthModal = () => {
     loginCustomer,
     signupCustomer,
     loginWithGoogle,
+    loginWithPhone,
     logoutCustomer,
     requestPasswordReset,
     resetPassword,
@@ -21,11 +22,19 @@ export const UserAuthModal = () => {
   } = useStore();
 
   const [mode, setMode] = useState(authModalMode || 'login'); // 'login' | 'signup' | 'forgot'
+  const [authMethod, setAuthMethod] = useState('phone'); // 'phone' | 'email'
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [errorAction, setErrorAction] = useState(null); // 'goto-login' | 'goto-signup'
+
+  // Phone Auth States
+  const [phoneOtpStep, setPhoneOtpStep] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneName, setPhoneName] = useState('');
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [generatedPhoneOtp, setGeneratedPhoneOtp] = useState('');
 
   // Google 1-Click Fast Auth States
   const [googlePromptOpen, setGooglePromptOpen] = useState(false);
@@ -168,6 +177,83 @@ export const UserAuthModal = () => {
   const isEmailValid = !email.trim() || EMAIL_REGEX.test(email.trim());
   const isPasswordValid = isPasswordComplex;
   const isLoginIdentifierValid = EMAIL_REGEX.test(email.trim()) || PHONE_REGEX.test(cleanIndianPhone(email));
+
+  // 0. Handle Phone Authentication (Instant OTP & Fast Sign In)
+  const handleSendPhoneOtp = (e) => {
+    if (e) e.preventDefault();
+    setError('');
+    setErrorAction(null);
+    setSuccessMsg('');
+
+    const targetPhone = phoneInput || phone;
+    const cleanP = cleanIndianPhone(targetPhone);
+    if (!PHONE_REGEX.test(cleanP)) {
+      setError(
+        language === 'te'
+          ? 'దయచేసి 6, 7, 8, లేదా 9 తో ప్రారంభమయ్యే సరైన 10 అంకెల భారతీయ మొబైల్ నంబర్ (+91) నమోదు చేయండి.'
+          : 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.'
+      );
+      return;
+    }
+
+    if (mode === 'signup') {
+      const cleanN = (phoneName || name).trim();
+      if (!cleanN || cleanN.length < 3) {
+        setError(language === 'te' ? 'దయచేసి మీ పూర్తి పేరు (కనీసం 3 అక్షరాలు) నమోదు చేయండి.' : 'Please enter your valid full name (minimum 3 characters).');
+        return;
+      }
+    }
+
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedPhoneOtp(code);
+    setPhoneOtpStep(true);
+    setSuccessMsg(
+      language === 'te'
+        ? `+91 ${cleanP} కు OTP పంపబడింది. వెరిఫికేషన్ కోడ్: ${code}`
+        : `Verification OTP generated for +91 ${cleanP}: ${code}`
+    );
+  };
+
+  const handleVerifyPhoneOtp = async (e) => {
+    if (e) e.preventDefault();
+    setError('');
+    setErrorAction(null);
+    setSuccessMsg('');
+
+    const targetPhone = phoneInput || phone;
+    const cleanP = cleanIndianPhone(targetPhone);
+    const cleanO = enteredOtp.trim();
+
+    if (!cleanO || cleanO.length < 4) {
+      setError(language === 'te' ? 'దయచేసి 4 అంకెల OTP నమోదు చేయండి.' : 'Please enter the 4-digit verification code.');
+      return;
+    }
+
+    if (generatedPhoneOtp && cleanO !== generatedPhoneOtp) {
+      setError(language === 'te' ? 'తప్పు OTP కోడ్. దయచేసి సరిచూసుకోండి.' : 'Incorrect OTP code. Please check and try again.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const finalName = (phoneName || name).trim() || `Customer ${cleanP.slice(-4)}`;
+    const res = await loginWithPhone({ phone: cleanP, name: finalName, otp: cleanO });
+    setIsSubmitting(false);
+
+    if (res && res.success) {
+      setSuccessMsg(
+        language === 'te'
+          ? `స్వాగతం, ${res.user?.name}! విజయవంతంగా లాగిన్ అయ్యారు.`
+          : `Welcome, ${res.user?.name}! Signed in successfully.`
+      );
+      setTimeout(() => {
+        closeAuthModal();
+        setPhoneOtpStep(false);
+        setEnteredOtp('');
+      }, 900);
+    } else {
+      setError(res?.message || (language === 'te' ? 'మొబైల్ లాగిన్ విఫలమైంది.' : 'Mobile login failed.'));
+    }
+  };
 
   // 1. Handle Professional Sign In Submit
   const handleLoginSubmit = async (e) => {
@@ -565,9 +651,11 @@ export const UserAuthModal = () => {
                     </form>
                   )}
 
+                  {/* Sign In vs Create Account Mode Tabs */}
                   <div className="flex bg-[#faf8f5] p-1 rounded-2xl border border-[#c99632]/30">
                     <button
-                      onClick={() => { setMode('login'); setError(''); setErrorAction(null); setSuccessMsg(''); }}
+                      type="button"
+                      onClick={() => { setMode('login'); setError(''); setErrorAction(null); setSuccessMsg(''); setPhoneOtpStep(false); }}
                       className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         mode === 'login'
                           ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-md gold-glow'
@@ -577,7 +665,8 @@ export const UserAuthModal = () => {
                       🔐 {language === 'te' ? 'లాగిన్' : 'SIGN IN'}
                     </button>
                     <button
-                      onClick={() => { setMode('signup'); setError(''); setErrorAction(null); setSuccessMsg(''); }}
+                      type="button"
+                      onClick={() => { setMode('signup'); setError(''); setErrorAction(null); setSuccessMsg(''); setPhoneOtpStep(false); }}
                       className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
                         mode === 'signup'
                           ? 'bg-gradient-to-r from-[#c99632] to-[#a6751d] text-white shadow-md gold-glow'
@@ -585,6 +674,34 @@ export const UserAuthModal = () => {
                       }`}
                     >
                       ✨ {language === 'te' ? 'కొత్త ఖాతా' : 'CREATE ACCOUNT'}
+                    </button>
+                  </div>
+
+                  {/* Auth Method Selector (Phone vs Email) */}
+                  <div className="flex bg-[#faf8f5] p-1 rounded-2xl border border-[#c99632]/25">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMethod('phone'); setError(''); setSuccessMsg(''); setPhoneOtpStep(false); }}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        authMethod === 'phone'
+                          ? 'bg-white text-[#c99632] border border-[#c99632]/40 shadow-xs'
+                          : 'text-[#666666] hover:text-[#171717]'
+                      }`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>{language === 'te' ? 'మొబైల్ నంబర్ (+91)' : 'Phone Number (+91)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMethod('email'); setError(''); setSuccessMsg(''); }}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        authMethod === 'email'
+                          ? 'bg-white text-[#c99632] border border-[#c99632]/40 shadow-xs'
+                          : 'text-[#666666] hover:text-[#171717]'
+                      }`}
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>{language === 'te' ? 'ఈమెయిల్ & పాస్‌వర్డ్' : 'Email & Password'}</span>
                     </button>
                   </div>
                 </div>
@@ -652,8 +769,149 @@ export const UserAuthModal = () => {
                 </div>
               )}
 
-              {/* 1. PROFESSIONAL SIGN IN FORM */}
-              {mode === 'login' && (
+              {/* PHONE AUTHENTICATION FORM */}
+              {authMethod === 'phone' && mode !== 'forgot' && (
+                <div className="space-y-4">
+                  {!phoneOtpStep ? (
+                    <form onSubmit={handleSendPhoneOtp} className="space-y-3.5">
+                      {mode === 'signup' && (
+                        <div>
+                          <label htmlFor="phone-name-input" className="block text-xs font-bold text-[#171717] mb-1">
+                            {language === 'te' ? 'మీ పూర్తి పేరు *' : 'Full Name *'}
+                          </label>
+                          <div className="relative">
+                            <input
+                              id="phone-name-input"
+                              type="text"
+                              required
+                              value={phoneName}
+                              onChange={(e) => setPhoneName(e.target.value)}
+                              placeholder={language === 'te' ? 'మీ పేరు (ఉదా: రామ్‌చరణ్)' : 'e.g. Ramesh Kumar'}
+                              className="w-full bg-white border border-[#c99632]/30 rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium text-[#171717] focus:outline-none focus:border-[#c99632]"
+                            />
+                            <User className="w-4 h-4 text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label htmlFor="phone-auth-input" className="block text-xs font-bold text-[#171717] mb-1">
+                          {language === 'te' ? 'మొబైల్ నంబర్ (భారతీయ +91) *' : 'Mobile Number (+91) *'}
+                        </label>
+                        <div className="relative flex rounded-xl border border-[#c99632]/30 bg-white overflow-hidden focus-within:border-[#c99632] transition-all">
+                          <span className="bg-[#faf8f5] px-3.5 py-2.5 text-xs font-bold text-[#171717] border-r border-[#c99632]/30 flex items-center gap-1 shrink-0 select-none">
+                            <span>🇮🇳</span>
+                            <span>+91</span>
+                          </span>
+                          <input
+                            id="phone-auth-input"
+                            type="tel"
+                            required
+                            maxLength={10}
+                            value={phoneInput}
+                            onChange={(e) => setPhoneInput(e.target.value.replace(/[^\d]/g, ''))}
+                            placeholder="9876543210"
+                            className="w-full bg-white py-2.5 px-3 text-xs font-bold text-[#171717] tracking-wider placeholder-slate-400 focus:outline-none"
+                          />
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1">
+                          {language === 'te' ? 'త్వరిత లాగిన్ కోసం మేము 4-అంకెల OTP పంపుతాము.' : 'We will send a 4-digit verification code (OTP) for instant sign in.'}
+                        </p>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || phoneInput.length < 10}
+                        className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#c99632] via-[#e5b85c] to-[#a6751d] text-white font-bold text-xs shadow-md hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow disabled:opacity-50"
+                      >
+                        <Smartphone className="w-4 h-4" />
+                        <span>{language === 'te' ? 'ఓటీపీ పొందండి & కొనసాగించండి' : 'GET OTP & CONTINUE'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </form>
+                  ) : (
+                    /* OTP VERIFICATION VIEW */
+                    <form onSubmit={handleVerifyPhoneOtp} className="space-y-4">
+                      <div className="p-3 bg-[#faf8f5] border border-[#c99632]/30 rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="w-4 h-4 text-[#c99632]" />
+                          <div>
+                            <span className="text-[10px] text-gray-500 block">{language === 'te' ? 'మొబైల్ నంబర్' : 'Mobile Number'}</span>
+                            <span className="text-xs font-bold text-[#171717] font-mono">+91 {phoneInput}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPhoneOtpStep(false)}
+                          className="text-[11px] font-bold text-[#c99632] hover:underline"
+                        >
+                          {language === 'te' ? 'నంబర్ మార్చండి' : 'Change'}
+                        </button>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label htmlFor="phone-otp-code" className="block text-xs font-bold text-[#171717]">
+                            {language === 'te' ? '4-అంకెల వెరిఫికేషన్ కోడ్ (OTP) *' : '4-Digit Verification Code (OTP) *'}
+                          </label>
+                          {generatedPhoneOtp && (
+                            <button
+                              type="button"
+                              onClick={() => setEnteredOtp(generatedPhoneOtp)}
+                              className="text-[10px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-md transition-colors"
+                            >
+                              ⚡ {language === 'te' ? `ఆటో-ఫిల్ (${generatedPhoneOtp})` : `Auto-fill (${generatedPhoneOtp})`}
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          id="phone-otp-code"
+                          type="text"
+                          required
+                          maxLength={6}
+                          value={enteredOtp}
+                          onChange={(e) => setEnteredOtp(e.target.value.replace(/[^\d]/g, ''))}
+                          placeholder="••••"
+                          className="w-full text-center tracking-[0.5em] font-mono font-black text-lg py-2.5 bg-white border border-[#c99632]/40 rounded-xl focus:outline-none focus:border-[#c99632]"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || enteredOtp.length < 4}
+                        className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#c99632] via-[#e5b85c] to-[#a6751d] text-white font-bold text-xs shadow-md hover:brightness-110 flex items-center justify-center gap-2 transition-all gold-glow disabled:opacity-50"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>{isSubmitting ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Verifying...') : (language === 'te' ? 'వెరిఫై చేసి లాగిన్ అవ్వండి' : 'VERIFY & SIGN IN')}</span>
+                      </button>
+
+                      <div className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleSendPhoneOtp()}
+                          className="text-[11px] font-bold text-gray-500 hover:text-[#c99632]"
+                        >
+                          {language === 'te' ? 'మళ్లీ OTP పంపండి' : 'Resend OTP'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  <div className="pt-2 text-center border-t border-[#c99632]/20">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMethod('email'); setError(''); setSuccessMsg(''); }}
+                      className="text-[11px] font-semibold text-[#888888] hover:text-[#c99632] transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>{language === 'te' ? 'ఈమెయిల్ & పాస్‌వర్డ్ ద్వారా లాగిన్ అవ్వాలనుకుంటున్నారా?' : 'Prefer Email & Password instead?'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 1. PROFESSIONAL SIGN IN FORM (EMAIL) */}
+              {authMethod === 'email' && mode === 'login' && (
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-1">
@@ -739,11 +997,22 @@ export const UserAuthModal = () => {
                     <span>{isSubmitting ? (language === 'te' ? 'లాగిన్ అవుతోంది...' : 'Signing In...') : (language === 'te' ? 'నా ఖాతాలోకి లాగిన్ అవ్వండి' : 'SIGN IN TO MY ACCOUNT')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
+
+                  <div className="pt-2 text-center border-t border-[#c99632]/20">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMethod('phone'); setError(''); setSuccessMsg(''); setPhoneOtpStep(false); }}
+                      className="text-[11px] font-semibold text-[#888888] hover:text-[#c99632] transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-[#c99632]" />
+                      <span>{language === 'te' ? 'మొబైల్ నంబర్ (+91) OTP తో వేగంగా లాగిన్ అవ్వండి' : 'Sign in faster with Mobile OTP (+91)'}</span>
+                    </button>
+                  </div>
                 </form>
               )}
 
-              {/* 2. PROFESSIONAL SIGN UP FORM */}
-              {mode === 'signup' && (
+              {/* 2. PROFESSIONAL SIGN UP FORM (EMAIL) */}
+              {authMethod === 'email' && mode === 'signup' && (
                 <form onSubmit={handleSignupSubmit} className="space-y-3.5">
                   <div>
                     <div className="flex items-center justify-between mb-1">
@@ -916,6 +1185,17 @@ export const UserAuthModal = () => {
                     <span>{isSubmitting ? (language === 'te' ? 'ఖాతా సృష్టిస్తోంది...' : 'Creating Account...') : (language === 'te' ? 'ఖాతా సృష్టించండి' : 'CREATE ACCOUNT')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
+
+                  <div className="pt-2 text-center border-t border-[#c99632]/20">
+                    <button
+                      type="button"
+                      onClick={() => { setAuthMethod('phone'); setError(''); setSuccessMsg(''); setPhoneOtpStep(false); }}
+                      className="text-[11px] font-semibold text-[#888888] hover:text-[#c99632] transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-[#c99632]" />
+                      <span>{language === 'te' ? 'పాస్‌వర్డ్ అవసరం లేకుండా మొబైల్ నంబర్ (+91) తో ఖాతా తెరవండి' : 'No password needed: Sign up with Mobile (+91)'}</span>
+                    </button>
+                  </div>
                 </form>
               )}
 

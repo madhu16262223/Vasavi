@@ -20,8 +20,8 @@ export const ProductDetailModal = () => {
 
   if (!selectedProduct) return null;
 
-  const hasVariants = Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 1;
-  const currentVariant = modalVariant || (Array.isArray(selectedProduct.variants) ? selectedProduct.variants[0] : null);
+  const hasVariants = selectedProduct?.hasVariants !== false && Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 1;
+  const currentVariant = hasVariants ? (modalVariant || selectedProduct.variants[0]) : null;
   const { price, originalPrice, stock, discountPct } = getEffectiveProductDetails(selectedProduct, currentVariant);
 
   const inWishlist = isInWishlist(selectedProduct.id);

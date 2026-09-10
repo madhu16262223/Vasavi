@@ -69,13 +69,17 @@ export const StoreProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('vasavi_products');
       const source = saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-      const list = Array.isArray(source) && source.length > 0 ? source : INITIAL_PRODUCTS;
       return list.map((p) => {
-        if (Array.isArray(p.variants) && p.variants.length > 0) return p;
+        if (p.hasVariants === false) {
+          return { ...p, hasVariants: false, variants: [] };
+        }
+        if (Array.isArray(p.variants) && p.variants.length > 0) {
+          return { ...p, hasVariants: true };
+        }
         return {
           ...p,
-          hasVariants: true,
-          variants: generateSmartVariantsForProduct(p)
+          hasVariants: false,
+          variants: []
         };
       });
     } catch (e) {
@@ -263,8 +267,8 @@ export const StoreProvider = ({ children }) => {
       shade: p.shade,
       isTrending: p.isTrending,
       isBestSeller: p.isBestSeller,
-      hasVariants: !!(p.variants && p.variants.length > 0),
-      variants: Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : undefined,
+      hasVariants: p.hasVariants !== false && Array.isArray(p.variants) && p.variants.length > 0,
+      variants: p.hasVariants !== false && Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : [],
       imageUrl: (typeof p.imageUrl === 'string' && !p.imageUrl.startsWith('data:')) ? p.imageUrl : ''
     }));
     safeLocalStorageSet('vasavi_products', sanitizedProds);
@@ -767,6 +771,9 @@ export const StoreProvider = ({ children }) => {
     const id = typeof productIdOrObj === 'object' ? productIdOrObj.id : productIdOrObj;
     const data = typeof productIdOrObj === 'object' ? productIdOrObj : (maybePayload || {});
     const imageSrc = data.image || data.imageUrl;
+    const hasVariantsBool = data.hasVariants !== undefined 
+      ? !!data.hasVariants 
+      : (Array.isArray(data.variants) ? data.variants.length > 0 : undefined);
 
     setProducts((prev) =>
       prev.map((p) => {
@@ -778,6 +785,10 @@ export const StoreProvider = ({ children }) => {
             updated.image = imageSrc;
             updated.imageUrl = imageSrc;
           }
+          if (hasVariantsBool !== undefined) {
+            updated.hasVariants = hasVariantsBool;
+            updated.variants = hasVariantsBool && Array.isArray(data.variants) ? data.variants : [];
+          }
           return updated;
         }
         return p;
@@ -785,10 +796,18 @@ export const StoreProvider = ({ children }) => {
     );
 
     // Send to Cloud Database
+    const syncPayload = {
+      ...data,
+      image: imageSrc,
+      imageUrl: imageSrc,
+      hasVariants: hasVariantsBool,
+      variants: hasVariantsBool && Array.isArray(data.variants) ? data.variants : []
+    };
+
     fetch(`${API_BASE_URL}/api/products/${id}`, {
       method: 'PUT',
       headers: ADMIN_API_HEADER,
-      body: JSON.stringify({ ...data, image: imageSrc, imageUrl: imageSrc })
+      body: JSON.stringify(syncPayload)
     }).catch((err) => console.error('[Vasavi] Product update sync error:', err));
   };
 
@@ -1402,6 +1421,72 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
+  // 1-Click Fast Phone Number Authentication (Login or Auto-Signup)
+  const loginWithPhone = async ({ phone, name, otp, password }) => {
+    const cleanPhone = cleanIndianPhone(phone);
+    if (!PHONE_REGEX.test(cleanPhone)) {
+      return {
+        success: false,
+        message: 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.'
+      };
+    }
+
+    const cleanName = sanitizeInput(name) || `Customer ${cleanPhone.slice(-4)}`;
+
+    const phoneUser = {
+      id: `cust-phone-${Date.now()}`,
+      name: cleanName,
+      phone: cleanPhone,
+      email: `${cleanPhone}@vasavistore.in`,
+      address: 'Nandyal, Andhra Pradesh',
+      avatar: cleanName.charAt(0).toUpperCase() || '👤',
+      authProvider: 'phone',
+      createdAt: new Date().toISOString()
+    };
+
+    // 1. Try syncing with backend
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          name: cleanName,
+          otp,
+          password
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.customer) {
+        phoneUser.id = data.customer.id;
+        if (data.customer.name) phoneUser.name = data.customer.name;
+        if (data.customer.address) phoneUser.address = data.customer.address;
+        if (data.customer.email) phoneUser.email = data.customer.email;
+      } else if (!res.ok && data?.error) {
+        return { success: false, message: data.error };
+      }
+    } catch (e) {
+      console.warn('[Vasavi] Cloud phone auth fallback note:', e);
+    }
+
+    // 2. Set current user state & persist locally
+    setCurrentUser(phoneUser);
+    safeLocalStorageSet('vasavi_customer_user', phoneUser);
+
+    // 3. Update registeredUsers list
+    setRegisteredUsers((prev) => {
+      const idx = prev.findIndex((u) => u.phone && cleanIndianPhone(u.phone) === cleanPhone);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], ...phoneUser };
+        return updated;
+      }
+      return [phoneUser, ...prev];
+    });
+
+    return { success: true, user: phoneUser };
+  };
+
   const resetStoreToCleanState = () => {
     setProducts([]);
     setOrders([]);
@@ -1482,6 +1567,7 @@ export const StoreProvider = ({ children }) => {
         loginCustomer,
         signupCustomer,
         loginWithGoogle,
+        loginWithPhone,
         logoutCustomer,
         requestPasswordReset,
         resetPassword,

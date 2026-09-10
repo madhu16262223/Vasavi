@@ -39,7 +39,8 @@ router.get('/', async (req, res) => {
       categoryId: p.categoryId,
       categoryName: p.categoryName || 'Cosmetics',
       categorySlug: p.categorySlug || 'cosmetics',
-      variants: p.variants ? (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants) : undefined,
+      variants: (p.hasVariants === false || !p.variants) ? [] : (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants),
+      hasVariants: p.hasVariants !== false && !!p.variants && (Array.isArray(p.variants) ? p.variants.length > 0 : true),
       createdAt: p.createdAt,
       updatedAt: p.updatedAt
     }));
@@ -194,20 +195,22 @@ router.get('/:id', async (req, res) => {
 // Create product (Admin)
 router.post('/', authenticateAdmin, async (req, res) => {
   try {
-    const { id, name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, variants } = req.body;
+    const { id, name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, variants, hasVariants } = req.body;
     const finalId = id || `prod-${Date.now()}`;
     const imageSrc = imageUrl || image || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
     const catId = categoryId || 'cat-1';
     const numPrice = parseFloat(price) || 0;
     const numOrig = originalPrice ? parseFloat(originalPrice) : null;
     const numStock = stock !== undefined ? parseInt(stock, 10) : 10;
-    const variantsJson = Array.isArray(variants) && variants.length > 0 ? JSON.stringify(variants) : null;
+    const hasVarBool = hasVariants !== undefined ? !!hasVariants : (Array.isArray(variants) && variants.length > 0);
+    const variantsJson = (hasVarBool && Array.isArray(variants) && variants.length > 0) ? JSON.stringify(variants) : '[]';
 
     await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS variants JSONB').catch(() => {});
+    await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS "hasVariants" BOOLEAN DEFAULT true').catch(() => {});
 
     await query(
-      `INSERT INTO products (id, name, description, price, "originalPrice", stock, "imageUrl", brand, shade, "isTrending", "isBestSeller", "isActive", "categoryId", variants, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, $13, NOW(), NOW())
+      `INSERT INTO products (id, name, description, price, "originalPrice", stock, "imageUrl", brand, shade, "isTrending", "isBestSeller", "isActive", "categoryId", variants, "hasVariants", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, $13, $14, NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          price = EXCLUDED.price,
@@ -216,8 +219,9 @@ router.post('/', authenticateAdmin, async (req, res) => {
          "imageUrl" = EXCLUDED."imageUrl",
          "categoryId" = EXCLUDED."categoryId",
          variants = EXCLUDED.variants,
+         "hasVariants" = EXCLUDED."hasVariants",
          "updatedAt" = NOW()`,
-      [finalId, name, description || '', numPrice, numOrig, numStock, imageSrc, brand || 'Vasavi Collection', shade || null, !!isTrending, !!isBestSeller, catId, variantsJson]
+      [finalId, name, description || '', numPrice, numOrig, numStock, imageSrc, brand || 'Vasavi Collection', shade || null, !!isTrending, !!isBestSeller, catId, variantsJson, hasVarBool]
     );
 
     res.status(201).json({
@@ -229,7 +233,8 @@ router.post('/', authenticateAdmin, async (req, res) => {
       image: imageSrc,
       imageUrl: imageSrc,
       categoryId: catId,
-      variants: variants || []
+      hasVariants: hasVarBool,
+      variants: hasVarBool && Array.isArray(variants) ? variants : []
     });
   } catch (err) {
     console.error('Create product error:', err);
@@ -240,11 +245,22 @@ router.post('/', authenticateAdmin, async (req, res) => {
 // Update product (Admin)
 router.put('/:id', authenticateAdmin, async (req, res) => {
   try {
-    const { name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, isActive, variants } = req.body;
+    const { name, categoryId, price, originalPrice, stock, image, imageUrl, description, brand, shade, isTrending, isBestSeller, isActive, variants, hasVariants } = req.body;
     const imageSrc = imageUrl || image;
-    const variantsJson = variants !== undefined ? (Array.isArray(variants) && variants.length > 0 ? JSON.stringify(variants) : null) : undefined;
+
+    const hasVarBool = hasVariants !== undefined 
+      ? !!hasVariants 
+      : (Array.isArray(variants) ? variants.length > 0 : undefined);
+
+    let variantsJson = undefined;
+    if (hasVarBool === false || (Array.isArray(variants) && variants.length === 0)) {
+      variantsJson = '[]';
+    } else if (Array.isArray(variants) && variants.length > 0) {
+      variantsJson = JSON.stringify(variants);
+    }
 
     await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS variants JSONB').catch(() => {});
+    await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS "hasVariants" BOOLEAN DEFAULT true').catch(() => {});
 
     await query(
       `UPDATE products SET
@@ -261,8 +277,9 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
          "isBestSeller" = COALESCE($11, "isBestSeller"),
          "isActive" = COALESCE($12, "isActive"),
          variants = CASE WHEN $13::text IS NOT NULL THEN $13::jsonb ELSE variants END,
+         "hasVariants" = CASE WHEN $14::boolean IS NOT NULL THEN $14::boolean ELSE "hasVariants" END,
          "updatedAt" = NOW()
-       WHERE id = $14`,
+       WHERE id = $15`,
       [
         name,
         categoryId,
@@ -277,6 +294,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
         isBestSeller !== undefined ? !!isBestSeller : null,
         isActive !== undefined ? !!isActive : null,
         variantsJson !== undefined ? variantsJson : null,
+        hasVarBool !== undefined ? hasVarBool : null,
         req.params.id
       ]
     );

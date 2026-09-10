@@ -76,6 +76,7 @@ export const AdminProducts = () => {
 
   const handleOpenEdit = (product) => {
     setEditingProduct(product);
+    const hasEnabled = product.hasVariants !== false && Array.isArray(product.variants) && product.variants.length > 0;
     const existingVariants = Array.isArray(product.variants) ? product.variants : [];
     setFormData({
       name: product.name,
@@ -90,7 +91,7 @@ export const AdminProducts = () => {
       brand: product.brand || 'Vasavi Collection',
       isTrending: product.isTrending || false,
       isBestSeller: product.isBestSeller || false,
-      hasVariants: existingVariants.length > 0,
+      hasVariants: hasEnabled,
       variants: existingVariants
     });
   };
@@ -132,7 +133,7 @@ export const AdminProducts = () => {
     const catObj = categories.find((c) => c.id === formData.categoryId) || categories[0];
     const imageToSave = formData.image?.trim() || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80';
     
-    let cleanedVariants = undefined;
+    let cleanedVariants = [];
     if (formData.hasVariants && Array.isArray(formData.variants) && formData.variants.length > 0) {
       cleanedVariants = formData.variants
         .filter(v => v.name && v.name.trim().length > 0)
@@ -145,6 +146,8 @@ export const AdminProducts = () => {
         }));
     }
 
+    const hasValidVariants = !!(formData.hasVariants && cleanedVariants.length > 0);
+
     const payload = {
       ...formData,
       image: imageToSave,
@@ -152,10 +155,11 @@ export const AdminProducts = () => {
       categoryId: catObj?.id || formData.categoryId || 'cat-1',
       categoryName: catObj?.name || formData.categoryName || 'Cosmetics',
       categorySlug: catObj?.slug || 'cosmetics',
-      price: parseFloat(formData.price) || (cleanedVariants?.[0]?.price || 0),
-      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : (cleanedVariants?.[0]?.originalPrice || null),
+      price: parseFloat(formData.price) || (hasValidVariants ? cleanedVariants[0]?.price : 0),
+      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : (hasValidVariants ? cleanedVariants[0]?.originalPrice : null),
       stock: parseInt(formData.stock, 10) || 0,
-      variants: cleanedVariants && cleanedVariants.length > 0 ? cleanedVariants : undefined
+      hasVariants: hasValidVariants,
+      variants: hasValidVariants ? cleanedVariants : []
     };
 
     if (editingProduct) {
@@ -286,7 +290,7 @@ export const AdminProducts = () => {
                 <div>
                   <span className="text-[9px] uppercase font-bold text-[#c99632] block truncate">{p.categoryName}</span>
                   <h4 className="text-[11px] font-bold text-[#171717] line-clamp-1 leading-tight" title={p.name}>{p.name}</h4>
-                  {Array.isArray(p.variants) && p.variants.length > 0 && (
+                  {p.hasVariants !== false && Array.isArray(p.variants) && p.variants.length > 0 && (
                     <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[8.5px] font-bold text-amber-800">
                       🏷️ {p.variants.length} Sizes/Weights
                     </span>
@@ -353,7 +357,7 @@ export const AdminProducts = () => {
                     <td className="py-2.5 px-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-bold text-[#171717]">{p.name}</h4>
-                        {Array.isArray(p.variants) && p.variants.length > 0 && (
+                        {p.hasVariants !== false && Array.isArray(p.variants) && p.variants.length > 0 && (
                           <span className="px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-300 text-[9px] font-bold text-amber-800">
                             🏷️ {p.variants.length} Sizes
                           </span>
