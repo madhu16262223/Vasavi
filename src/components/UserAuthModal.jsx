@@ -58,6 +58,7 @@ export const UserAuthModal = () => {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [generatedPhoneOtp, setGeneratedPhoneOtp] = useState('');
   const [whatsappOtpUrl, setWhatsappOtpUrl] = useState('');
+  const [smsSent, setSmsSent] = useState(false);
 
   // Google Real-World Account Chooser States
   const [isGoogleChooserOpen, setIsGoogleChooserOpen] = useState(false);
@@ -225,12 +226,21 @@ export const UserAuthModal = () => {
     if (res && res.success) {
       setGeneratedPhoneOtp(res.otp);
       setWhatsappOtpUrl(res.whatsappUrl || '');
+      setSmsSent(Boolean(res.smsSent));
       setPhoneOtpStep(true);
-      setSuccessMsg(
-        language === 'te'
-          ? `+91 ${cleanP} కు మొబైల్ OTP పంపబడింది. వెరిఫికేషన్ కోడ్: ${res.otp}`
-          : `Mobile verification OTP sent to +91 ${cleanP}: ${res.otp}`
-      );
+      if (res.smsSent) {
+        setSuccessMsg(
+          language === 'te'
+            ? `+91 ${cleanP} కు రియల్ SMS OTP పంపబడింది!`
+            : `Real SMS OTP sent to your mobile messages (+91 ${cleanP})!`
+        );
+      } else {
+        setSuccessMsg(
+          language === 'te'
+            ? `+91 ${cleanP} కు OTP సిద్ధమైంది. కోడ్: ${res.otp}`
+            : `Verification OTP ready for +91 ${cleanP}: ${res.otp}`
+        );
+      }
     } else {
       setError(res?.message || (language === 'te' ? 'OTP పంపడం విఫలమైంది.' : 'Failed to send OTP to your mobile.'));
     }
@@ -668,6 +678,25 @@ export const UserAuthModal = () => {
                           {language === 'te' ? 'నంబర్ మార్చండి' : 'Change'}
                         </button>
                       </div>
+
+                      {/* Real SMS Delivery Status Badge */}
+                      {smsSent ? (
+                        <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl text-[11.5px] font-semibold text-emerald-900 flex items-center gap-2">
+                          <span className="text-base">📩</span>
+                          <span>
+                            {language === 'te'
+                              ? `రియల్ SMS OTP మీ మొబైల్ మెసేజ్‌ల యాప్‌కు పంపబడింది (+91 ${phoneInput})`
+                              : `Real SMS OTP dispatched to your phone's Messages app (+91 ${phoneInput})`}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-[11px] font-medium text-amber-900 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <span>💬</span>
+                            <span>{language === 'te' ? 'మీ మొబైల్ నంబర్‌కు OTP సిద్ధమైంది' : 'OTP ready for your mobile number'}</span>
+                          </span>
+                        </div>
+                      )}
 
                       <div>
                         <div className="flex items-center justify-between mb-1">

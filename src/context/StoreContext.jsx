@@ -1541,7 +1541,9 @@ export const StoreProvider = ({ children }) => {
           otp: data.otp,
           phone: cleanPhone,
           whatsappUrl: data.whatsappUrl,
-          message: data.message
+          message: data.message,
+          smsSent: Boolean(data.smsSent),
+          smsMessage: data.smsMessage || ''
         };
       }
       if (data?.error) {

@@ -465,13 +465,20 @@ router.post('/send-otp', async (req, res) => {
 
     console.log(`📲 Mobile OTP generated for +91 ${cleanPhone}: ${code}`);
 
-    // Deliver via Fast2SMS if API key is provided
-    if (process.env.FAST2SMS_API_KEY) {
+    let smsSent = false;
+    let smsMessage = '';
+
+    // Deliver via Fast2SMS Indian SMS Gateway
+    const fast2smsKey = process.env.FAST2SMS_API_KEY;
+    if (fast2smsKey && fast2smsKey.trim()) {
       try {
-        await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        console.log(`[Fast2SMS] Attempting real SMS delivery to +91 ${cleanPhone}...`);
+        
+        // Fast2SMS OTP route call
+        const smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
           method: 'POST',
           headers: {
-            'authorization': process.env.FAST2SMS_API_KEY,
+            'authorization': fast2smsKey.trim(),
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -480,10 +487,24 @@ router.post('/send-otp', async (req, res) => {
             numbers: cleanPhone
           })
         });
-        console.log(`✅ SMS successfully delivered to +91 ${cleanPhone}`);
+
+        const smsData = await smsRes.json().catch(() => ({}));
+        console.log('[Fast2SMS Response]:', smsData);
+
+        if (smsData && (smsData.return === true || smsData.status_code === 200)) {
+          smsSent = true;
+          smsMessage = 'Real SMS OTP sent successfully to your mobile phone messages.';
+          console.log(`✅ Real SMS successfully delivered via Fast2SMS to +91 ${cleanPhone}`);
+        } else {
+          smsMessage = (smsData && smsData.message && smsData.message[0]) || 'Fast2SMS returned failure';
+          console.warn('[Fast2SMS Warning]:', smsMessage);
+        }
       } catch (smsErr) {
-        console.warn('Fast2SMS dispatch note:', smsErr.message);
+        console.warn('[Fast2SMS Error]:', smsErr.message);
+        smsMessage = smsErr.message;
       }
+    } else {
+      console.log('[Fast2SMS] No FAST2SMS_API_KEY found in environment.');
     }
 
     // Direct WhatsApp message delivery link
@@ -492,9 +513,13 @@ router.post('/send-otp', async (req, res) => {
 
     return res.json({
       success: true,
-      message: `OTP sent successfully to +91 ${cleanPhone}`,
+      message: smsSent 
+        ? `Real SMS OTP sent to +91 ${cleanPhone}` 
+        : `OTP generated for +91 ${cleanPhone}`,
       phone: cleanPhone,
       otp: code,
+      smsSent,
+      smsMessage,
       whatsappUrl
     });
   } catch (err) {
