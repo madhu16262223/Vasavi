@@ -30,6 +30,7 @@ export const UserAuthModal = () => {
     signupCustomer,
     loginWithGoogle,
     loginWithPhone,
+    sendMobileOtp,
     logoutCustomer,
     requestPasswordReset,
     resetPassword,
@@ -56,6 +57,7 @@ export const UserAuthModal = () => {
   const [phoneName, setPhoneName] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
   const [generatedPhoneOtp, setGeneratedPhoneOtp] = useState('');
+  const [whatsappOtpUrl, setWhatsappOtpUrl] = useState('');
 
   // Google Real-World Account Chooser States
   const [isGoogleChooserOpen, setIsGoogleChooserOpen] = useState(false);
@@ -200,7 +202,7 @@ export const UserAuthModal = () => {
   };
 
   // 1. Phone OTP Handlers (Indian E-Commerce Standard: Flipkart / Amazon style)
-  const handleSendPhoneOtp = (e) => {
+  const handleSendPhoneOtp = async (e) => {
     if (e) e.preventDefault();
     setError('');
     setErrorAction(null);
@@ -216,14 +218,22 @@ export const UserAuthModal = () => {
       return;
     }
 
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedPhoneOtp(code);
-    setPhoneOtpStep(true);
-    setSuccessMsg(
-      language === 'te'
-        ? `+91 ${cleanP} కు OTP పంపబడింది. వెరిఫికేషన్ కోడ్: ${code}`
-        : `Verification OTP generated for +91 ${cleanP}: ${code}`
-    );
+    setIsSubmitting(true);
+    const res = await sendMobileOtp(cleanP);
+    setIsSubmitting(false);
+
+    if (res && res.success) {
+      setGeneratedPhoneOtp(res.otp);
+      setWhatsappOtpUrl(res.whatsappUrl || '');
+      setPhoneOtpStep(true);
+      setSuccessMsg(
+        language === 'te'
+          ? `+91 ${cleanP} కు మొబైల్ OTP పంపబడింది. వెరిఫికేషన్ కోడ్: ${res.otp}`
+          : `Mobile verification OTP sent to +91 ${cleanP}: ${res.otp}`
+      );
+    } else {
+      setError(res?.message || (language === 'te' ? 'OTP పంపడం విఫలమైంది.' : 'Failed to send OTP to your mobile.'));
+    }
   };
 
   const handleVerifyPhoneOtp = async (e) => {
@@ -695,13 +705,26 @@ export const UserAuthModal = () => {
                         <span>{isSubmitting ? (language === 'te' ? 'ధృవీకరిస్తోంది...' : 'Verifying...') : (language === 'te' ? 'వెరిఫై చేసి లాగిన్ అవ్వండి' : 'VERIFY & SIGN IN')}</span>
                       </button>
 
+                      {/* Direct Mobile WhatsApp Delivery Action */}
+                      {whatsappOtpUrl && (
+                        <a
+                          href={whatsappOtpUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs group"
+                        >
+                          <MessageCircle className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                          <span>{language === 'te' ? '📲 వాట్సాప్‌లో OTP పొందండి' : '📲 Receive OTP on WhatsApp'}</span>
+                        </a>
+                      )}
+
                       <div className="text-center">
                         <button
                           type="button"
                           onClick={() => handleSendPhoneOtp()}
                           className="text-[11px] font-bold text-gray-500 hover:text-[#c99632]"
                         >
-                          {language === 'te' ? 'మళ్లీ OTP పంపండి' : 'Resend OTP'}
+                          {language === 'te' ? 'మళ్లీ OTP పంపండి (SMS)' : 'Resend OTP (SMS)'}
                         </button>
                       </div>
                     </form>

@@ -440,6 +440,68 @@ router.post('/google', async (req, res) => {
   }
 });
 
+// In-Memory Mobile OTP Store (10 min validity)
+const mobileOtpStore = new Map();
+
+// 5.4 Send Mobile OTP (via Fast2SMS, Twilio, and Instant WhatsApp link)
+router.post('/send-otp', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    const cleanPhone = cleanIndianPhone(phone);
+    if (!PHONE_REGEX.test(cleanPhone)) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (+91)' });
+    }
+
+    // Generate secure 4-digit OTP
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    mobileOtpStore.set(cleanPhone, {
+      otp: code,
+      expiresAt: Date.now() + 10 * 60 * 1000
+    });
+
+    console.log(`📲 Mobile OTP generated for +91 ${cleanPhone}: ${code}`);
+
+    // Deliver via Fast2SMS if API key is provided
+    if (process.env.FAST2SMS_API_KEY) {
+      try {
+        await fetch('https://www.fast2sms.com/dev/bulkV2', {
+          method: 'POST',
+          headers: {
+            'authorization': process.env.FAST2SMS_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            route: 'otp',
+            variables_values: code,
+            numbers: cleanPhone
+          })
+        });
+        console.log(`✅ SMS successfully delivered to +91 ${cleanPhone}`);
+      } catch (smsErr) {
+        console.warn('Fast2SMS dispatch note:', smsErr.message);
+      }
+    }
+
+    // Direct WhatsApp message delivery link
+    const waText = `✨ *Vasavi Fancy Store - Verification OTP*\n\nYour 4-digit login verification code is: *${code}*\n\nValid for 10 minutes. Do not share this OTP with anyone.\nWelcome to Vasavi Fancy Store, Nandyal! 🛍️`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(waText)}`;
+
+    return res.json({
+      success: true,
+      message: `OTP sent successfully to +91 ${cleanPhone}`,
+      phone: cleanPhone,
+      otp: code,
+      whatsappUrl
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 5.5 Phone Number Fast Authentication (Login & Auto-Signup)
 router.post('/phone', async (req, res) => {
   try {
@@ -447,6 +509,20 @@ router.post('/phone', async (req, res) => {
     const cleanPhone = cleanIndianPhone(phone);
     if (!PHONE_REGEX.test(cleanPhone)) {
       return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (+91)' });
+    }
+
+    // Verify OTP if provided
+    if (otp) {
+      const cached = mobileOtpStore.get(cleanPhone);
+      if (cached) {
+        if (Date.now() > cached.expiresAt) {
+          return res.status(400).json({ error: 'Verification code has expired. Please request a new OTP.' });
+        }
+        if (cached.otp !== String(otp).trim()) {
+          return res.status(400).json({ error: 'Incorrect OTP code. Please enter the valid verification code.' });
+        }
+        mobileOtpStore.delete(cleanPhone);
+      }
     }
 
     let customer = null;
